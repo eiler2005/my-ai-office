@@ -8,6 +8,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Changed
+- **OpenClaw Gateway resource containment**: bounded the live Gateway restart policy to
+  `on-failure:5`, capped Docker json logs at `10m x3`, and added
+  `OPENCLAW_NODE_OPTIONS=--max-old-space-size=768` so repeated `exit=137` events stop inside the
+  OpenClaw budget instead of causing a host-level outage that can take `maxtg_bridge` down.
 - **Football Telegram topic recovery**: registered the live football forum topic, reset its stale
   OpenClaw session state after a missed inbound update, and verified delivered topic smokes after
   restoring the intended `openai/gpt-5.5` primary plus `deepseek-direct/deepseek-chat` reserve policy.

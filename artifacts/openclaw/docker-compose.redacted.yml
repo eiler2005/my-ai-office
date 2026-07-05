@@ -8,6 +8,7 @@ services:
     environment:
       HOME: /home/node
       TERM: xterm-256color
+      NODE_OPTIONS: ${OPENCLAW_NODE_OPTIONS:---max-old-space-size=768}
       OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_GATEWAY_TOKEN}
       GEMINI_API_KEY: ${GEMINI_API_KEY}
       DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY}
@@ -24,7 +25,12 @@ services:
       - "${OPENCLAW_GATEWAY_PORT}:18789"
       - "${OPENCLAW_BRIDGE_PORT}:18790"
     init: true
-    restart: unless-stopped
+    restart: on-failure:5
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     command: ["node", "openclaw.mjs", "gateway", "--allow-unconfigured", "--bind", "lan", "--port", "18789", "--force"]
     healthcheck:
       test:

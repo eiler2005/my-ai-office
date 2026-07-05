@@ -1907,3 +1907,34 @@ Validation:
   `run_completed`, `message_completed`, and `dispatchCompleteMs=18315`, proving the UI ingress path was
   restored. That short test text did not emit a separate outbound message, so future end-to-end smokes
   should use an explicit prompt such as `answer exactly OK_STATUS`.
+
+## 50. Gateway resource containment after VPS outage
+
+Date: `2026-07-05`
+
+Problem:
+
+- `maxtg_bridge` stopped delivering messages while the CX23 host was effectively offline after
+  `2026-07-03 06:56 MSK`.
+- The previous boot had repeated OpenClaw cgroup OOM/restart evidence, and the Gateway had a restart
+  count in the twenties before the host stopped reporting metrics.
+- The Gateway already had CPU/RAM/PID caps, but `restart: unless-stopped` allowed a failing Gateway to
+  keep retrying indefinitely.
+
+Actions:
+
+- Changed the tracked Gateway policy to `restart: on-failure:5`.
+- Added Docker json log rotation for the Gateway: `10m x3`.
+- Added `OPENCLAW_NODE_OPTIONS=--max-old-space-size=768` so the Node heap remains below the
+  `1224m` Docker memory ceiling.
+- Kept host-level cgroup policy in `vps_management`; OpenClaw only owns the app-level compose and env
+  template.
+
+Validation:
+
+- Validate the redacted compose template with `docker compose --env-file artifacts/openclaw/env.redacted.example -f artifacts/openclaw/docker-compose.redacted.yml config`.
+- After deploy, verify live policy with `docker inspect openclaw-openclaw-gateway-1` and confirm
+  `Restart=on-failure:5`, `Memory=1283457024`, `MemorySwap=1283457024`, `PidsLimit=256`, and log
+  config `json-file max-size=10m max-file=3`.
+- If the Gateway exhausts its five retries, treat the stopped container as a host-protection signal;
+  inspect OOM/restart cause before manually recreating it.

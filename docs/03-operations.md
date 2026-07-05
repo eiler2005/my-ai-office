@@ -449,18 +449,23 @@ The live `CX23` currently exposes `2 vCPU` and about `3.7GiB` RAM. Keep roughly 
 for SSH, Docker, Redis, Caddy/networking, and lightweight bridge services. The active caps are:
 
 ```text
-openclaw-gateway  0.90 CPU  1224m RAM  256 pids
-omniroute         0.25 CPU   512m RAM  128 pids
-lightrag          0.45 CPU  2304m RAM  2816m swap  128 pids
+openclaw-gateway  0.90 CPU  1224m RAM / no swap  256 pids  restart on-failure:5  logs 10m x3  Node heap 768m
+omniroute         0.25 CPU   512m RAM / no swap  128 pids
+lightrag          0.45 CPU  2304m RAM / 2816m swap  128 pids
 ```
 
 The combined CPU cap for the main AI path is `1.60` out of `2.00` vCPU. Do not reduce LightRAG
 memory below `2304m` without rebuilding/pruning its graph: the current graph is about `20k` nodes /
 `26k` edges, and a `1536m` cap caused `Exit 137` during cold start.
 
-These are active Compose overrides, not advisory examples: OpenClaw/OmniRoute limits live in
-`/opt/openclaw/docker-compose.override.yml`, and LightRAG limits live in
-`/opt/lightrag/docker-compose.override.yml`.
+These are active Compose settings, not advisory examples. OpenClaw Gateway's app-level defaults live
+in `/opt/openclaw/docker-compose.yml`; host guardrails from `vps_management` are persisted in
+`/opt/openclaw/docker-compose.override.local.yml`. LightRAG limits live in
+`/opt/lightrag/docker-compose.override.local.yml`.
+
+`openclaw-gateway` intentionally uses `restart: on-failure:5`. If it stops after exhausting that
+budget, inspect OOM/restart evidence before starting it again; do not change it back to
+`unless-stopped` to hide a resource storm.
 
 Check applied limits, not only YAML:
 
@@ -468,7 +473,7 @@ Check applied limits, not only YAML:
 ssh -i ~/.ssh/id_rsa "$OPENCLAW_HOST" '
   for c in openclaw-openclaw-gateway-1 omniroute lightrag-lightrag-1; do
     sudo docker inspect "$c" \
-      --format "$c NanoCpus={{.HostConfig.NanoCpus}} Memory={{.HostConfig.Memory}} PidsLimit={{.HostConfig.PidsLimit}}"
+      --format "$c NanoCpus={{.HostConfig.NanoCpus}} Memory={{.HostConfig.Memory}} MemorySwap={{.HostConfig.MemorySwap}} PidsLimit={{.HostConfig.PidsLimit}} Restart={{.HostConfig.RestartPolicy.Name}}:{{.HostConfig.RestartPolicy.MaximumRetryCount}} Log={{.HostConfig.LogConfig.Type}}"
   done
 '
 ```
@@ -805,9 +810,13 @@ If this returns `{"ok":true,"status":"live"}` but Compose shows `unhealthy`, the
 These are set in `/opt/openclaw/.env` to reduce startup overhead on this VPS:
 
 ```
+OPENCLAW_NODE_OPTIONS=--max-old-space-size=768
 NODE_COMPILE_CACHE=/var/tmp/openclaw-compile-cache
 OPENCLAW_NO_RESPAWN=1
 ```
+
+`OPENCLAW_NODE_OPTIONS` keeps the Node heap below the Docker cgroup ceiling so the Gateway fails
+inside its own budget instead of dragging the host into swap pressure.
 
 The cache directory must exist on the host (mounted into the container):
 
