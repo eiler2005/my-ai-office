@@ -1629,6 +1629,11 @@ Current validation snapshot:
 - on `2026-06-24`, `work-email` was redeployed with `poll_llm_enabled=false`; the next scheduled poll
   self-enqueued without creating an `openclaw agent` exec in the Gateway, and `openclaw-gateway`
   remained healthy.
+- on `2026-07-06`, scheduled `work-email` Telegram delivery was repaired after host cron showed
+  repeated `Permission denied` failures for the trigger script. The live trigger scripts were restored
+  to mode `0755`, the deploy helper now writes cron entries through `bash`, and a manual
+  `digest interval lookback=240` finished with `exit_code=0`, rendered `3` messages, and applied
+  `workmail/digested=3`.
 
 ### Host cron jobs
 
@@ -1645,6 +1650,10 @@ Host cron runs in UTC. `/etc/cron.d/agentmail-work-email` maps to the Moscow dig
 
 Legacy `AgentMail Work Email · ...` OpenClaw Cron jobs are disabled in the cron store to prevent
 duplicate delivery.
+
+Cron entries intentionally invoke `bash /opt/agentmail-work-email/trigger-email-digest.sh ...` rather
+than executing the script path directly. This keeps scheduled delivery working if rsync or manual file
+maintenance drops the trigger script executable bit.
 
 ### Bridge diagnostics
 

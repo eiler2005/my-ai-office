@@ -8,6 +8,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Changed
+- **AgentMail work-email delivery recovery**: repaired live scheduled Telegram digest delivery after
+  host cron was repeatedly failing with `Permission denied` on the work-email trigger script. The
+  deploy helper now writes work-email cron entries through `bash /opt/agentmail-work-email/trigger-email-digest.sh`
+  so delivery does not depend on the script executable bit; a manual `interval` digest validated the
+  live `work-email` topic with `exit_code=0`.
+- **OpenClaw upgrade assessment**: documented the `2026.6.11` stable release check and kept production
+  pinned to the `2026.6.9` Telegram polling hotfix until a separate derived-image canary proves fresh
+  Telegram UI ingress and outbound replies.
 - **OpenClaw Gateway resource containment**: bounded the live Gateway restart policy to
   `on-failure:5`, capped Docker json logs at `10m x3`, and added
   `OPENCLAW_NODE_OPTIONS=--max-old-space-size=768` so repeated `exit=137` events stop inside the

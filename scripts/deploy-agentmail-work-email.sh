@@ -218,14 +218,14 @@ PY
 SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 # Host cron runs in UTC. These lines map to 08:30, 10:00, 11:30, 13:00, 14:30, 16:00, 17:30, 19:00 MSK.
-30 5 * * * root /opt/agentmail-work-email/trigger-email-digest.sh morning >> /var/log/agentmail-work-email-cron.log 2>&1
-0 7 * * * root /opt/agentmail-work-email/trigger-email-digest.sh interval >> /var/log/agentmail-work-email-cron.log 2>&1
-30 8 * * * root /opt/agentmail-work-email/trigger-email-digest.sh interval >> /var/log/agentmail-work-email-cron.log 2>&1
-0 10 * * * root /opt/agentmail-work-email/trigger-email-digest.sh interval >> /var/log/agentmail-work-email-cron.log 2>&1
-30 11 * * * root /opt/agentmail-work-email/trigger-email-digest.sh interval >> /var/log/agentmail-work-email-cron.log 2>&1
-0 13 * * * root /opt/agentmail-work-email/trigger-email-digest.sh interval >> /var/log/agentmail-work-email-cron.log 2>&1
-30 14 * * * root /opt/agentmail-work-email/trigger-email-digest.sh interval >> /var/log/agentmail-work-email-cron.log 2>&1
-0 16 * * * root /opt/agentmail-work-email/trigger-email-digest.sh editorial >> /var/log/agentmail-work-email-cron.log 2>&1
+30 5 * * * root bash /opt/agentmail-work-email/trigger-email-digest.sh morning >> /var/log/agentmail-work-email-cron.log 2>&1
+0 7 * * * root bash /opt/agentmail-work-email/trigger-email-digest.sh interval >> /var/log/agentmail-work-email-cron.log 2>&1
+30 8 * * * root bash /opt/agentmail-work-email/trigger-email-digest.sh interval >> /var/log/agentmail-work-email-cron.log 2>&1
+0 10 * * * root bash /opt/agentmail-work-email/trigger-email-digest.sh interval >> /var/log/agentmail-work-email-cron.log 2>&1
+30 11 * * * root bash /opt/agentmail-work-email/trigger-email-digest.sh interval >> /var/log/agentmail-work-email-cron.log 2>&1
+0 13 * * * root bash /opt/agentmail-work-email/trigger-email-digest.sh interval >> /var/log/agentmail-work-email-cron.log 2>&1
+30 14 * * * root bash /opt/agentmail-work-email/trigger-email-digest.sh interval >> /var/log/agentmail-work-email-cron.log 2>&1
+0 16 * * * root bash /opt/agentmail-work-email/trigger-email-digest.sh editorial >> /var/log/agentmail-work-email-cron.log 2>&1
 CRON
   sudo chmod 0644 /etc/cron.d/agentmail-work-email
 
@@ -261,7 +261,7 @@ PY
 
   cd /opt/openclaw
   sudo docker compose up -d openclaw-gateway
-  sudo grep -q "30 5 \* \* \* root /opt/agentmail-work-email/trigger-email-digest.sh morning" /etc/cron.d/agentmail-work-email
+  sudo grep -q "30 5 \* \* \* root bash /opt/agentmail-work-email/trigger-email-digest.sh morning" /etc/cron.d/agentmail-work-email
 '
 
 cat <<'EOF'

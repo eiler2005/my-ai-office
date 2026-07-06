@@ -1938,3 +1938,56 @@ Validation:
   config `json-file max-size=10m max-file=3`.
 - If the Gateway exhausts its five retries, treat the stopped container as a host-protection signal;
   inspect OOM/restart cause before manually recreating it.
+
+## 51. AgentMail work-email scheduled delivery recovery
+
+Date: `2026-07-06`
+
+Problem:
+
+- New mail reached `workmail.denny@agentmail.to`, and the `agentmail-work-email-bridge` poll path was
+  healthy, but scheduled Telegram recaps were not appearing in the `work-email` topic.
+- Live host cron was installed for all eight work-email digest slots, but `/var/log/agentmail-work-email-cron.log`
+  showed repeated `Permission denied` failures when cron executed the trigger script directly.
+
+Actions:
+
+- Verified sanitized live state: bridge container up, `GET /health` ok, work config targeting
+  `work-email`, `poll_llm_enabled=false`, forwarded-sender resolution enabled, `workmail/*` labels
+  present, and Telegram chat/topic env values matching the intended work topic.
+- Restored live trigger script modes to `0755`.
+- Changed the tracked work-email deploy helper so `/etc/cron.d/agentmail-work-email` invokes the
+  trigger through `bash /opt/agentmail-work-email/trigger-email-digest.sh ...`.
+
+Validation:
+
+- Manual `interval` digest trigger with a 240-minute lookback finished with `exit_code=0`.
+- The run rendered `3` messages across `3` threads, counted `2` important and `1` low-signal message,
+  and applied `workmail/digested=3`.
+- The OpenClaw Gateway stayed healthy and legacy `AgentMail Work Email · ...` OpenClaw Cron jobs were
+  absent from the checked cron store path.
+
+## 52. OpenClaw 2026.6.11 upgrade assessment
+
+Date: `2026-07-06`
+
+Problem:
+
+- Production was on `OpenClaw 2026.6.9` with a local Telegram polling hotfix, while upstream had newer
+  stable and beta releases available.
+
+Findings:
+
+- Live Gateway remained healthy on `openclaw-with-iproute2:20260624-slim-2026.6.9-telegram-polling-hotfix`.
+- Live `openclaw --version` reported `OpenClaw 2026.6.9`.
+- The live route stayed `openai/gpt-5.5` primary with `deepseek-direct/deepseek-chat` fallback.
+- GitHub/GHCR check showed `OpenClaw 2026.6.11` as the latest stable candidate and
+  `2026.7.1-beta.2` as a pre-release candidate; both slim image manifests were available.
+
+Decision:
+
+- Do not upgrade production during this pass.
+- Do not deploy the `2026.7.1-beta.2` pre-release to production.
+- Treat `2026.6.11-slim` as the next stable candidate only after building the derived `iproute2` image
+  and validating fresh Telegram UI ingress plus outbound replies, because the current production image
+  carries the local `OPENCLAW_TELEGRAM_ISOLATED_INGRESS=0` hotfix.

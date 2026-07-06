@@ -90,6 +90,7 @@ Upgrade history:
 - `openclaw-with-iproute2:20260619-slim-2026.6.8` (`OpenClaw 2026.6.8`) — previous production; latest stable release verified from GitHub/GHCR and live-confirmed on `/opt/openclaw`
 - `openclaw-with-iproute2:20260624-slim-2026.6.9` (`OpenClaw 2026.6.9`) — previous production; latest stable release verified from GitHub/GHCR, but UI Telegram ingress required the hotfix below
 - `openclaw-with-iproute2:20260624-slim-2026.6.9-telegram-polling-hotfix` (`OpenClaw 2026.6.9`) — current production; disables isolated Telegram ingress with `OPENCLAW_TELEGRAM_ISOLATED_INGRESS=0` while retaining the 2026.6.9 OpenAI/fallback repairs
+- `ghcr.io/openclaw/openclaw:2026.6.11-slim` (`OpenClaw 2026.6.11`) — latest stable upstream checked on 2026-07-06, but not deployed. Treat it as the next upgrade candidate only after rebuilding the derived `iproute2` image and proving Telegram UI ingress plus outbound delivery without regressing the current hotfix behavior.
 
 ## Final deployed shape
 
