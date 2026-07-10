@@ -239,9 +239,12 @@ Reason:
 - bundled Codex plugin registry version: `2026.6.9`; stale managed npm `codex@2026.5.12` was removed after the earlier upgrade
 - live Telegram ingress runs with `OPENCLAW_TELEGRAM_ISOLATED_INGRESS=0` until the upstream isolated
   polling regression is resolved or safely revalidated
-- latest stable upstream checked on 2026-07-06: `OpenClaw 2026.6.11` / `ghcr.io/openclaw/openclaw:2026.6.11-slim`.
-  It is not deployed; upgrade requires a derived-image canary with the `iproute2` layer and fresh
-  Telegram UI ingress/outbound validation before production switch.
+- latest stable upstream checked on 2026-07-10: `OpenClaw 2026.6.11` / `ghcr.io/openclaw/openclaw:2026.6.11-slim`.
+  A derived-image canary passed health, config, and reserve-model checks, but could not complete the
+  real UI release gate. The scripted MTProto message produced neither an inbound Gateway event nor a
+  bot reply on the candidate or the restored image, so it is not evidence of an upstream regression.
+  The candidate was rolled back conservatively; require a manual Telegram UI ingress/outbound smoke
+  before another production attempt.
 
 Previous blocked releases: `2026.4.5` — startup instability (high-CPU spin loop, port never bound). Fixed by later releases including the current `2026.6.9`.
 

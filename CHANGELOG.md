@@ -8,6 +8,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Changed
+- **Signals market-source extension**: deployed one additional private Telegram source through the
+  existing FX/Si deterministic keyword rule with a 15-minute bootstrap. Its source-only validation
+  scanned 76 messages, produced zero matches, and left the bridge healthy; real identifiers remain
+  only in ignored runtime configuration. Startup now also releases only interrupted configured
+  ruleset locks, so a bridge restart cannot suppress the next signals run for the full lock TTL.
+- **OpenClaw 2026.6.11 canary rollback**: built the latest stable derived image and passed health,
+  config, reserve-model, and channel probes, but the scripted MTProto smoke could not prove UI
+  ingress on either the candidate or the restored image. Production was immediately restored to the
+  confirmed `2026.6.9-telegram-polling-hotfix` image; `2026.6.11` remains pending a manual UI smoke.
 - **AgentMail work-email delivery recovery**: repaired live scheduled Telegram digest delivery after
   host cron was repeatedly failing with `Permission denied` on the work-email trigger script. The
   deploy helper now writes work-email cron entries through `bash /opt/agentmail-work-email/trigger-email-digest.sh`

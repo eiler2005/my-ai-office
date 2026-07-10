@@ -79,6 +79,19 @@ def _make_redis() -> redis_lib.Redis:
     )
 
 
+def _recover_interrupted_ruleset_locks(r: redis_lib.Redis, config: dict) -> int:
+    released = 0
+    for ruleset in config.get("rule_sets", []):
+        ruleset_id = str(ruleset.get("id") or "").strip()
+        if not ruleset_id:
+            continue
+        if r.delete(state_store.lock_key("ruleset", ruleset_id)):
+            released += 1
+    if released:
+        logger.warning("Released %s interrupted signals ruleset lock(s) on startup", released)
+    return released
+
+
 def _utc_now() -> datetime:
     return datetime.now(timezone.utc)
 
@@ -913,6 +926,7 @@ def main() -> None:
     if not TOKEN:
         raise SystemExit("SIGNALS_BRIDGE_TOKEN is required")
     config = load_config()
+    _recover_interrupted_ruleset_locks(_make_redis(), config)
     logger.info(
         "Starting signals-bridge on :%s with 5m scheduler tick=%s and OmniRoute model=%s (last30days=%s)",
         PORT,

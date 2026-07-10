@@ -34,7 +34,7 @@ os.environ.setdefault("TELEGRAM_BOT_TOKEN", "test-token")
 os.environ.setdefault("SIGNALS_SUPERGROUP_ID", "-1001")
 
 from config_store import normalize_config, validate_config
-from cron_bridge import _deliver_source_contexts, _relay_telegram_event_via_telethon
+from cron_bridge import _deliver_source_contexts, _recover_interrupted_ruleset_locks, _relay_telegram_event_via_telethon
 from email_adapter import _window_messages
 from event_store import append_events, append_new_events
 from last30days_persistence import _render_expanded_markdown
@@ -56,6 +56,15 @@ class FakeRedis:
             return False
         self.kv[key] = value
         return True
+
+    def get(self, key):
+        return self.kv.get(key)
+
+    def delete(self, key):
+        if key not in self.kv:
+            return 0
+        del self.kv[key]
+        return 1
 
     def xadd(self, name, fields):
         self.stream.append((name, fields))
@@ -229,6 +238,22 @@ class ConfigValidationTests(unittest.TestCase):
         }
         with self.assertRaisesRegex(ValueError, "last30days.mode"):
             validate_config(config)
+
+
+class StartupLockRecoveryTests(unittest.TestCase):
+    def test_interrupted_ruleset_locks_are_released_on_startup(self) -> None:
+        redis = FakeRedis()
+        redis.set("lock:signals:ruleset:trading-si", "interrupted-run")
+        redis.set("lock:signals:last30days:personal-feed-v1", "keep")
+
+        released = _recover_interrupted_ruleset_locks(
+            redis,
+            {"rule_sets": [{"id": "trading-si"}, {"id": "other"}]},
+        )
+
+        self.assertEqual(released, 1)
+        self.assertIsNone(redis.get("lock:signals:ruleset:trading-si"))
+        self.assertEqual(redis.get("lock:signals:last30days:personal-feed-v1"), "keep")
 
 
 class MatchingTests(unittest.TestCase):
@@ -652,6 +677,49 @@ class MatchingTests(unittest.TestCase):
             },
         )
         self.assertIsNone(candidate)
+
+    def test_ladytrader_fx_si_rule_matches_without_author_filter(self) -> None:
+        rule = {
+            "id": "ladytrader-vip-fx-si",
+            "source_type": "telegram",
+            "source_id": "telegram-ladytrader-vip",
+            "enabled": True,
+            "kind": "content_keywords",
+            "keywords": ["си", "cnyrub", "usd/rub"],
+            "tags": ["trading", "fx", "ladytrader"],
+        }
+        message = {
+            "chat_id": -1003000000003,
+            "chat_name": "LadyTraderVIP",
+            "message_id": 22,
+            "sender_id": 0,
+            "author": "LadyTraderVIP",
+            "text": "CNYRUB сохраняет ключевой уровень.",
+            "timestamp": "2026-04-12T12:00:00+00:00",
+            "has_video": False,
+        }
+
+        candidate = match_telegram_rule(
+            ruleset_id="trading-si",
+            ruleset_title="Trading Si",
+            rule=rule,
+            message=message,
+        )
+
+        self.assertIsNotNone(candidate)
+        assert candidate is not None
+        self.assertEqual(candidate.rule_id, "ladytrader-vip-fx-si")
+        self.assertEqual(candidate.tags, ["trading", "fx", "ladytrader"])
+
+        message["text"] = "Обзор рынка акций без валютных инструментов."
+        self.assertIsNone(
+            match_telegram_rule(
+                ruleset_id="trading-si",
+                ruleset_title="Trading Si",
+                rule=rule,
+                message=message,
+            )
+        )
 
     def test_build_telegram_message_link_for_private_chat(self) -> None:
         self.assertEqual(

@@ -425,6 +425,12 @@ worker/spool path. Keep `openai/gpt-5.5` as the primary route and
 `deepseek-direct/deepseek-chat` as the reserve fallback; do not make DeepSeek the global primary just
 to work around an OpenAI cooldown or an ingress outage.
 
+The `2026.6.11` derived-image canary confirmed that a green `/healthz`, `openclaw config validate`,
+reserve-model smoke, and `openclaw channels status telegram --probe` do **not** prove Telegram UI
+ingress. A scripted MTProto message produced neither an inbound event nor a bot reply on the
+candidate or restored image, so it cannot diagnose an upstream regression. Retain a manual UI
+inbound/outbound smoke as the release gate before retrying the candidate.
+
 Validation after enabling the switch:
 
 ```bash
@@ -1809,6 +1815,10 @@ Architecture note:
 - polling cadence is every 5 minutes, not every 30 seconds
 - scheduling is internal to `signals-bridge`
 - public docs/templates stay generic; real local rules live in separate JSON files under `secrets/signals-bridge/rules/`
+- add a private Telegram source only after resolving one stable `chat_id` through the authorised
+  Telethon session; use an explicit bootstrap window and validate it with a source-only run
+- startup releases stale locks only for configured signals rulesets, so an interrupted bridge run
+  cannot block the next run for the full lock TTL
 - AgentMail and Telethon reads happen inside the bridge itself
 - LLM enrichment for already matched candidates is `OpenClaw/OpenAI -> OmniRoute light -> DeepSeek`
 - if all model routes are unavailable, the bridge falls back to local rule-based summaries and can still post

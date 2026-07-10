@@ -1991,3 +1991,31 @@ Decision:
 - Treat `2026.6.11-slim` as the next stable candidate only after building the derived `iproute2` image
   and validating fresh Telegram UI ingress plus outbound replies, because the current production image
   carries the local `OPENCLAW_TELEGRAM_ISOLATED_INGRESS=0` hotfix.
+
+## 53. LadyTraderVIP source deployment and OpenClaw 2026.6.11 canary rollback
+
+Date: `2026-07-10`
+
+Actions:
+
+- Resolved exactly one authorised Telethon dialog for the new private market source and added it only
+  to ignored signals runtime configuration. The rule reuses the existing no-author FX/Si vocabulary
+  and begins with a 15-minute bootstrap window.
+- Built a derived `OpenClaw 2026.6.11` image with `iproute2` and the Telegram isolated-ingress kill
+  switch. Image version, config validation, Gateway health, Telegram channel probe, and direct
+  DeepSeek reserve smoke all passed.
+- Sent a marked MTProto message from the owner session to a registered topic. It produced neither an
+  inbound Gateway event nor a bot reply on the candidate; the same scripted route could not prove
+  ingress after restoring the previous image either. The Gateway was therefore restored
+  conservatively to `openclaw-with-iproute2:20260624-slim-2026.6.9-telegram-polling-hotfix`; this is
+  a missing manual UI release proof, not a confirmed `2026.6.11` regression.
+- Deployed the private signals configuration only after the rollback health gate. The restart exposed
+  a stale Redis `ruleset` lock from the interrupted run, so the bridge now releases only configured
+  ruleset locks at startup; a subsequent source-only run completed successfully.
+
+Validation:
+
+- The restored Gateway returned `OpenClaw 2026.6.9`, `/healthz` live status, and a healthy Telegram
+  polling probe.
+- The new source-only signals run scanned `76` messages, matched `0`, posted `0`, and returned bridge
+  health `ok=true` with no source errors.
