@@ -2019,3 +2019,36 @@ Validation:
   polling probe.
 - The new source-only signals run scanned `76` messages, matched `0`, posted `0`, and returned bridge
   health `ok=true` with no source errors.
+
+## 54. OpenClaw version compatibility ledger
+
+Date: `2026-07-10`
+
+Decision:
+
+- Treat the derived Gateway image and its local adaptations as versioned compatibility knowledge,
+  not as isolated one-off fixes.
+- Establish `docs/22-openclaw-version-compatibility-ledger.md` as the canonical pre-upgrade record;
+  image history remains in the installation document and detailed chronology remains in this log.
+
+Recorded active findings:
+
+- the derived image must continue to provide `iproute2` for the selected Gateway network mode;
+- the current production image retains the Telegram isolated-ingress kill switch until a candidate
+  proves the real UI path without it;
+- auth-store/provider transport and direct reserve-model behavior require version-specific probes
+  after upgrades;
+- the 2026.6.11 candidate is held because the available scripted MTProto smoke cannot prove the
+  Telegram UI path on either candidate or baseline, not because an upstream regression is confirmed.
+- every retained image version now has an explicit ledger entry, including releases with no
+  version-specific incompatibility in the retained evidence.
+
+Process:
+
+- every candidate now starts with a ledger record naming its known-good rollback image and required
+  gates;
+- active workarounds are carried deliberately and can be removed only with the record's stated proof;
+- promotion requires generic health/config/model checks plus a fresh manual Telegram UI inbound event
+  and outbound reply whenever OpenClaw or its Telegram implementation changes;
+- an incomplete or failed gate requires rollback to the known-good image and a `held` or
+  `rolled-back` ledger status with sanitized evidence.

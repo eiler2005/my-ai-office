@@ -77,6 +77,14 @@ Why it exists:
 - the upstream image did not provide it
 - OpenClaw-adjacent tools such as `ffmpeg` and `whisper` must live where OpenClaw actually executes commands
 
+### Version compatibility ledger
+
+The derived image is a controlled compatibility layer, not an untracked collection of fixes. The
+[OpenClaw Version Compatibility Ledger](22-openclaw-version-compatibility-ledger.md) records every
+active local adaptation, failure signature, required release gate, and rollback relationship. This
+keeps upstream upgrades reproducible: a candidate must deliberately carry or revalidate each
+adaptation, rather than silently dropping a patch because its base image changed.
+
 ### Control UI delivery strategy
 
 Current strategy:

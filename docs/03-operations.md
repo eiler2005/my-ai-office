@@ -405,6 +405,29 @@ This installs `/usr/local/sbin/openclaw-telegram-spool-guard` and
 `/etc/cron.d/openclaw-telegram-spool-guard`. The cron runs once per minute and logs only when it
 actually requeues or drops stale duplicate processing files.
 
+## OpenClaw version compatibility ledger
+
+Before any OpenClaw image update, read the
+[OpenClaw Version Compatibility Ledger](22-openclaw-version-compatibility-ledger.md). It is the
+release decision record for local image adaptations, blocked versions, historical symptoms, required
+validation, and the known-good rollback target.
+
+Use this order for every candidate:
+
+1. Create or update the candidate record, name the known-good parent image, and back up the current
+   image reference and Gateway configuration.
+2. Carry all active workarounds into the derived image; verify the expected source/compiled patch
+   rather than relying on a filename or a release note.
+3. Run image version, configuration, `/healthz`, primary and reserve-model, and Telegram channel
+   probes.
+4. Run every version-specific gate named by the active ledger records.
+5. Send a fresh manual Telegram UI prompt and require both an inbound Gateway event and an outbound
+   reply before promotion. Channel probes and `openclaw agent --deliver` do not prove this path.
+6. On any failed or incomplete gate, restore the ledger's known-good image, recreate the Gateway,
+   validate the restored service, and mark the candidate `held` or `rolled-back` with the evidence.
+
+Do not retire a local workaround without the exact removal proof specified in its ledger record.
+
 ## Telegram isolated polling kill switch
 
 OpenClaw 2026.6.9 can run Telegram Bot API ingress through a separate isolated polling worker. If

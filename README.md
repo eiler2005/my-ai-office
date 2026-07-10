@@ -747,6 +747,7 @@ See [`docs/07-architecture-and-security.md`](docs/07-architecture-and-security.m
 | 17 | [knowledge-management](docs/17-knowledge-management.md) | Knowledgebase and Ideas workflow: save, capture, promotion |
 | 19 | [llm-wiki-memory-explained](docs/19-llm-wiki-memory-explained.md) | Human-first explanation of `raw -> wiki -> LightRAG -> OpenClaw` |
 | 20 | [llm-project-orientation](docs/20-llm-project-orientation.md) | LLM-facing project map: read order, trust hierarchy, doc routing |
+| 22 | [openclaw-version-compatibility-ledger](docs/22-openclaw-version-compatibility-ledger.md) | Versioned OpenClaw defects, local workarounds, release gates, and rollback evidence |
 
 ---
 

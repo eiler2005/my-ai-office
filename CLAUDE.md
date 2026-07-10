@@ -79,6 +79,18 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
   - host OS for infrastructure/admin tools
   - `openclaw-gateway` container for OpenClaw runtime tools
 
+## OpenClaw Version Compatibility
+
+- Before preparing, building, or deploying an OpenClaw upgrade, read
+  `docs/22-openclaw-version-compatibility-ledger.md` together with the current server state.
+- Treat every `active-workaround`, `blocked`, or `candidate-held` record as a release gate. Carry an
+  active local adaptation into the candidate unless a version-specific validation proves it obsolete.
+- Create or update the candidate's ledger record before changing the live image reference. Record the
+  known-good rollback image, the required gates, and both positive and negative evidence.
+- A healthy container, channel probe, or outbound-only Telegram delivery does not prove Telegram UI
+  ingress. For OpenClaw/Telegram changes, require a fresh manual UI inbound-and-outbound smoke before
+  promotion.
+
 ## Security And Secrets
 
 - Never commit or quote live values from `LOCAL_ACCESS.md` or anything under `secrets/`.
@@ -111,9 +123,11 @@ Deploying is allowed only after an explicit command.
 - `docs/01-server-state.md`
 - `docs/02-openclaw-installation.md`
 - `docs/03-operations.md`
+- `docs/05-rollback-and-backup.md`
 - `docs/06-command-log.md`
 - `docs/07-architecture-and-security.md`
 - `docs/08-git-and-redaction-policy.md`
+- `docs/22-openclaw-version-compatibility-ledger.md`
 
 ## Local-Only Complements
 

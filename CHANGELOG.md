@@ -8,6 +8,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Changed
+- **OpenClaw version compatibility ledger**: added a dedicated, versioned registry for derived-image
+  adaptations, historical failure signatures, release gates, and rollback evidence. Future OpenClaw
+  candidates must start from this record, carry active workarounds deliberately, and close the
+  required manual Telegram UI gate before promotion. The retained image timeline now has an explicit
+  record for every release, including releases with no version-specific incompatibility.
 - **Signals market-source extension**: deployed one additional private Telegram source through the
   existing FX/Si deterministic keyword rule with a 15-minute bootstrap. Its source-only validation
   scanned 76 messages, produced zero matches, and left the bridge healthy; real identifiers remain

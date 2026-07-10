@@ -211,6 +211,10 @@ The final deployment is a layered setup:
 
 OpenClaw is not running from the untouched upstream image anymore.
 
+Version-specific compatibility decisions, active local adaptations, blocked releases, and required
+upgrade gates are maintained in the [OpenClaw Version Compatibility Ledger](22-openclaw-version-compatibility-ledger.md).
+Use that ledger before treating a newer upstream tag as deployable.
+
 Last confirmed healthy image:
 
 - `openclaw-with-iproute2:20260624-slim-2026.6.9-telegram-polling-hotfix`

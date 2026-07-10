@@ -41,6 +41,20 @@ Typical rollback path:
 4. recreate the gateway container
 5. reload `Caddy`
 
+## Versioned Gateway image rollback
+
+For every OpenClaw candidate, start from the
+[OpenClaw Version Compatibility Ledger](22-openclaw-version-compatibility-ledger.md) and record the
+current derived image as the known-good parent before switching the Gateway. Back up the image
+reference, Gateway configuration, and the auth state relevant to the candidate; do not rely on a
+floating upstream tag as a rollback target.
+
+If any generic or version-specific release gate fails, restore that known-good image reference,
+recreate only `openclaw-gateway`, and repeat the restored-image health, configuration, model, and
+Telegram checks. Then mark the candidate `held` or `rolled-back` in the ledger with the observable
+failure and the evidence that the restore succeeded. Keep the known-good image available until a
+later candidate is marked `production-verified`.
+
 ## Hard rollback
 
 If OpenClaw must be removed entirely:

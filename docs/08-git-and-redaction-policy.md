@@ -123,7 +123,13 @@ For AI infrastructure repos, documentation should always make the following expl
 - local-only vs tracked materials
 - rollback path
 - version pinning strategy
+- version-specific compatibility records for upstream adaptations, with sanitized failure signatures
+  and promotion/rollback gates
 - runtime boundary between host OS and application container
+
+The tracked [OpenClaw Version Compatibility Ledger](22-openclaw-version-compatibility-ledger.md)
+must preserve the reason for each local workaround without copying real chat identifiers, credentials,
+hostnames, raw logs, or private configuration into Git.
 
 ## Claude Code project policy
 

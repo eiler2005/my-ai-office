@@ -183,6 +183,19 @@ Read:
 3. [docs/07-architecture-and-security.md](07-architecture-and-security.md)
 4. [docs/11-lightrag-setup.md](11-lightrag-setup.md)
 
+### If the task is about upgrading OpenClaw
+
+Read in this order:
+
+1. [docs/22-openclaw-version-compatibility-ledger.md](22-openclaw-version-compatibility-ledger.md)
+2. [docs/01-server-state.md](01-server-state.md)
+3. [docs/02-openclaw-installation.md](02-openclaw-installation.md)
+4. [docs/03-operations.md](03-operations.md)
+5. [docs/05-rollback-and-backup.md](05-rollback-and-backup.md)
+
+The ledger is the mandatory first read. It names historical defects and active local adaptations;
+never treat a newer upstream tag as safe until its candidate record closes every relevant gate.
+
 ### If the task is about runtime behavior of Бенька
 
 Read:

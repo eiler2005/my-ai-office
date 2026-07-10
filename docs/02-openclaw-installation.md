@@ -78,6 +78,11 @@ Derived image:
 
 Upgrade history:
 
+This is an image timeline only. The authoritative record of version-specific defects, local
+workarounds, and promotion/rollback gates is the
+[OpenClaw Version Compatibility Ledger](22-openclaw-version-compatibility-ledger.md). A newer tag in
+this list is not implicitly approved for deployment.
+
 - `openclaw-with-iproute2:20260405` (`OpenClaw 2026.4.2`) — first stable derived image
 - `openclaw-with-iproute2:20260406/07` (`OpenClaw 2026.4.5`) — startup instability; blocked
 - `openclaw-with-iproute2:20260408` (`OpenClaw 2026.4.8`) — stable Whisper-enabled image used during earlier experiments
