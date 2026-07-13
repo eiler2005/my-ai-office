@@ -2052,3 +2052,32 @@ Process:
   and outbound reply whenever OpenClaw or its Telegram implementation changes;
 - an incomplete or failed gate requires rollback to the known-good image and a `held` or
   `rolled-back` ledger status with sanitized evidence.
+
+## 55. Signals Russian-yuan inflection repair
+
+Date: `2026-07-13`
+
+Problem:
+
+- A valid FX signal from a configured private Telegram source used the Russian form `юане` and did
+  not reach the `signals` topic.
+- The source and no-author `content_keywords` rule were enabled, but the deterministic matcher only
+  recognized the base form `юань` and a few trading-slang aliases. Its whole-word guard correctly
+  prevented partial matches, but also excluded the standard inflection.
+
+Actions:
+
+- Added the complete standard Russian yuan word forms to the alias set used by canonical `юань`,
+  `cny`, and `yuan` keywords. The existing whole-word guard remains in place, so unrelated longer
+  words are not accepted.
+- Added regression coverage for the exact missed wording and for the private-source `content_keywords`
+  rule shape.
+- Rebuilt and recreated the live `signals-bridge`, then enqueued one source-only 60-minute repair
+  run to catch up the missed message without reprocessing unrelated sources.
+
+Validation:
+
+- The local real-rule check matches the previously missed message after the fix.
+- Full signals suite: `90` tests passed; `compileall` and `git diff --check` passed.
+- The live repair run scanned `76` source messages, matched and posted `1` fresh event, relayed its
+  original source content, and reported zero source errors, drops, or duplicates.

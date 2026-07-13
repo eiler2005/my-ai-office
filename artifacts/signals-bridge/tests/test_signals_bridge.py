@@ -653,6 +653,12 @@ class MatchingTests(unittest.TestCase):
         self.assertTrue(keyword_matches("сиху чуть взял на отскок.", "си"))
         self.assertTrue(keyword_matches("юашку пока не трогал.", "юань"))
 
+    def test_keyword_matches_yuan_inflections_without_partial_stem_match(self) -> None:
+        text = "Откупила позу в юане по 11,500. Стоп под 11,276."
+        for keyword in ("юань", "cny", "yuan"):
+            self.assertTrue(keyword_matches(text, keyword))
+        self.assertFalse(keyword_matches("Юанист обсуждает историю Китая.", "юань"))
+
     def test_telegram_content_keywords_short_word_inside_longer_word_ignored(self) -> None:
         rule = {
             "id": "artem-bendak-fx-cny-rub",
@@ -685,7 +691,7 @@ class MatchingTests(unittest.TestCase):
             "source_id": "telegram-ladytrader-vip",
             "enabled": True,
             "kind": "content_keywords",
-            "keywords": ["си", "cnyrub", "usd/rub"],
+            "keywords": ["си", "юань", "cnyrub", "usd/rub"],
             "tags": ["trading", "fx", "ladytrader"],
         }
         message = {
@@ -710,6 +716,16 @@ class MatchingTests(unittest.TestCase):
         assert candidate is not None
         self.assertEqual(candidate.rule_id, "ladytrader-vip-fx-si")
         self.assertEqual(candidate.tags, ["trading", "fx", "ladytrader"])
+
+        message["text"] = "Откупила позу в юане по 11,500. Стоп под 11,276. Не ИИР."
+        self.assertIsNotNone(
+            match_telegram_rule(
+                ruleset_id="trading-si",
+                ruleset_title="Trading Si",
+                rule=rule,
+                message=message,
+            )
+        )
 
         message["text"] = "Обзор рынка акций без валютных инструментов."
         self.assertIsNone(

@@ -8,6 +8,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Changed
+- **Signals Russian yuan inflections**: fixed deterministic FX matching so the canonical `юань` /
+  `cny` / `yuan` keywords cover standard Russian inflections while preserving whole-word boundaries.
+  A source-only repair run caught up the missed private-channel post and delivered one fresh signal
+  without duplicates.
 - **OpenClaw version compatibility ledger**: added a dedicated, versioned registry for derived-image
   adaptations, historical failure signatures, release gates, and rollback evidence. Future OpenClaw
   candidates must start from this record, carry active workarounds deliberately, and close the

@@ -24,11 +24,24 @@ TRADINGVIEW_USER_PATTERNS = [
     re.compile(r"\b@(?P<user>[A-Za-z0-9_.-]{3,64})\b"),
 ]
 HASHTAG_RE_TEMPLATE = r"(?<!\w){tag}\b"
+YUAN_WORD_FORMS = (
+    "юань",
+    "юаня",
+    "юаню",
+    "юанем",
+    "юане",
+    "юани",
+    "юаней",
+    "юаням",
+    "юанями",
+    "юанях",
+)
+YUAN_SLANG_FORMS = ("юашка", "юашку", "юашки")
 KEYWORD_ALIASES = {
     "си": ("сиха", "сиху"),
-    "юань": ("юашка", "юашку", "юашки"),
-    "cny": ("юашка", "юашку", "юашки"),
-    "yuan": ("юашка", "юашку", "юашки"),
+    "юань": (*YUAN_WORD_FORMS[1:], *YUAN_SLANG_FORMS),
+    "cny": (*YUAN_WORD_FORMS, *YUAN_SLANG_FORMS),
+    "yuan": (*YUAN_WORD_FORMS, *YUAN_SLANG_FORMS),
 }
 
 

@@ -378,6 +378,9 @@ During gateway cold starts or config-triggered restarts, `docker compose ps` can
 - Docker volumes: `signals-bridge-sessions`, `signals-bridge-state`
 - runtime config: `/opt/signals-bridge/config.json` (volume-mounted)
 - output targets: `signals` topic (5-min signal alerts), `last30daysTrend` topic (daily 07:00 MSK World Radar)
+- Telegram FX rules retain whole-word matching while recognizing standard Russian inflections of the
+  yuan alongside configured `юань` / `cny` / `yuan` keywords; this prevents a valid form such as
+  `юане` from being silently dropped.
 - key env vars in `signals.env`:
   - `OPENROUTER_API_KEY` — enables LLM planning/reranking in external last30days script (exits local_mode)
   - `LAST30DAYS_PLANNER_MODEL=google/gemini-2.5-flash-lite` — overrides default invalid model ID
