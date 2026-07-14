@@ -37,6 +37,7 @@ from poster import (
 import state_store
 from telegram_adapter import build_client as build_telethon_client
 from telegram_adapter import collect_telegram_candidates
+from telegram_adapter import is_telethon_session_locked_error, telethon_session_lock
 
 load_dotenv("/app/signals.env", override=False)
 
@@ -192,27 +193,28 @@ async def _relay_telegram_event_via_telethon(event) -> bool:
     if not chat_id or not message_id:
         return await _relay_telegram_text_event(event)
 
-    client = build_telethon_client()
-    await client.connect()
-    if not await client.is_user_authorized():
-        await client.disconnect()
-        raise RuntimeError("signals telethon session is not authorized")
+    with telethon_session_lock():
+        client = build_telethon_client()
+        await client.connect()
+        if not await client.is_user_authorized():
+            await client.disconnect()
+            raise RuntimeError("signals telethon session is not authorized")
 
-    try:
-        if await _forward_telegram_event_via_telethon(client, event):
-            return True
+        try:
+            if await _forward_telegram_event_via_telethon(client, event):
+                return True
 
-        message = await client.get_messages(chat_id, ids=message_id)
-        if message is None:
-            return await _relay_telegram_text_event(event)
+            message = await client.get_messages(chat_id, ids=message_id)
+            if message is None:
+                return await _relay_telegram_text_event(event)
 
-        if await _resend_telegram_message_via_telethon(client, message):
-            return True
+            if await _resend_telegram_message_via_telethon(client, message):
+                return True
 
-        delivery_text = str(getattr(message, "message", "") or event.delivery_text or "").strip()
-        return await _relay_telegram_text_event(event, text=delivery_text)
-    finally:
-        await client.disconnect()
+            delivery_text = str(getattr(message, "message", "") or event.delivery_text or "").strip()
+            return await _relay_telegram_text_event(event, text=delivery_text)
+        finally:
+            await client.disconnect()
 
 
 async def _relay_telegram_event(event) -> bool:
@@ -256,6 +258,95 @@ def _load_signals_status() -> dict:
 
 def _load_last30days_status() -> dict:
     return _load_status_file(LAST30DAYS_STATUS_PATH)
+
+
+def _source_error_kind(exc: BaseException) -> str:
+    if is_telethon_session_locked_error(exc):
+        return "telethon_session_locked"
+    if "not authorized" in str(exc).casefold():
+        return "telethon_unauthorized"
+    return exc.__class__.__name__
+
+
+def _mark_source_success(r, source_id: str, now: datetime) -> None:
+    timestamp = now.astimezone(timezone.utc).isoformat()
+    state_store.set_source_status(
+        r,
+        source_id,
+        {
+            "ok": True,
+            "last_attempt_at": timestamp,
+            "last_error": None,
+            "last_success_at": timestamp,
+        },
+    )
+
+
+def _mark_source_failure(r, source_id: str, now: datetime, exc: BaseException) -> None:
+    previous = state_store.get_source_status(r, source_id)
+    state_store.set_source_status(
+        r,
+        source_id,
+        {
+            "ok": False,
+            "last_attempt_at": now.astimezone(timezone.utc).isoformat(),
+            "last_error": _source_error_kind(exc),
+            "last_success_at": previous.get("last_success_at"),
+        },
+    )
+
+
+def _source_health(config: dict, r, *, now: datetime) -> dict:
+    source_index = index_sources(config)
+    active_sources: dict[tuple[str, str], int] = {}
+    for ruleset in config.get("rule_sets", []):
+        if not ruleset.get("enabled", True):
+            continue
+        poll_seconds = _poll_interval_seconds(config, ruleset)
+        for rule in ruleset.get("rules", []):
+            if not rule.get("enabled", True):
+                continue
+            source_type = str(rule.get("source_type", "")).strip()
+            source_id = str(rule.get("source_id", "")).strip()
+            source = source_index.get((source_type, source_id))
+            if not source or not source.get("enabled", True):
+                continue
+            key = (source_type, source_id)
+            active_sources[key] = min(active_sources.get(key, poll_seconds), poll_seconds)
+
+    sources: dict[str, dict] = {}
+    healthy = True
+    for (_, source_id), poll_seconds in sorted(active_sources.items()):
+        last_success = state_store.get_dt(r, state_store.source_last_success_key(source_id))
+        status = state_store.get_source_status(r, source_id)
+        has_error = bool(status.get("last_error"))
+        stale_after_seconds = max(3 * poll_seconds, 900)
+        stale = bool(last_success and now - last_success > timedelta(seconds=stale_after_seconds))
+        if has_error:
+            state = "error"
+        elif stale:
+            state = "stale"
+        elif last_success:
+            state = "healthy"
+        else:
+            state = "unknown"
+        source_ok = not has_error and not stale
+        healthy = healthy and source_ok
+        sources[source_id] = {
+            "last_attempt_at": status.get("last_attempt_at"),
+            "last_error": status.get("last_error"),
+            "last_success_at": last_success.isoformat() if last_success else None,
+            "state": state,
+        }
+    return {"ok": healthy, "sources": sources}
+
+
+def _load_source_health() -> dict:
+    try:
+        return _source_health(load_config(), _make_redis(), now=_utc_now())
+    except Exception:
+        logger.exception("Unable to load signals source health")
+        return {"ok": False, "sources": {}, "error": "source_health_unavailable"}
 
 
 def _write_status(path: Path, r: redis_lib.Redis | None, payload: dict) -> None:
@@ -319,10 +410,11 @@ class Handler(BaseHTTPRequestHandler):
         if self.path == "/health":
             signals_status = _load_signals_status()
             last30days_status = _load_last30days_status()
+            source_health = _load_source_health()
             self._send(
                 HTTPStatus.OK,
                 {
-                    "ok": bool(signals_status.get("ok", True) and last30days_status.get("ok", True)),
+                    "ok": bool(signals_status.get("ok", True) and last30days_status.get("ok", True) and source_health["ok"]),
                     "service": "signals-bridge",
                     "running": bool(signals_status.get("running") or last30days_status.get("running")),
                     "last_ruleset_id": signals_status.get("ruleset_id"),
@@ -336,12 +428,14 @@ class Handler(BaseHTTPRequestHandler):
                         "last_posted_themes": last30days_status.get("posted_themes", 0),
                         "topic_name": last30days_status.get("topic_name"),
                     },
+                    "source_health": source_health,
                 },
             )
             return
         if self.path == "/status":
             payload = _load_signals_status()
             payload["last30days"] = _load_last30days_status()
+            payload["source_health"] = _load_source_health()
             self._send(HTTPStatus.OK, payload)
             return
         self._send(HTTPStatus.NOT_FOUND, {"ok": False, "error": "not_found"})
@@ -727,6 +821,7 @@ def _process_signals_job(r, data: dict[str, str]) -> dict:
                 except Exception as exc:
                     source_errors.append(f"{source_id}: {exc}")
                     tails.append([f"source_error {source_id}: {exc}"])
+                    _mark_source_failure(r, source_id, now, exc)
                     _dlq(
                         r,
                         run_id=run_id,
@@ -886,6 +981,7 @@ def _run_email_source(*, r, source: dict, ruleset: dict, rules: list[dict], look
         until_dt=until_dt,
     )
     state_store.set_dt(r, state_store.source_last_success_key(source["id"]), now)
+    _mark_source_success(r, source["id"], now)
     return candidates, tail
 
 
@@ -913,10 +1009,26 @@ def _run_telegram_source(*, r, source: dict, ruleset: dict, rules: list[dict], l
         finally:
             await client.disconnect()
 
-    candidates, tail, max_seen_id = asyncio.run(_inner())
+    for attempt in range(3):
+        try:
+            with telethon_session_lock():
+                candidates, tail, max_seen_id = asyncio.run(_inner())
+            break
+        except Exception as exc:
+            if not is_telethon_session_locked_error(exc) or attempt == 2:
+                raise
+            delay_seconds = 2**attempt
+            logger.warning(
+                "Telethon session is locked for source %s; retrying in %ss (%s/3)",
+                source["id"],
+                delay_seconds,
+                attempt + 1,
+            )
+            time.sleep(delay_seconds)
     if max_seen_id > cursor:
         state_store.set_int(r, state_store.source_cursor_key(source["id"]), max_seen_id)
     state_store.set_dt(r, state_store.source_last_success_key(source["id"]), now)
+    _mark_source_success(r, source["id"], now)
     return candidates, tail
 
 

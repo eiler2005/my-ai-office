@@ -2081,3 +2081,39 @@ Validation:
 - Full signals suite: `90` tests passed; `compileall` and `git diff --check` passed.
 - The live repair run scanned `76` source messages, matched and posted `1` fresh event, relayed its
   original source content, and reported zero source errors, drops, or duplicates.
+
+## 56. Signals SI scheduler recovery and safe stale-source policy
+
+Date: `2026-07-14`
+
+Problem:
+
+- Two enabled private SI rule groups shared one `rule_sets.id`. The internal scheduler keyed its due
+  state by that ID, so the later ruleset was silently shadowed and never scheduled.
+- The affected Telethon sources had stopped reporting successful polls after transient session SQLite
+  locking. Their stale state was invisible in the former aggregate bridge health result.
+
+Actions:
+
+- Config validation now rejects duplicate ruleset IDs across base and external rule fragments before
+  the bridge starts. The private affected ruleset now has its own unique ID.
+- Polling, relay, and interactive auth use one inter-process Telethon session lock; transient
+  `database is locked` errors retry with bounded backoff. Per-source success, error, and stale state
+  now feed both `/health` and `/status`.
+- Manual `lookback_minutes` is a strict lower timestamp bound. During rollout this exposed a second
+  recovery hazard: a stale automatic source could otherwise replay retained history. Automatic stale
+  polls now use only the normal overlap; any wider backfill must be a source-only manual operation.
+- The deploy helper now preserves server-side bridge backups and no longer attempts obsolete
+  OpenClaw-cron synchronisation for this standalone service.
+
+Validation and rollout:
+
+- Full signals suite: `97` tests passed; Python compilation, deploy-script syntax validation, config
+  JSON parsing, and `git diff --check` passed.
+- The live bridge was rebuilt after preserving the previous image/config reference. The protected
+  scheduler completed a normal all-source pass with `posted=0`; `/health` returned `ok=true` and all
+  configured source states were `healthy`.
+- The two source-only 12-hour recovery checks matched the live rule result: three SI candidates from
+  the channel source and one author-scoped candidate from the chat source. They were already present
+  in deduplication state from the initial rollout attempt, so the final checks safely reported
+  `posted=0` with duplicates rather than publishing another copy.

@@ -298,6 +298,12 @@ independent of OpenClaw Cron Jobs. Two responsibilities:
    deterministic matching (keyword/hashtag/author rules) before any LLM call, enriches matches
    via OmniRoute `light` tier only (or local fallback), posts to `signals` Telegram topic.
 
+   Ruleset IDs are a globally unique scheduler namespace, including ignored rule fragments. The
+   bridge rejects duplicate IDs at config load so `get_ruleset`, Redis cursors, and next-due state
+   cannot select a different ruleset than the scheduler enqueued. Telethon polling, source relay, and
+   interactive session auth take a shared lock beside the SQLite session; transient lock contention is
+   retried, while unrecovered errors become source-level health state rather than a hidden partial run.
+
 2. **Last30Days presets** — `signals-bridge` now supports two digest modes:
    `personal-feed` (query-driven focused radar) and `platform-pulse`
    (platform-first storylines grouped by source). The scheduled daily run remains the

@@ -8,6 +8,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Changed
+- **Signals ruleset execution hardening**: `signals-bridge` now rejects duplicate `rule_sets.id`
+  values across the base config and ignored rule fragments instead of silently running only the first
+  matching ruleset. Telethon session use is serialized across polling, relay, and interactive auth,
+  with a bounded retry for transient SQLite `database is locked` errors. `/health` and `/status` now
+  expose per-source healthy/stale/error state so a partially stalled signals feed cannot look healthy
+  merely because another ruleset is still running. Manual Telegram lookback is a strict timestamp
+  boundary even when a source cursor is stale, preventing old retained messages from being replayed
+  during recovery; stale automatic sources resume only over the normal overlap and require an explicit
+  source-only lookback for wider recovery.
 - **Signals Russian yuan inflections**: fixed deterministic FX matching so the canonical `юань` /
   `cny` / `yuan` keywords cover standard Russian inflections while preserving whole-word boundaries.
   A source-only repair run caught up the missed private-channel post and delivered one fresh signal

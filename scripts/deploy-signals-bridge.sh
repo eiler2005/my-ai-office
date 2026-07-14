@@ -55,6 +55,7 @@ rsync -avz --delete \
   --exclude config.json \
   --exclude signals.env \
   --exclude rules \
+  --exclude backups/ \
   --exclude '__pycache__/' \
   --exclude '.pytest_cache/' \
   --exclude 'tests/' \
@@ -132,7 +133,6 @@ PY
 
   sudo chmod 600 signals.env
   sudo chmod +x /opt/signals-bridge/entrypoint.sh
-  sudo chmod +x /opt/signals-bridge/sync-openclaw-cron-jobs.sh
 
   sudo docker compose build
   sudo docker compose down 2>/dev/null || true
@@ -151,7 +151,6 @@ PY
     exit 1
   fi
 
-  sudo /opt/signals-bridge/sync-openclaw-cron-jobs.sh
 '
 
 cat <<'EOF'

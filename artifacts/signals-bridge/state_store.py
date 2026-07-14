@@ -27,6 +27,10 @@ def source_cursor_key(source_id: str) -> str:
     return f"state:signals:source:{_slug(source_id)}:cursor"
 
 
+def source_status_key(source_id: str) -> str:
+    return f"state:signals:source:{_slug(source_id)}:status"
+
+
 def last30days_last_success_key(preset_id: str) -> str:
     return f"state:signals:last30days:{_slug(preset_id)}:last_success_at"
 
@@ -63,6 +67,21 @@ def get_int(r, key: str, default: int = 0) -> int:
 
 def set_int(r, key: str, value: int) -> None:
     r.set(key, str(int(value)))
+
+
+def get_source_status(r, source_id: str) -> dict:
+    raw = r.get(source_status_key(source_id))
+    if not raw:
+        return {}
+    try:
+        payload = json.loads(raw)
+    except (TypeError, ValueError, json.JSONDecodeError):
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+def set_source_status(r, source_id: str, payload: dict) -> None:
+    r.set(source_status_key(source_id), json.dumps(payload, ensure_ascii=False, sort_keys=True))
 
 
 def acquire_lock(r, key: str, holder: str, ttl_seconds: int) -> bool:

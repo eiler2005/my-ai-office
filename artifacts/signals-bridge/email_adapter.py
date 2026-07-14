@@ -122,6 +122,11 @@ def resolve_email_window(*, source: dict, last_success: datetime | None, lookbac
     grace = int(source.get("lag_grace_minutes", 15) or 15)
     if last_success is None:
         return until_dt - timedelta(minutes=bootstrap), until_dt
+    stale_after = int(source.get("stale_after_minutes", 15) or 15)
+    if last_success < until_dt - timedelta(minutes=max(stale_after, 15)):
+        # Backfill requires an explicit lookback override; a stale automatic
+        # poll must not turn a recovery restart into an old-message replay.
+        return until_dt - timedelta(minutes=grace), until_dt
     return last_success - timedelta(minutes=grace), until_dt
 
 

@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import asyncio
+from contextlib import nullcontext
 import json
 import os
+import sqlite3
 import sys
 import tempfile
 import types
@@ -17,6 +19,7 @@ sys.path.insert(0, str(ROOT))
 os.environ.setdefault("TELEGRAM_BOT_TOKEN", "test-token")
 os.environ.setdefault("SIGNALS_SUPERGROUP_ID", "-100123")
 os.environ.setdefault("SIGNALS_TOPIC_ID", "414")
+os.environ.setdefault("SIGNALS_TELETHON_SESSION_PATH", str(Path(tempfile.gettempdir()) / "signals-bridge-test"))
 
 if "aiohttp" not in sys.modules:
     sys.modules["aiohttp"] = types.SimpleNamespace(ClientSession=object, ClientTimeout=lambda total=None: None)
@@ -34,8 +37,8 @@ os.environ.setdefault("TELEGRAM_BOT_TOKEN", "test-token")
 os.environ.setdefault("SIGNALS_SUPERGROUP_ID", "-1001")
 
 from config_store import normalize_config, validate_config
-from cron_bridge import _deliver_source_contexts, _recover_interrupted_ruleset_locks, _relay_telegram_event_via_telethon
-from email_adapter import _window_messages
+from cron_bridge import _deliver_source_contexts, _recover_interrupted_ruleset_locks, _relay_telegram_event_via_telethon, _run_telegram_source, _source_health
+from email_adapter import _window_messages, resolve_email_window
 from event_store import append_events, append_new_events
 from last30days_persistence import _render_expanded_markdown
 from last30days_runner import build_digest, write_signal_digest
@@ -43,7 +46,8 @@ from matching import build_telegram_message_link, extract_tradingview_username, 
 from models import Last30DaysCategorySection, Last30DaysDigest, Last30DaysPlatformSection, Last30DaysTheme, ModelMeta, SignalEvent
 from omniroute_client import _local_fallback_batch
 from poster import render_batch, render_last30days_digest
-from telegram_adapter import resolve_telegram_window
+from telegram_adapter import collect_telegram_candidates, resolve_telegram_window
+import state_store
 
 
 class FakeRedis:
@@ -191,6 +195,12 @@ class ConfigValidationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "missing source ref"):
             validate_config(config)
 
+    def test_duplicate_ruleset_id_raises(self) -> None:
+        config = sample_config()
+        config["rule_sets"].append({"id": "trading", "title": "Duplicate", "rules": []})
+        with self.assertRaisesRegex(ValueError, "duplicate ruleset id: trading"):
+            validate_config(config)
+
     def test_telegram_rule_without_stable_ids_raises(self) -> None:
         config = sample_config()
         config["sources"]["telegram"][0]["chat_id"] = ""
@@ -218,6 +228,20 @@ class ConfigValidationTests(unittest.TestCase):
             normalized = normalize_config(config, base_path=base)
         self.assertEqual(len(normalized["rule_sets"]), 1)
         self.assertEqual(normalized["rule_sets"][0]["id"], "market-watch")
+
+    def test_external_rule_file_duplicate_ruleset_id_raises(self) -> None:
+        config = sample_config()
+        config["rule_files"] = ["rules/*.json"]
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            rules_dir = base / "rules"
+            rules_dir.mkdir()
+            (rules_dir / "duplicate.json").write_text(
+                '{"rule_sets":[{"id":"trading","title":"Duplicate","enabled":true,"rules":[]}]}',
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(ValueError, "duplicate ruleset id: trading"):
+                normalize_config(config, base_path=base)
 
     def test_normalize_sets_last30days_defaults(self) -> None:
         normalized = normalize_config(sample_config())
@@ -254,6 +278,129 @@ class StartupLockRecoveryTests(unittest.TestCase):
         self.assertEqual(released, 1)
         self.assertIsNone(redis.get("lock:signals:ruleset:trading-si"))
         self.assertEqual(redis.get("lock:signals:last30days:personal-feed-v1"), "keep")
+
+
+class SourceHealthTests(unittest.TestCase):
+    def test_source_health_reports_stale_error_then_recovery(self) -> None:
+        redis = FakeRedis()
+        config = sample_config()
+        source_id = "telegram-trader-speki"
+        now = datetime(2026, 4, 12, 12, 0, tzinfo=timezone.utc)
+        stale_at = now - timedelta(minutes=20)
+        state_store.set_dt(redis, state_store.source_last_success_key(source_id), stale_at)
+        state_store.set_source_status(
+            redis,
+            source_id,
+            {
+                "ok": True,
+                "last_attempt_at": stale_at.isoformat(),
+                "last_error": None,
+                "last_success_at": stale_at.isoformat(),
+            },
+        )
+
+        health = _source_health(config, redis, now=now)
+        self.assertFalse(health["ok"])
+        self.assertEqual(health["sources"][source_id]["state"], "stale")
+
+        state_store.set_dt(redis, state_store.source_last_success_key(source_id), now)
+        state_store.set_source_status(
+            redis,
+            source_id,
+            {
+                "ok": True,
+                "last_attempt_at": now.isoformat(),
+                "last_error": None,
+                "last_success_at": now.isoformat(),
+            },
+        )
+        health = _source_health(config, redis, now=now)
+        self.assertTrue(health["ok"])
+        self.assertEqual(health["sources"][source_id]["state"], "healthy")
+
+        state_store.set_source_status(
+            redis,
+            source_id,
+            {
+                "ok": False,
+                "last_attempt_at": now.isoformat(),
+                "last_error": "telethon_session_locked",
+                "last_success_at": now.isoformat(),
+            },
+        )
+        health = _source_health(config, redis, now=now)
+        self.assertFalse(health["ok"])
+        self.assertEqual(health["sources"][source_id]["state"], "error")
+
+
+class TelethonSessionRetryTests(unittest.TestCase):
+    def test_telegram_source_retries_database_lock_then_records_success(self) -> None:
+        redis = FakeRedis()
+        source = {"id": "telegram-trader-speki", "chat_id": -1001}
+        ruleset = {"id": "trading"}
+        client = Mock()
+        client.connect = AsyncMock()
+        client.disconnect = AsyncMock()
+        client.is_user_authorized = AsyncMock(return_value=True)
+        now = datetime(2026, 4, 12, 12, 0, tzinfo=timezone.utc)
+
+        with patch("cron_bridge.build_telethon_client", return_value=client), patch(
+            "cron_bridge.collect_telegram_candidates",
+            new=AsyncMock(side_effect=[sqlite3.OperationalError("database is locked"), ([], ["matched=0"], 7)]),
+        ) as collect_mock, patch("cron_bridge.telethon_session_lock", side_effect=lambda: nullcontext()), patch(
+            "cron_bridge.time.sleep"
+        ) as sleep_mock:
+            candidates, tail = _run_telegram_source(
+                r=redis,
+                source=source,
+                ruleset=ruleset,
+                rules=[],
+                lookback_minutes=None,
+                now=now,
+            )
+
+        self.assertEqual(candidates, [])
+        self.assertEqual(tail, ["matched=0"])
+        self.assertEqual(collect_mock.await_count, 2)
+        sleep_mock.assert_called_once_with(1)
+        self.assertEqual(redis.get(state_store.source_cursor_key(source["id"])), "7")
+        self.assertEqual(state_store.get_source_status(redis, source["id"])["last_error"], None)
+
+
+class TelegramLookbackTests(unittest.IsolatedAsyncioTestCase):
+    async def test_manual_lookback_excludes_old_messages_after_stalled_cursor(self) -> None:
+        class FakeMessage:
+            def __init__(self, message_id: int, text: str, date: datetime) -> None:
+                self.id = message_id
+                self.message = text
+                self.date = date
+                self.sender_id = 0
+                self.post_author = ""
+                self.sender = None
+                self.video = None
+
+        now = datetime(2026, 7, 14, 19, 0, tzinfo=timezone.utc)
+        stale_but_unseen = FakeMessage(199, "старый #si", now - timedelta(hours=13))
+        in_window = FakeMessage(200, "свежий #si", now - timedelta(hours=1))
+        client = Mock()
+        client.get_messages = AsyncMock(return_value=[in_window, stale_but_unseen])
+        fake_types = types.SimpleNamespace(Message=FakeMessage)
+
+        with patch.dict(sys.modules, {"telethon.tl.types": fake_types}):
+            candidates, _, max_seen_id = await collect_telegram_candidates(
+                client=client,
+                source={"id": "telegram-trader-speki", "chat_id": -1001, "message_limit": 80},
+                ruleset_id="trading",
+                ruleset_title="Trading",
+                rules=[{"id": "si", "kind": "hashtag", "hashtags": ["#si"]}],
+                cursor=100,
+                last_success=now - timedelta(days=4),
+                lookback_minutes=12 * 60,
+                now=now,
+            )
+
+        self.assertEqual([candidate.external_ref for candidate in candidates], ["-1001:200"])
+        self.assertEqual(max_seen_id, 200)
 
 
 class MatchingTests(unittest.TestCase):
@@ -513,6 +660,25 @@ class MatchingTests(unittest.TestCase):
                 "sender_id": 777,
                 "author": "Example Author",
                 "text": "По паре юань и валюте вижу интересный сетап",
+                "timestamp": "2026-04-12T12:00:00+00:00",
+            },
+        )
+        self.assertIsNotNone(candidate)
+
+    def test_telegram_media_caption_hashtag_match(self) -> None:
+        rule = sample_config()["rule_sets"][0]["rules"][1]
+        candidate = match_telegram_rule(
+            ruleset_id="trading",
+            ruleset_title="Trading",
+            rule=rule,
+            message={
+                "chat_id": -1001,
+                "chat_name": "Трейдер",
+                "message_id": 2,
+                "sender_id": 10,
+                "author": "Trader",
+                "text": "Подпись к графику #si",
+                "has_video": False,
                 "timestamp": "2026-04-12T12:00:00+00:00",
             },
         )
@@ -932,6 +1098,28 @@ class DeliveryAndStateTests(unittest.TestCase):
             now=now,
         )
         self.assertEqual(since, last_success - timedelta(minutes=15))
+
+    def test_stale_automatic_windows_do_not_backfill_history(self) -> None:
+        now = datetime(2026, 4, 12, 12, 0, tzinfo=timezone.utc)
+        stale_success = now - timedelta(hours=4)
+
+        telegram_since = resolve_telegram_window(
+            source={"overlap_grace_minutes": 15, "stale_after_minutes": 15},
+            cursor=20,
+            last_success=stale_success,
+            lookback_minutes=None,
+            now=now,
+        )
+        email_since, email_until = resolve_email_window(
+            source={"lag_grace_minutes": 15, "stale_after_minutes": 15},
+            last_success=stale_success,
+            lookback_minutes=None,
+            now=now,
+        )
+
+        self.assertEqual(telegram_since, now - timedelta(minutes=15))
+        self.assertEqual(email_since, now - timedelta(minutes=15))
+        self.assertEqual(email_until, now)
 
     def test_local_batch_preserves_telegram_link_and_email_excerpt(self) -> None:
         email_rule = sample_config()["rule_sets"][0]["rules"][0]

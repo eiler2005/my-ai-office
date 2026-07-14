@@ -377,6 +377,12 @@ During gateway cold starts or config-triggered restarts, `docker compose ps` can
 - bridge endpoints: `GET /health`, `GET /status`, `POST /trigger`
 - Docker volumes: `signals-bridge-sessions`, `signals-bridge-state`
 - runtime config: `/opt/signals-bridge/config.json` (volume-mounted)
+- every active `rule_sets.id` is unique across the base config and ignored rule fragments; duplicate
+  IDs fail validation before the scheduler can silently shadow a source
+- access to the shared Telethon SQLite session is serialized for polling, relay, and interactive auth;
+  transient `database is locked` errors retry before becoming a source failure
+- `/health` and `/status` include source-level `healthy`, `stale`, `error`, or `unknown` state based on
+  the latest successful poll and last source error
 - output targets: `signals` topic (5-min signal alerts), `last30daysTrend` topic (daily 07:00 MSK World Radar)
 - Telegram FX rules retain whole-word matching while recognizing standard Russian inflections of the
   yuan alongside configured `юань` / `cny` / `yuan` keywords; this prevents a valid form such as

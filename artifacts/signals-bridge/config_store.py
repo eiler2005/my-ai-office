@@ -93,10 +93,14 @@ def validate_config(data: dict) -> None:
             if source_type == "telegram" and not str(item.get("chat_id", "")).strip():
                 raise ValueError(f"telegram source {source_id} missing chat_id")
 
+    seen_ruleset_ids: set[str] = set()
     for ruleset in data.get("rule_sets", []):
         ruleset_id = str(ruleset.get("id", "")).strip()
         if not ruleset_id:
             raise ValueError("ruleset missing id")
+        if ruleset_id in seen_ruleset_ids:
+            raise ValueError(f"duplicate ruleset id: {ruleset_id}")
+        seen_ruleset_ids.add(ruleset_id)
         for rule in ruleset.get("rules", []):
             source_type = str(rule.get("source_type", "")).strip()
             source_id = str(rule.get("source_id", "")).strip()

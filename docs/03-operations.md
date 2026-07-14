@@ -1827,6 +1827,7 @@ Recommended local keys:
 The deploy script:
 
 - rsyncs `/opt/signals-bridge`
+- preserves `/opt/signals-bridge/backups/` while syncing the application payload
 - syncs local `secrets/signals-bridge/config.json`
 - syncs local `secrets/signals-bridge/rules/*.json`
 - hydrates `TELEGRAM_BOT_TOKEN` from `/opt/openclaw/.env` when missing
@@ -1845,6 +1846,12 @@ Architecture note:
   Telethon session; use an explicit bootstrap window and validate it with a source-only run
 - startup releases stale locks only for configured signals rulesets, so an interrupted bridge run
   cannot block the next run for the full lock TTL
+- every enabled `rule_sets.id` must be globally unique, including IDs loaded through `rule_files`;
+  config validation rejects a duplicate rather than allowing the scheduler to shadow a ruleset
+- polling, relay, and interactive Telethon auth share one session lock; a transient SQLite session
+  lock retries with bounded backoff before the source is marked failed
+- a stale source resumes automatically only over its normal overlap window; any wider recovery is an
+  explicit source-only run with `lookback_minutes`, preventing an outage restart from replaying history
 - AgentMail and Telethon reads happen inside the bridge itself
 - LLM enrichment for already matched candidates is `OpenClaw/OpenAI -> OmniRoute light -> DeepSeek`
 - if all model routes are unavailable, the bridge falls back to local rule-based summaries and can still post
@@ -1856,11 +1863,14 @@ ssh -i ~/.ssh/id_rsa "$OPENCLAW_HOST" \
   'curl -s http://127.0.0.1:8093/health && echo && curl -s http://127.0.0.1:8093/status'
 ```
 
-- `GET /health` — quick liveness + last signals run summary
-- `GET /status` — current or last run payload with ruleset id, posted count, and tail
+- `GET /health` — quick liveness + last signals run summary and per-source health; it becomes
+  `ok=false` for a source with an unresolved error or a prior successful poll older than three poll
+  intervals (minimum 15 minutes)
+- `GET /status` — current or last run payload with ruleset id, posted count, tail, and source-level
+  `healthy` / `stale` / `error` / `unknown` state
 - `POST /trigger` — enqueue a manual ruleset run into `ingest:jobs:signals`
 - Optional trigger overrides:
-  - `lookback_minutes` for manual catch-up/backfill
+  - `lookback_minutes` for manual catch-up/backfill; it is a strict lower timestamp bound even when a source cursor is stale. Automatic polls never expand a stale source into a historical backfill.
   - `source_id` to limit a manual run to one configured source
 
 ### Integration bus checks
@@ -1877,11 +1887,11 @@ ssh -i ~/.ssh/id_rsa "$OPENCLAW_HOST" '
 ### Manual enqueue examples
 
 ```bash
-# Run the whole trading ruleset now
+# Run one configured ruleset now
 ssh -i ~/.ssh/id_rsa "$OPENCLAW_HOST" '
   docker exec integration-bus-redis redis-cli XADD ingest:jobs:signals "*" \
     run_id manual-signals \
-    ruleset_id trading \
+    ruleset_id <ruleset-id> \
     requested_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
     requested_by manual
 '
@@ -1890,8 +1900,8 @@ ssh -i ~/.ssh/id_rsa "$OPENCLAW_HOST" '
 ssh -i ~/.ssh/id_rsa "$OPENCLAW_HOST" '
   docker exec integration-bus-redis redis-cli XADD ingest:jobs:signals "*" \
     run_id manual-signals-backfill \
-    ruleset_id trading \
-    source_id telegram-trader-speki \
+    ruleset_id <ruleset-id> \
+    source_id <source-id> \
     lookback_minutes 60 \
     requested_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
     requested_by manual
