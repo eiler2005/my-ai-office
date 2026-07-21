@@ -131,6 +131,12 @@ The tracked [OpenClaw Version Compatibility Ledger](22-openclaw-version-compatib
 must preserve the reason for each local workaround without copying real chat identifiers, credentials,
 hostnames, raw logs, or private configuration into Git.
 
+Shared-VPS incident documentation follows the same rule: record sanitized
+probe status, unit ownership and next action only. Do not commit firewall
+sources, provider-console screenshots, raw journal excerpts, container IDs,
+addresses or generated client artifacts. The required safe handoff is
+[Shared VPS incident contract](23-shared-vps-incident-contract.md).
+
 ## Claude Code project policy
 
 This repository uses Claude Code-compatible project files to reduce repeat mistakes:

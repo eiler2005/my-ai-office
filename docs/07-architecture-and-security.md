@@ -186,6 +186,16 @@ A strict readiness probe (`/healthz`) can report `starting` or `unhealthy` durin
 
 If the gateway restarts (for example after config changes), the edge proxy can briefly return `502` until the backend is listening again.
 
+### Shared VPS failure boundary
+
+This application shares host resources with other workloads, but it does not
+own their routing/edge data-plane. A Docker/resolver `systemd` ordering cycle
+can keep an edge component from starting after boot; OOM/CPU pressure is a
+separate capacity signal unless evidence proves otherwise. The cross-project
+contract deliberately forbids broad Docker restart loops, volume cleanup and
+unscoped firewall changes during diagnosis. See
+[Shared VPS incident contract](23-shared-vps-incident-contract.md).
+
 ## Applied OpenClaw security settings
 
 Reference: [docs.openclaw.ai/gateway/security](https://docs.openclaw.ai/gateway/security)

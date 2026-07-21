@@ -8,6 +8,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Changed
+
+- **Shared VPS incident contract**: documented the routing/host/OpenClaw
+  ownership boundary, Docker boot-order evidence, OOM separation, safe
+  read-only triage and redaction requirements for cross-project incidents.
+
 - **Signals ruleset execution hardening**: `signals-bridge` now rejects duplicate `rule_sets.id`
   values across the base config and ignored rule fragments instead of silently running only the first
   matching ruleset. Telethon session use is serialized across polling, relay, and interactive auth,

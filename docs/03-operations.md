@@ -507,6 +507,15 @@ ssh -i ~/.ssh/id_rsa "$OPENCLAW_HOST" '
 '
 ```
 
+### Shared VPS incident boundary
+
+A routing managed-egress outage, a Docker boot-order warning and OpenClaw OOM
+evidence are separate signals until the respective data-plane, unit-graph and
+resource checks prove a link. Do not turn the bounded restart policy into an
+unlimited restart loop or restart the full Docker stack as a first response.
+Use [Shared VPS incident contract](23-shared-vps-incident-contract.md) for the
+owner split, safe read-only evidence and closure criteria.
+
 ## LightRAG embedding-provider recovery
 
 Current live status after the 2026-05-31 recovery:
