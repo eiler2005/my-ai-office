@@ -118,7 +118,7 @@ Everything runs inside Docker containers on a single Hetzner CX23 (2 vCPU / 4 GB
 │  │  → signals topic  (+ daily Last30Days radar) │                      │
 │  └──────────────────────────────────────────────┘                      │
 │  ┌──────────────────────────────────────────────┐                      │
-│  │  telethon-digest  (Docker)   :8091           │                      │
+│  │  telethon-digest  (Docker)   :8091 internal  │                      │
 │  │  150–200 Telegram channels via MTProto       │                      │
 │  │  → OmniRoute medium → telegram-digest topic  │                      │
 │  │  schedule: 08/11/14/17/21 Moscow             │                      │
@@ -225,7 +225,7 @@ graph LR
 
     subgraph Bridges["Bridge Services"]
         SB["signals-bridge\n:8093\n5-min scheduler"]
-        TD["telethon-digest\n:8091\n5x daily"]
+        TD["telethon-digest\n:8091 internal\n5x daily"]
         EM["agentmail-email\n:8092\n4x daily"]
         WE["agentmail-work-email\n:8094\n8x daily"]
     end
@@ -253,8 +253,8 @@ graph LR
     Redis -->|"ingest:jobs:email"| EM
     Redis -->|"ingest:jobs:email:work"| WE
 
-    SB -->|"OpenClaw/OpenAI -> OmniRoute -> DeepSeek"| OC
-    TD -->|"OpenClaw/OpenAI -> OmniRoute -> DeepSeek"| OC
+    SB -->|"OpenClaw/OpenAI -> OmniRoute -> Qwen -> DeepSeek"| OC
+    TD -->|"OpenClaw/OpenAI -> OmniRoute -> Qwen -> DeepSeek"| OC
 
     SB --> T1
     SB --> T2
@@ -273,13 +273,13 @@ graph LR
 
 | Service | Role | Network binding | LLM tier |
 |---------|------|----------------|----------|
-| **OpenClaw Gateway** | Main agent runtime, conversation broker | `127.0.0.1:18789` | OpenAI `gpt-5.5`, OmniRoute fallback, DeepSeek final reserve |
+| **OpenClaw Gateway** | Main agent runtime, conversation broker | `127.0.0.1:18789` | OpenAI `gpt-5.5`, Qwen direct fallback, DeepSeek final reserve |
 | **OmniRoute** | Smart model dispatcher, 3-tier routing with failover | `127.0.0.1:20128` (UI), `:20129` (API) | — |
-| **LightRAG** | Knowledge graph, hybrid vector+graph retrieval | `127.0.0.1:8020` | OmniRoute `light` + Gemini embeddings |
+| **LightRAG** | Knowledge graph, hybrid vector+graph retrieval | `127.0.0.1:8020` | OmniRoute `light` (Qwen first, DeepSeek reserve) + local embeddings |
 | **wiki-import** | Curated import bridge for `url` / `text` / `server_path` into LLM-Wiki | `127.0.0.1:8095` | deterministic v1 |
 | **Redis Streams** | Async integration bus, consumer groups, DLQ | internal only | — |
-| **signals-bridge** | Signal routing from email + Telegram sources | `127.0.0.1:8093` | OpenClaw/OpenAI -> OmniRoute -> DeepSeek -> local |
-| **telethon-digest** | Telegram channel digest (150–200 channels) | `127.0.0.1:8091` | OpenClaw/OpenAI -> OmniRoute -> DeepSeek -> local |
+| **signals-bridge** | Signal routing from email + Telegram sources | `127.0.0.1:8093` | OpenClaw/OpenAI -> OmniRoute -> Qwen -> DeepSeek -> local |
+| **telethon-digest** | Telegram channel digest (150–200 channels) | internal `:8091` only (not host-published) | OpenClaw/OpenAI -> OmniRoute -> Qwen -> DeepSeek -> local |
 | **agentmail-email** | Personal inbox polling + scheduled digests | `127.0.0.1:8092` | OmniRoute `medium` |
 | **agentmail-work-email** | Work inbox polling + scheduled digests with forwarded-sender resolution and actionable/info triage | `127.0.0.1:8094` | OmniRoute `medium` |
 
@@ -452,8 +452,8 @@ OmniRoute dispatches tasks across three tiers with automatic provider failover.
 | **medium** | Summarization, Q&A, digests | Kiro/Claude Haiku → Gemini 2.0 Flash → OpenRouter/Qwen3-30B |
 | **light** | Classification, signals enrichment, tagging | Kiro/Claude Haiku → Gemini 2.0 Flash → OpenRouter/Qwen3-8B |
 
-**Primary route:** OpenAI `openai/gpt-5.5` via the OpenClaw subscription path; DeepSeek is the direct reserve for interactive Gateway turns. OmniRoute remains available for dedicated service routes, but is not in the interactive fallback chain.
-**LightRAG:** OmniRoute `light` for LLM extraction/summarization, with DeepSeek registered as the final LLM reserve behind that combo. Retrieval embeddings still require Gemini/OpenRouter/OpenAI embeddings; DeepSeek is not an embeddings provider.
+**2026-08-14 rollout:** OmniRoute `light` now uses Qwen `qwen3.7-flash` first and DeepSeek as final reserve for the dedicated bridges; Qwen smoke and bridge health checks passed. The Gateway was rebuilt from its pinned compatibility Dockerfile and is healthy with the direct Qwen-then-DeepSeek order; its controlled Qwen text smoke passed. Automatic image/audio/video understanding is disabled so a text-only reserve cannot falsely attempt media analysis; a manual Telegram UI media retest remains the acceptance gate.
+**LightRAG remains separate:** its live extraction route stays direct DeepSeek until a dedicated Qwen-first extraction smoke passes. Retrieval uses local `wiki-import` embeddings; DeepSeek is not an embeddings provider.
 **Last30Days reasoning:** OpenRouter `google/gemini-2.5-flash-lite` via `OPENROUTER_API_KEY` in `signals.env`.
 
 | Provider | Auth | Cost |
@@ -749,6 +749,7 @@ See [`docs/07-architecture-and-security.md`](docs/07-architecture-and-security.m
 | 20 | [llm-project-orientation](docs/20-llm-project-orientation.md) | LLM-facing project map: read order, trust hierarchy, doc routing |
 | 22 | [openclaw-version-compatibility-ledger](docs/22-openclaw-version-compatibility-ledger.md) | Versioned OpenClaw defects, local workarounds, release gates, and rollback evidence |
 | 23 | [shared-vps-incident-contract](docs/23-shared-vps-incident-contract.md) | Ownership, safe evidence and closure gate for shared Docker/edge incidents |
+| 24 | [llm-provider-map](docs/24-llm-provider-map.md) | LLM call inventory, credential names, routing, cost controls, and provider-migration checklist |
 
 ---
 

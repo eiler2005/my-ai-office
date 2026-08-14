@@ -28,6 +28,14 @@ ssh -i ~/.ssh/id_rsa "$OPENCLAW_HOST" '
 
 ## Config rollback
 
+For the 2026-08-14 staged Qwen-first rollout, retain the pre-change
+`openclaw.json`, OmniRoute combo backup, and prior LightRAG env. The Gateway
+config and compose file were backed up before the Qwen-first fallback and env
+wiring were written. The expected derived Gateway image was rebuilt locally and
+the active route passed health plus Qwen text smoke. If a Qwen smoke or Gateway
+activation fails, restore the relevant backup and retain the
+`DEEPSEEK_API_KEY` reserve during recovery.
+
 Relevant rollback points were stored on the server under:
 
 - `/opt/openclaw/backups/`

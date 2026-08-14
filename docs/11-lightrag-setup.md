@@ -136,7 +136,7 @@ the bot which raw/workspace/Obsidian file to inspect next if the answer needs st
 | Graph storage | NetworkX (built-in) | File-based, no Neo4j |
 | Vector storage | NanoVectorDB (built-in) | File-based, no Qdrant |
 | KV storage | JsonKV (built-in) | File-based, no Redis |
-| LLM | Direct DeepSeek API fallback | Used for LightRAG extraction while OmniRoute `light` returns bridge timeouts |
+| LLM | OmniRoute `light` (Qwen first, DeepSeek reserve) | OmniRoute order deployed on 2026-08-14; LightRAG still requires its own extraction smoke before replacing the current direct-DeepSeek route |
 | Embedding | `wiki-import` local OpenAI-compatible endpoint | Keeps Knowledgebase indexing functional without Gemini/OpenRouter credits; dimensions stay at 3072 |
 
 All graph/vector data lives under `/opt/lightrag/data/` on the host.
@@ -145,10 +145,12 @@ Live resource guardrail on this host: LightRAG runs with `cpus: "0.45"`, `mem_li
 `memswap_limit: 2816m`, and `pids_limit: 128`. The current graph has roughly 20k nodes and 26k
 edges; a 1536MB cap caused `Exit 137` during cold start.
 
-**Current split:** the preferred policy is OmniRoute first, then direct DeepSeek fallback for RAG
-LLM extraction. On 2026-05-31 the live server moved to the fallback because OmniRoute `light`
-returned `api_bridge_timeout` during LightRAG extraction. Embeddings use the local
-OpenAI-compatible endpoint exposed by `wiki-import`:
+**Current production split:** direct DeepSeek is used because OmniRoute `light` returned
+`api_bridge_timeout` during LightRAG extraction. OmniRoute now has the Qwen-first
+combo, proven by a controlled Qwen smoke, but LightRAG remains direct DeepSeek
+until a separate Qwen-first extraction smoke passes. DeepSeek is its final
+reserve once that switch is made.
+Embeddings use the local OpenAI-compatible endpoint exposed by `wiki-import`:
 
 - `LLM_BINDING_HOST=https://api.deepseek.com/v1`
 - `LLM_MODEL=deepseek-chat`
@@ -156,11 +158,12 @@ OpenAI-compatible endpoint exposed by `wiki-import`:
 - `EMBEDDING_MODEL=local/hash-embedding-3072`
 - `EMBEDDING_DIM=3072`
 
-If OmniRoute recovers, it can be restored as the first LLM hop by pointing LightRAG back at
-`http://omniroute:20129/v1` and model `light`. DeepSeek should remain the fallback. To refresh
-the direct DeepSeek reserve inside OmniRoute:
+When the dedicated extraction smoke is approved, point LightRAG at
+`http://omniroute:20129/v1` and model `light`. The OmniRoute Qwen-first sync is
+already deployed; these commands are retained only for an intentional rerun:
 
 ```bash
+OPENCLAW_HOST=deploy@<server-host> ./scripts/sync-omniroute-qwen-provider.sh
 OPENCLAW_HOST=deploy@<server-host> ./scripts/sync-omniroute-deepseek-provider.sh
 ```
 
@@ -268,11 +271,11 @@ Generate it with:
 Or manually from template `scripts/lightrag.env.template`:
 
 ```env
-# LLM: direct DeepSeek fallback
+# LLM: OmniRoute light (Qwen primary, DeepSeek reserve)
 LLM_BINDING=openai
-LLM_MODEL=deepseek-chat
-LLM_BINDING_API_KEY=<deepseek-api-key>
-LLM_BINDING_HOST=https://api.deepseek.com/v1
+LLM_MODEL=light
+LLM_BINDING_API_KEY=<omniroute-api-key>
+LLM_BINDING_HOST=http://omniroute:20129/v1
 LLM_MAX_TOKEN_SIZE=32768
 
 # Embeddings: wiki-import local fallback
@@ -308,7 +311,7 @@ WEBUI_TITLE=БенькаMemory
 ```
 
 Secrets in this setup:
-- `LLM_BINDING_API_KEY` = DeepSeek API key
+- `LLM_BINDING_API_KEY` = OmniRoute API key
 - `EMBEDDING_BINDING_API_KEY` = wiki-import bearer token
 
 ---
@@ -514,7 +517,7 @@ After quota resets, re-run: `ssh deploy@<server> '/opt/lightrag/scripts/lightrag
 
 ## Files to Back Up
 
-- `/opt/lightrag/.env` (DeepSeek API key + wiki-import token)
+- `/opt/lightrag/.env` (OmniRoute API key + wiki-import token)
 - `/opt/lightrag/data/` (graph + vector state — rebuild requires re-ingestion)
 - `/opt/lightrag/docker-compose.override.yml`
 - `/opt/lightrag/scripts/lightrag-ingest.sh`

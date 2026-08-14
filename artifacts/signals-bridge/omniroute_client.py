@@ -1,5 +1,5 @@
 """
-OpenClaw/OpenAI-first model client with OmniRoute, DeepSeek, and local fallback.
+OpenClaw/OpenAI-first model client with OmniRoute, Qwen, DeepSeek, and local fallback.
 """
 from __future__ import annotations
 
@@ -36,6 +36,14 @@ OPENCLAW_FALLBACK_SESSION_PREFIX = os.environ.get(
     "OPENCLAW_FALLBACK_SESSION_PREFIX",
     "agent:main:signals-openai-fallback",
 ).strip()
+
+QWEN_API_KEY = os.environ.get("DASHSCOPE_API_KEY", "").strip()
+QWEN_URL = os.environ.get(
+    "QWEN_URL",
+    "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions",
+).strip()
+QWEN_MODEL = os.environ.get("QWEN_MODEL", "qwen3.7-flash").strip() or "qwen3.7-flash"
+QWEN_TIMEOUT_SECONDS = int(os.environ.get("QWEN_TIMEOUT_SECONDS", "90") or 90)
 
 DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "").strip()
 DEEPSEEK_URL = os.environ.get("DEEPSEEK_URL", "https://api.deepseek.com/chat/completions").strip()
@@ -92,6 +100,12 @@ def _run_omniroute_prompt(prompt: str) -> dict[str, Any]:
         )
     except Exception as exc:
         route_errors.append(f"omniroute: {exc}")
+
+    if QWEN_API_KEY:
+        try:
+            return _run_qwen_prompt(prompt)
+        except Exception as exc:
+            route_errors.append(f"qwen: {exc}")
 
     if DEEPSEEK_API_KEY:
         try:
@@ -235,6 +249,25 @@ def _run_deepseek_prompt(prompt: str) -> dict[str, Any]:
     with urllib.request.urlopen(req, timeout=DEEPSEEK_TIMEOUT_SECONDS) as resp:
         raw = json.load(resp)
     return _completion_payload_to_signal_payload(raw, default_model=DEEPSEEK_MODEL, provider_fallback=True)
+
+
+def _run_qwen_prompt(prompt: str) -> dict[str, Any]:
+    payload = _chat_payload(prompt, model=QWEN_MODEL)
+    payload["enable_thinking"] = False
+    body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+    req = urllib.request.Request(
+        QWEN_URL,
+        data=body,
+        headers={
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "Authorization": f"Bearer {QWEN_API_KEY}",
+        },
+        method="POST",
+    )
+    with urllib.request.urlopen(req, timeout=QWEN_TIMEOUT_SECONDS) as resp:
+        raw = json.load(resp)
+    return _completion_payload_to_signal_payload(raw, default_model=QWEN_MODEL, provider_fallback=True)
 
 
 def _extract_json_object(text: str) -> Any:

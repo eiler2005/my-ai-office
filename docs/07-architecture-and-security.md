@@ -43,6 +43,13 @@ Role:
 - auth profile usage
 - agent/runtime orchestration
 
+The active Gateway model-policy boundary is OpenAI primary, DashScope Qwen as
+first direct reserve, and DeepSeek as final LLM-only reserve. The expected
+derived image was rebuilt from its pinned source on 2026-08-14; health,
+configuration, and controlled Qwen text-route checks passed. Automatic media
+understanding is disabled for this text-only reserve policy. Both provider keys
+remain env SecretRefs; neither is a retrieval-embeddings key.
+
 Current auth mode:
 
 - token auth at the gateway layer

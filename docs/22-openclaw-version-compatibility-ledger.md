@@ -54,6 +54,7 @@ removed only by a candidate result that proves the original failure path is fixe
 | Derived-image baseline (`iproute2`) | `active-workaround` | Keep `iproute2` in the derived image and verify `ip` inside the Gateway. |
 | Telegram isolated polling | `active-workaround` on current 2026.6.9 production | Carry `OPENCLAW_TELEGRAM_ISOLATED_INGRESS=0`; require a fresh manual Telegram UI inbound-and-outbound smoke. |
 | OpenAI OAuth/auth-store migration | `production-verified`, revalidate on every auth/storage change | Probe the OpenAI primary and check its intended OAuth transport before promotion. |
+| Qwen direct reserve | `production-verified` for text route (2026-08-14) | Keep Qwen before DeepSeek; verify a controlled text smoke after provider/catalog changes. Image/audio/video auto-understanding stays disabled unless a separately verified vision route is introduced. |
 | Direct DeepSeek reserve | `production-verified`, revalidate on every model-catalog change | Run an explicit reserve-model smoke; do not substitute it for the primary route. |
 | OpenClaw 2026.6.11 | `candidate-held` | Rebuild only as a candidate and complete the manual Telegram UI gate; the prior MTProto automation is inconclusive. |
 

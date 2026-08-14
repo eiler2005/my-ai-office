@@ -33,7 +33,7 @@ For Knowledgebase / Ideas behavior, use `docs/17-knowledge-management.md`.
 - port: `127.0.0.1:8020` → container internal port `9621` (not exposed via Caddy)
 - Docker networks: `lightrag_default` + `openclaw_default`; OpenClaw container uses `http://lightrag:9621`
 - input mounts (read-only): `/opt/obsidian-vault` → `/app/data/inputs/obsidian`, `/opt/openclaw/workspace` → `/app/data/inputs/workspace`
-- LLM: direct DeepSeek API fallback (`LLM_BINDING=openai`, `LLM_MODEL=deepseek-chat`, `LLM_BINDING_HOST=https://api.deepseek.com/v1`) while OmniRoute `light` returns bridge timeouts during LightRAG extraction
+- LLM: LightRAG itself still uses the direct DeepSeek extraction route. OmniRoute `light` was successfully changed to Qwen first with DeepSeek final reserve on 2026-08-14, but LightRAG must not be repointed until a dedicated extraction smoke passes.
 - embedding: local OpenAI-compatible endpoint exposed by `wiki-import` (`EMBEDDING_BINDING=openai`, `EMBEDDING_MODEL=local/hash-embedding-3072`, `EMBEDDING_BINDING_HOST=http://wiki-import:8095/v1`, `EMBEDDING_DIM=3072`); this avoids Gemini/OpenRouter quota failures. DeepSeek is not an embeddings provider.
 - storage backend: NetworkX + NanoVectorDB + JsonKV (no external DB)
 - ingest script: `/opt/lightrag/scripts/lightrag-ingest.sh` (uses `POST /documents/upload` file-by-file)
@@ -219,6 +219,12 @@ Last confirmed healthy image:
 
 - `openclaw-with-iproute2:20260624-slim-2026.6.9-telegram-polling-hotfix`
 
+The derived image reference was absent from the host and unavailable from its
+registry during the Qwen rollout. On 2026-08-14 it was rebuilt locally from the
+pinned upstream base plus the compatibility Dockerfile. The recreated Gateway
+is healthy and its controlled Qwen text smoke passed; retain the local image as
+the known-good recovery target.
+
 Previous confirmed healthy images:
 
 - `openclaw-with-iproute2:20260412-slim-2026.4.11`
@@ -334,9 +340,9 @@ During gateway cold starts or config-triggered restarts, `docker compose ps` can
 - routing tiers (priority order inside OmniRoute; Gateway-level fallback is documented below):
   - `smart` → Kiro/claude-sonnet-4-5 → OpenRouter/claude-3.5-sonnet → OpenRouter/kimi-k2
   - `medium` → Kiro/claude-3-5-haiku-20241022 → Gemini/gemini-2.0-flash → OpenRouter/qwen3-30b-a3b
-  - `light` → OpenRouter free model pool → OpenRouter DeepSeek free → OpenRouter Qwen3 8B; optional direct DeepSeek reserve is available when `DEEPSEEK_API_KEY` is present
-- LightRAG integration: active again for API-based retrieval. Live LightRAG uses direct DeepSeek for extraction after OmniRoute `light` timed out, and `wiki-import` local embeddings for vector work after Gemini/OpenRouter credentials/credits failed. `scripts/sync-omniroute-openrouter-provider.sh` remains available if a paid OpenRouter embeddings route is restored. Codex/OpenAI OAuth remains a Gateway text-inference route, not an embeddings API route; DeepSeek remains an LLM reserve only.
-- OpenClaw integration: **active** — `omniroute` remains available for digest/signals/RAG service flows, while the interactive Gateway policy lists `openai/gpt-5.5` as primary and `deepseek-direct/deepseek-chat` as direct reserve. After the `2026.6.9` upgrade, legacy OpenAI auth profiles were imported into `openclaw-agent.sqlite` and the OpenAI provider was pinned to ChatGPT/Codex OAuth transport; the final default-route smoke used `provider=openai`, `model=gpt-5.5`, and `fallbackAttempts=0`.
+  - `light` → Qwen `alibaba/qwen3.7-flash` → DeepSeek `deepseek/deepseek-chat`; a controlled Qwen request passed on 2026-08-14.
+- LightRAG integration: active again for API-based retrieval. It still uses direct DeepSeek for extraction after the prior OmniRoute timeout and `wiki-import` local embeddings for vector work. Do not switch it to `light` until its own Qwen-first extraction smoke passes.
+- OpenClaw integration: active config lists `openai/gpt-5.5` → `qwen-direct/qwen3.7-flash` → `deepseek-direct/deepseek-chat`; the recreated Gateway passed health, config validation, and controlled Qwen text smoke on 2026-08-14. Automatic image/audio/video understanding is disabled because the two reserves are text-only; manual Telegram UI media acceptance remains separate.
 - OpenClaw compaction reserve: `agents.defaults.compaction.reserveTokensFloor=20000` in the live Gateway config, added after the 2026-05-28 upgrade to keep long tool-heavy sessions recoverable.
 - Бенька model selection: rule-based heuristics in `workspace/AGENTS.md` — code/complex → smart, chat → medium, lightweight lookups/classification → light
 - auth: `REQUIRE_API_KEY` is redacted on the API port; dashboard password-protected; API key stored in `/opt/openclaw/.env`
@@ -362,6 +368,7 @@ During gateway cold starts or config-triggered restarts, `docker compose ps` can
 - content mix: `news` is selected toward a 30% target and capped at 35% when enough other allowlisted folders have scored candidates; if other folders are quiet, the cap expands so the digest can still fill from strong news posts
 - catalog: 18 folders, 499 dialogs, 426 broadcast channels recorded; 240 broadcast channels selected by current allowlist
 - bridge endpoints: `GET /health`, `GET /status`, `POST /trigger`
+- LLM route: recreated on 2026-08-14 with Qwen first and DeepSeek final reserve. Both server-side provider variables are present; `/health` passed inside the container. The HTTP port is intentionally not published to the host.
 - status: bridge running as `telethon-digest-cron-bridge`; job timing managed by host cron calling `/opt/telethon-digest/trigger-digest.sh`
 - current Telethon runtime: `Telethon 1.43.2`; this is required for the live session database schema with `tmp_auth_key`
 
@@ -388,10 +395,12 @@ During gateway cold starts or config-triggered restarts, `docker compose ps` can
   yuan alongside configured `юань` / `cny` / `yuan` keywords; this prevents a valid form such as
   `юане` from being silently dropped.
 - key env vars in `signals.env`:
+  - `DASHSCOPE_API_KEY` — Qwen primary for the internal and direct reserve chain (live value is ignored)
+  - `DEEPSEEK_API_KEY` — final LLM reserve (live value is ignored)
   - `OPENROUTER_API_KEY` — enables LLM planning/reranking in external last30days script (exits local_mode)
   - `LAST30DAYS_PLANNER_MODEL=google/gemini-2.5-flash-lite` — overrides default invalid model ID
   - `LAST30DAYS_RERANK_MODEL=google/gemini-2.5-flash-lite` — same for rerank step
   - `OMNIROUTE_API_KEY` — signals enrichment via internal OmniRoute
 - Last30Days source counts (typical run): `github:38, x:29, hn:6–12`
 - Last30Days posted themes per run: 10 (6 before HN companion pass was added)
-- status: running; Last30Days scheduled at 07:00 MSK, signals every 5 min
+- status: recreated on 2026-08-14; Qwen/DeepSeek-reserve variables and `/health` + `/status` passed. Last30Days is scheduled at 07:00 MSK, signals every 5 min.

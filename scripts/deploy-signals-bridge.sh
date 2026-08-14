@@ -109,6 +109,14 @@ PY
     fi
   fi
 
+  if ! sudo grep -Eq "^DASHSCOPE_API_KEY=.+" signals.env && sudo test -f /opt/openclaw/.env; then
+    key="$(sudo awk -F= "/^DASHSCOPE_API_KEY=/{print substr(\$0, length(\$1)+2)}" /opt/openclaw/.env | tail -n1)"
+    if [ -n "$key" ]; then
+      sudo sed -i "/^DASHSCOPE_API_KEY=/d" signals.env
+      printf "DASHSCOPE_API_KEY=%s\n" "$key" | sudo tee -a signals.env >/dev/null
+    fi
+  fi
+
   if ! sudo grep -Eq "^DEEPSEEK_API_KEY=.+" signals.env && sudo test -f /opt/openclaw/.env; then
     key="$(sudo awk -F= "/^DEEPSEEK_API_KEY=/{print substr(\$0, length(\$1)+2)}" /opt/openclaw/.env | tail -n1)"
     if [ -n "$key" ]; then
@@ -158,7 +166,7 @@ Signals bridge deployed.
 
 Cadence:
   - internal scheduler every 5 minutes
-  - enrichment route: OpenClaw/OpenAI -> OmniRoute light -> DeepSeek -> local
+  - enrichment route: OpenClaw/OpenAI -> OmniRoute light -> Qwen -> DeepSeek -> local
 
 Useful commands:
   ssh -i "$SSH_KEY" "$OPENCLAW_HOST" 'cd /opt/signals-bridge && sudo docker compose logs --tail=100 signals-bridge'

@@ -28,6 +28,7 @@ This folder is intended to become a safe operational repository, but only after 
 - certificate passwords
 - tokenized access URLs
 - private keys, PEMs, and ad hoc token files
+- provider secrets such as `DASHSCOPE_API_KEY` and `DEEPSEEK_API_KEY`
 
 ## Existing protections in this folder
 

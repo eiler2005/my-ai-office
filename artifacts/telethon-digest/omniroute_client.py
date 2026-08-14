@@ -27,6 +27,14 @@ OPENCLAW_FALLBACK_SESSION_PREFIX = os.environ.get(
     "agent:main:telethon-digest-openai-fallback",
 ).strip()
 
+QWEN_API_KEY = os.environ.get("DASHSCOPE_API_KEY", "").strip()
+QWEN_URL = os.environ.get(
+    "QWEN_URL",
+    "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions",
+).strip()
+QWEN_MODEL = os.environ.get("QWEN_MODEL", "qwen3.7-flash").strip() or "qwen3.7-flash"
+QWEN_TIMEOUT_SECONDS = int(os.environ.get("QWEN_TIMEOUT_SECONDS", "120") or 120)
+
 DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "").strip()
 DEEPSEEK_URL = os.environ.get("DEEPSEEK_URL", "https://api.deepseek.com/chat/completions").strip()
 DEEPSEEK_MODEL = os.environ.get("DEEPSEEK_MODEL", "deepseek-v4-flash").strip() or "deepseek-v4-flash"
@@ -161,6 +169,12 @@ async def call_chat_completion(
     except Exception as exc:
         route_errors.append(f"omniroute: {exc}")
 
+    if QWEN_API_KEY:
+        try:
+            return await _call_qwen_fallback(session, payload, default_model=default_model)
+        except Exception as exc:
+            route_errors.append(f"qwen: {exc}")
+
     if DEEPSEEK_API_KEY:
         try:
             return await _call_deepseek_fallback(session, payload, default_model=default_model)
@@ -277,5 +291,30 @@ async def _call_deepseek_fallback(
     ) as resp:
         resp.raise_for_status()
         completion = await read_completion(resp, default_model=DEEPSEEK_MODEL or default_model)
+    completion.provider_fallback = True
+    return completion
+
+
+async def _call_qwen_fallback(
+    session: aiohttp.ClientSession,
+    payload: dict[str, Any],
+    *,
+    default_model: str,
+) -> LLMCompletion:
+    qwen_payload = dict(payload)
+    qwen_payload["model"] = QWEN_MODEL
+    qwen_payload["enable_thinking"] = False
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {QWEN_API_KEY}",
+    }
+    async with session.post(
+        QWEN_URL,
+        json=qwen_payload,
+        headers=headers,
+        timeout=aiohttp.ClientTimeout(total=QWEN_TIMEOUT_SECONDS),
+    ) as resp:
+        resp.raise_for_status()
+        completion = await read_completion(resp, default_model=QWEN_MODEL or default_model)
     completion.provider_fallback = True
     return completion

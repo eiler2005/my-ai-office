@@ -81,6 +81,13 @@ PY
       printf "OMNIROUTE_API_KEY=%s\n" "$key" | sudo tee -a telethon.env >/dev/null
     fi
   fi
+  if ! sudo grep -Eq "^DASHSCOPE_API_KEY=.+" telethon.env && sudo test -f /opt/openclaw/.env; then
+    key="$(sudo awk -F= "/^DASHSCOPE_API_KEY=/{print substr(\$0, length(\$1)+2)}" /opt/openclaw/.env | tail -n1)"
+    if [ -n "$key" ]; then
+      sudo sed -i "/^DASHSCOPE_API_KEY=/d" telethon.env
+      printf "DASHSCOPE_API_KEY=%s\n" "$key" | sudo tee -a telethon.env >/dev/null
+    fi
+  fi
   if ! sudo grep -Eq "^DEEPSEEK_API_KEY=.+" telethon.env && sudo test -f /opt/openclaw/.env; then
     key="$(sudo awk -F= "/^DEEPSEEK_API_KEY=/{print substr(\$0, length(\$1)+2)}" /opt/openclaw/.env | tail -n1)"
     if [ -n "$key" ]; then

@@ -1,10 +1,6 @@
 #!/usr/bin/env bash
-# Register the server-side DeepSeek API key inside OmniRoute and add it as the
-# final LLM reserve for the `light` combo after Qwen.
-#
-# This does not make DeepSeek an embeddings provider. DeepSeek currently has no
-# /embeddings-compatible endpoint, so LightRAG retrieval still needs a funded
-# Gemini/OpenRouter/OpenAI embeddings route.
+# Register the server-side DashScope API key as Qwen in OmniRoute and make it
+# the primary model for the `light` combo. DeepSeek remains the final reserve.
 
 set -euo pipefail
 
@@ -23,7 +19,7 @@ if [[ -z "$OPENCLAW_HOST" ]]; then
   exit 1
 fi
 
-echo "Syncing DeepSeek provider into OmniRoute on ${OPENCLAW_HOST}..."
+echo "Syncing Qwen DashScope provider into OmniRoute on ${OPENCLAW_HOST}..."
 
 ssh "${SSH_OPTS[@]}" "$OPENCLAW_HOST" \
   'sudo docker exec -i omniroute sh -lc "cd /app && node -"' <<'JS'
@@ -33,16 +29,16 @@ import fs from "node:fs";
 
 const { encrypt } = await import("./src/lib/db/encryption.ts");
 
-const key = process.env.DEEPSEEK_API_KEY;
+const key = process.env.DASHSCOPE_API_KEY;
 if (!key) {
-  throw new Error("DEEPSEEK_API_KEY is not set in the omniroute container env");
+  throw new Error("DASHSCOPE_API_KEY is not set in the omniroute container env");
 }
 
 const dbPath = "/app/data/storage.sqlite";
 const backupDir = "/app/data/db_backups";
 fs.mkdirSync(backupDir, { recursive: true });
 const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-const backupPath = `${backupDir}/db_${stamp}_pre-deepseek-provider.sqlite`;
+const backupPath = `${backupDir}/db_${stamp}_pre-qwen-provider.sqlite`;
 fs.copyFileSync(dbPath, backupPath);
 
 const db = new Database(dbPath);
@@ -51,7 +47,7 @@ const encryptedKey = encrypt(key);
 
 const existing = db
   .prepare("select id from provider_connections where provider = ? order by priority limit 1")
-  .get("deepseek");
+  .get("alibaba");
 
 let action = "inserted";
 if (existing) {
@@ -76,7 +72,7 @@ if (existing) {
     insert into provider_connections (
       id, provider, auth_type, name, priority, is_active, test_status,
       api_key, created_at, updated_at
-    ) values (?, 'deepseek', 'apikey', 'DeepSeek reserve', 1, 1, 'active', ?, ?, ?)
+    ) values (?, 'alibaba', 'apikey', 'Qwen DashScope primary', 1, 1, 'active', ?, ?, ?)
   `).run(randomUUID(), encryptedKey, now, now);
 }
 
@@ -84,12 +80,16 @@ const combo = db.prepare("select id, data from combos where name = ?").get("ligh
 let comboUpdated = false;
 if (combo) {
   const data = JSON.parse(combo.data || "{}");
+  const qwenModel = "alibaba/qwen3.7-flash";
+  const deepseekModel = "deepseek/deepseek-chat";
   const models = Array.isArray(data.models) ? data.models : [];
-  if (!models.includes("deepseek/deepseek-chat")) {
-    models.push("deepseek/deepseek-chat");
-    comboUpdated = true;
-  }
-  data.models = models;
+  const reordered = [
+    qwenModel,
+    ...models.filter((model) => model !== qwenModel && model !== deepseekModel),
+    deepseekModel,
+  ];
+  comboUpdated = JSON.stringify(models) !== JSON.stringify(reordered);
+  data.models = reordered;
   data.updatedAt = now;
   db.prepare("update combos set data = ?, updated_at = ? where id = ?").run(
     JSON.stringify(data),
@@ -100,8 +100,9 @@ if (combo) {
 
 console.log(JSON.stringify({
   ok: true,
-  provider: "deepseek",
+  provider: "alibaba",
   action,
+  light_combo_qwen_primary: true,
   light_combo_deepseek_reserve: true,
   combo_updated: comboUpdated,
   backup: backupPath.split("/").pop(),

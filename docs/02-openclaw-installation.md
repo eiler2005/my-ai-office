@@ -105,8 +105,8 @@ this list is not implicitly approved for deployment.
 - gateway auth mode: `token`
 - trusted proxies: localhost and Docker bridge
 - builtin memorySearch: disabled while external embedding limits are unstable; retrieval should use LightRAG once its embedding provider is healthy
-- model routing: `openai/gpt-5.5` primary, `deepseek-direct/deepseek-chat` direct fallback. The
-  OpenAI provider is pinned to ChatGPT/Codex OAuth transport
+- model routing: active Gateway config uses `openai/gpt-5.5` primary with `qwen-direct/qwen3.7-flash` then `deepseek-direct/deepseek-chat` as direct fallbacks. On 2026-08-14 the exact derived image was rebuilt from its pinned base and compatibility Dockerfile; Gateway health, configuration validation, and controlled Qwen text smoke passed. Automatic image/audio/video understanding is disabled for the text-only reserves; a manual Telegram UI media retest remains separate. The
+  OpenAI provider remains pinned to ChatGPT/Codex OAuth transport
   (`https://chatgpt.com/backend-api/codex`, `openai-chatgpt-responses`) so `gpt-5.5` uses the
   restored OAuth profile instead of the direct OpenAI Platform API-key path.
 - Telegram Bot API ingress: isolated polling is disabled in the derived hotfix image with

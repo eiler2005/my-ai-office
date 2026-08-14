@@ -137,16 +137,21 @@ when UDP/123 is available again.
 
 ## OpenAI Codex auth recovery
 
-Current live policy: OpenAI via OpenClaw remains the intended normal route. The Gateway primary route
-is `openai/gpt-5.5`, with `deepseek-direct/deepseek-chat` as the direct reserve. `deepseek-direct` is
-a custom OpenAI-compatible provider that uses the bare DeepSeek model id and an env SecretRef for
-`DEEPSEEK_API_KEY`.
+Current intended policy is OpenAI via OpenClaw as the normal route, then
+`qwen-direct/qwen3.7-flash`, then `deepseek-direct/deepseek-chat`. The server
+config was updated to that order on 2026-08-14 using the DashScope
+OpenAI-compatible endpoint and `DASHSCOPE_API_KEY` env SecretRef. Gateway
+was rebuilt from its pinned compatibility Dockerfile, then passed `/healthz`,
+config validation, and an explicit Qwen text-route smoke. Automatic
+image/audio/video understanding is disabled for the text-only Qwen/DeepSeek
+reserves. A manual Telegram UI media retest remains separate from these
+non-delivery checks.
 
 Do not switch the global primary route to DeepSeek as a cooldown workaround. If OpenAI reports a
 Codex subscription cooldown such as `You've reached your Codex subscription usage limit`, the intended
-behavior is still `openai/gpt-5.5` primary with the configured DeepSeek reserve handling the failed
-turn. Changing `agents.defaults.model.primary` masks the fallback defect and makes later default-route
-smokes less useful.
+behavior is still `openai/gpt-5.5` primary with Qwen then DeepSeek handling a failed turn. Changing
+`agents.defaults.model.primary` masks the fallback defect and makes later default-route smokes less
+useful.
 
 Do not put `omniroute/light` in the interactive Gateway fallback chain: after the 2026.6.1 upgrade it
 could return `Cannot continue from message role: assistant` after compaction retries, while DeepSeek
@@ -259,6 +264,7 @@ ssh -i ~/.ssh/id_rsa "$OPENCLAW_HOST" '
   cd /opt/openclaw &&
   sudo docker compose exec -T openclaw-gateway sh -lc "
     openclaw models status --probe --probe-provider openai &&
+    openclaw models status --probe --probe-provider qwen-direct &&
     openclaw models status --probe --probe-provider deepseek-direct &&
     openclaw config get agents.defaults.model --json
   "
@@ -270,11 +276,13 @@ Expected essentials:
 ```text
 Auth probes
 - openai/gpt-5.5 ... openai:default ... ok
+- qwen-direct/qwen3.7-flash ... ok
 - deepseek-direct/deepseek-chat ... ok
 
 Model policy
 - primary: openai/gpt-5.5
-- fallback: deepseek-direct/deepseek-chat
+- fallback: qwen-direct/qwen3.7-flash
+- final reserve: deepseek-direct/deepseek-chat
 ```
 
 Finish with a real default-route agent smoke and require `fallbackAttempts=0` before treating the
@@ -527,7 +535,9 @@ Current live status after the 2026-05-31 recovery:
 - The embedding model is `local/hash-embedding-3072` through `http://wiki-import:8095/v1`, with
   `EMBEDDING_DIM=3072`.
 - LightRAG LLM extraction currently uses direct DeepSeek (`deepseek-chat`) because OmniRoute `light`
-  returned `api_bridge_timeout` during document extraction.
+  returned `api_bridge_timeout` during document extraction. OmniRoute `light` was switched to Qwen
+  first with DeepSeek final reserve on 2026-08-14, but LightRAG itself remains direct DeepSeek until
+  a dedicated Qwen-first extraction smoke passes.
 - The Codex/OpenAI subscription fallback works for Gateway chat responses, but it does not provide a
   usable API embeddings route for LightRAG. DeepSeek is an LLM reserve only.
 
@@ -1294,7 +1304,8 @@ launchctl unload ~/Library/LaunchAgents/com.openclaw.obsidian-sync.plist
 Telethon Digest reads Denis's Telegram subscriptions via Telethon and posts structured
 digests to the configured supergroup topic using the OpenClaw Telegram bot token.
 LLM summarization and dedup use OpenClaw/OpenAI first, then OmniRoute
-(`http://omniroute:20129/v1`), then DeepSeek as final reserve, before local deterministic fallback.
+(`http://omniroute:20129/v1`), then Qwen, then DeepSeek as final reserve, before local deterministic
+fallback.
 
 **Scheduling:** host cron triggers one-shot runs at
 `08:00, 11:00, 14:00, 17:00, 21:00 MSK` by calling
@@ -1411,9 +1422,12 @@ server uses a dedicated ops agent. The sync script reads existing jobs from
 
 **Bridge diagnostics:**
 
+The bridge listens on its container-only `:8091` port; it is not published to
+the host. Run the check inside the container instead:
+
 ```bash
 ssh -i ~/.ssh/id_rsa "$OPENCLAW_HOST" \
-  'curl -s http://127.0.0.1:8091/health && echo && curl -s http://127.0.0.1:8091/status'
+  'sudo docker exec telethon-digest-cron-bridge python -c '\''import urllib.request; print(urllib.request.urlopen("http://127.0.0.1:8091/health", timeout=5).read().decode())'\'''
 ```
 
 - `GET /health` — quick liveness + last run snapshot
@@ -1793,7 +1807,7 @@ Use this after migrating away from the old embedded-runtime design or after repe
 Signals Bridge polls allowlisted email + Telegram sources every 5 minutes through its own internal
 Python scheduler and publishes compact mini-batches into the `signals` topic. This service does not
 use OpenClaw Cron Jobs. LLM enrichment uses OpenClaw/OpenAI first, then cheap `OmniRoute light`,
-then DeepSeek as final reserve, with local rule-based summaries only after all model routes fail.
+then Qwen, then DeepSeek as final reserve, with local rule-based summaries only after all model routes fail.
 
 Delivery format:
 
@@ -1831,6 +1845,7 @@ Required local keys:
 Recommended local keys:
 
 - `OMNIROUTE_API_KEY`
+- `DASHSCOPE_API_KEY` (Qwen direct reserve)
 - `TELEGRAM_BOT_TOKEN` if you do not want the deploy script to hydrate it from `/opt/openclaw/.env`
 
 The deploy script:
@@ -1841,6 +1856,7 @@ The deploy script:
 - syncs local `secrets/signals-bridge/rules/*.json`
 - hydrates `TELEGRAM_BOT_TOKEN` from `/opt/openclaw/.env` when missing
 - hydrates `OMNIROUTE_API_KEY` from `/opt/openclaw/.env` when missing
+- hydrates `DASHSCOPE_API_KEY` from `/opt/openclaw/.env` when missing
 - generates `SIGNALS_BRIDGE_TOKEN` when missing
 - keeps the bridge standalone; there is no OpenClaw cron-store sync step
 - rebuilds the lightweight Python `signals-bridge`
@@ -1862,7 +1878,7 @@ Architecture note:
 - a stale source resumes automatically only over its normal overlap window; any wider recovery is an
   explicit source-only run with `lookback_minutes`, preventing an outage restart from replaying history
 - AgentMail and Telethon reads happen inside the bridge itself
-- LLM enrichment for already matched candidates is `OpenClaw/OpenAI -> OmniRoute light -> DeepSeek`
+- LLM enrichment for already matched candidates is `OpenClaw/OpenAI -> OmniRoute light -> Qwen -> DeepSeek`
 - if all model routes are unavailable, the bridge falls back to local rule-based summaries and can still post
 
 ### Bridge diagnostics

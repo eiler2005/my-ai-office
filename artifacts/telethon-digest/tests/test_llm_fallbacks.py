@@ -137,8 +137,10 @@ class LlmFallbackTests(unittest.TestCase):
     def test_deepseek_runs_after_openclaw_and_omniroute_failure(self) -> None:
         calls: list[str] = []
         original_openclaw = omniroute_client._call_openclaw_fallback
+        original_qwen = omniroute_client._call_qwen_fallback
         original_deepseek = omniroute_client._call_deepseek_fallback
         original_enabled = omniroute_client.OPENCLAW_FALLBACK_ENABLED
+        original_qwen_key = omniroute_client.QWEN_API_KEY
         original_deepseek_key = omniroute_client.DEEPSEEK_API_KEY
 
         def fake_openclaw(payload, *, default_model):
@@ -149,10 +151,16 @@ class LlmFallbackTests(unittest.TestCase):
             calls.append("deepseek")
             return LLMCompletion(text='{"ok": true}', model_id="deepseek-v4-flash", provider_fallback=True)
 
+        async def fake_qwen(session, payload, *, default_model):
+            calls.append("qwen")
+            raise AssertionError("qwen should be disabled for this final-reserve test")
+
         try:
             omniroute_client.OPENCLAW_FALLBACK_ENABLED = True
+            omniroute_client.QWEN_API_KEY = ""
             omniroute_client.DEEPSEEK_API_KEY = "test-key"
             omniroute_client._call_openclaw_fallback = fake_openclaw
+            omniroute_client._call_qwen_fallback = fake_qwen
             omniroute_client._call_deepseek_fallback = fake_deepseek
 
             completion = asyncio.run(
@@ -167,13 +175,66 @@ class LlmFallbackTests(unittest.TestCase):
             )
         finally:
             omniroute_client._call_openclaw_fallback = original_openclaw
+            omniroute_client._call_qwen_fallback = original_qwen
             omniroute_client._call_deepseek_fallback = original_deepseek
             omniroute_client.OPENCLAW_FALLBACK_ENABLED = original_enabled
+            omniroute_client.QWEN_API_KEY = original_qwen_key
             omniroute_client.DEEPSEEK_API_KEY = original_deepseek_key
 
         self.assertEqual(calls, ["openclaw", "omniroute", "deepseek"])
         self.assertTrue(completion.provider_fallback)
         self.assertEqual(completion.model_id, "deepseek-v4-flash")
+
+    def test_qwen_runs_after_openclaw_and_omniroute_failure_before_deepseek(self) -> None:
+        calls: list[str] = []
+        original_openclaw = omniroute_client._call_openclaw_fallback
+        original_qwen = omniroute_client._call_qwen_fallback
+        original_deepseek = omniroute_client._call_deepseek_fallback
+        original_enabled = omniroute_client.OPENCLAW_FALLBACK_ENABLED
+        original_qwen_key = omniroute_client.QWEN_API_KEY
+        original_deepseek_key = omniroute_client.DEEPSEEK_API_KEY
+
+        def fake_openclaw(payload, *, default_model):
+            calls.append("openclaw")
+            raise RuntimeError("openclaw unavailable")
+
+        async def fake_qwen(session, payload, *, default_model):
+            calls.append("qwen")
+            return LLMCompletion(text='{"ok": true}', model_id="qwen3.7-flash", provider_fallback=True)
+
+        async def fake_deepseek(session, payload, *, default_model):
+            calls.append("deepseek")
+            raise AssertionError("deepseek must remain the last reserve")
+
+        try:
+            omniroute_client.OPENCLAW_FALLBACK_ENABLED = True
+            omniroute_client.QWEN_API_KEY = "test-key"
+            omniroute_client.DEEPSEEK_API_KEY = "reserve-key"
+            omniroute_client._call_openclaw_fallback = fake_openclaw
+            omniroute_client._call_qwen_fallback = fake_qwen
+            omniroute_client._call_deepseek_fallback = fake_deepseek
+
+            completion = asyncio.run(
+                omniroute_client.call_chat_completion(
+                    FailingSession(calls),
+                    url="http://omniroute:20129/v1",
+                    api_key="test",
+                    payload={"messages": [{"role": "user", "content": "return json"}]},
+                    timeout_seconds=1,
+                    default_model="light",
+                )
+            )
+        finally:
+            omniroute_client._call_openclaw_fallback = original_openclaw
+            omniroute_client._call_qwen_fallback = original_qwen
+            omniroute_client._call_deepseek_fallback = original_deepseek
+            omniroute_client.OPENCLAW_FALLBACK_ENABLED = original_enabled
+            omniroute_client.QWEN_API_KEY = original_qwen_key
+            omniroute_client.DEEPSEEK_API_KEY = original_deepseek_key
+
+        self.assertEqual(calls, ["openclaw", "omniroute", "qwen"])
+        self.assertTrue(completion.provider_fallback)
+        self.assertEqual(completion.model_id, "qwen3.7-flash")
 
 
 if __name__ == "__main__":

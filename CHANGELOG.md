@@ -9,6 +9,31 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- **Qwen-first staged rollout (2026-08-14):** transferred the DashScope
+  credential only between ignored server-side environments, then applied Qwen
+  `qwen3.7-flash` before DeepSeek to OmniRoute `light`, Signals Bridge, and
+  Telethon Digest. Controlled Qwen smoke requests and the bridge health checks
+  passed; DeepSeek remains the final LLM reserve and deterministic fallbacks
+  remain intact. No secret value or Telegram message was emitted by the checks.
+
+- **Gateway image recovery and Qwen activation:** rebuilt the expected derived
+  Gateway image locally from the pinned upstream base plus the tracked
+  compatibility Dockerfile, then recreated only the Gateway. `/healthz`, config
+  validation, and a controlled `qwen-direct/qwen3.7-flash` text smoke passed;
+  Qwen precedes DeepSeek in the active direct fallback order. A manual Telegram
+  UI media retest remains a separate acceptance gate. LightRAG remains on its
+  direct-DeepSeek extraction route until a separate extraction smoke passes.
+
+- **Media-safe text fallback:** disabled automatic image, audio, and video
+  understanding in Gateway `tools.media`. Qwen and DeepSeek are declared
+  text-only reserves, so a primary vision failure cannot create a misleading
+  `Image: Analyze ...` request through the Qwen route; the user instead needs a
+  working vision primary or a text clarification.
+
+- **LLM provider map:** added docs/24-llm-provider-map.md as the canonical
+  inventory of model routes, sanitized credential names, cost controls, and
+  a reversible migration procedure for every LLM workload.
+
 - **Shared VPS incident contract**: documented the routing/host/OpenClaw
   ownership boundary, Docker boot-order evidence, OOM separation, safe
   read-only triage and redaction requirements for cross-project incidents.

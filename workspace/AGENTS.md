@@ -27,8 +27,8 @@
 ## Выбор модели по сложности задачи
 
 Основной диалог с Денисом идёт через OpenClaw; текущий основной маршрут — OpenAI Codex `openai/gpt-5.5`.
-OmniRoute `light` используется как первый резерв, если OpenAI недоступен; DeepSeek — последний резерв,
-если отказали и OpenAI, и OmniRoute/OpenRouter. OmniRoute (`http://omniroute:20129/v1`) также используется
+Qwen — первый прямой текстовый резерв, а DeepSeek — последний текстовый резерв,
+если отказали OpenAI, OmniRoute/OpenRouter и Qwen. OmniRoute (`http://omniroute:20129/v1`) также используется
 для делегирования подзадач и для LightRAG LLM extraction.
 
 ### Тиры и критерии
@@ -46,7 +46,7 @@ OmniRoute `light` используется как первый резерв, е�
 3. Требует архитектурного решения или trade-off анализа → **smart**
 4. Обычный диалог, Q&A, суммаризация → **medium**
 5. Классификация, извлечение данных, форматирование → **light**
-6. Вспомогательные LightRAG lookups/классификация → **light**; индексация LightRAG сейчас идёт через OmniRoute `light` для LLM, DeepSeek как резерв за OmniRoute, и прямой Gemini для embeddings
+6. Вспомогательные LightRAG lookups/классификация → **light**; после деплоя индексация LightRAG идёт через OmniRoute `light` для LLM, Qwen первым и DeepSeek резервом, и прямой Gemini для embeddings
 
 Отдельно:
 - `Ideas` queue / promotion, `Knowledgebase` save, короткие Telegram workflow-команды → **medium**
@@ -68,8 +68,15 @@ API ключ: переменная `OMNIROUTE_API_KEY` в окружении Ope
 
 - Не вызывать `smart` для тривиальных вопросов — расточительство квоты
 - Не вызывать `smart` для listing / confirmation / promotion workflow в Telegram, если не нужен глубокий анализ
-- Не обращаться к DeepSeek, пока работают OpenAI Codex или OmniRoute/OpenRouter
+- Не обращаться к DeepSeek, пока работают OpenAI Codex, OmniRoute/OpenRouter или Qwen
 - Не вызывать OmniRoute если достаточно собственных знаний без HTTP вызова
+- Qwen и DeepSeek в этом Gateway объявлены text-only. Автоматическое распознавание
+  изображений, аудио и видео выключено: не пытаться описывать вложение через
+  текстовый fallback и не выдавать сырой `Image: Analyze ... failed`.
+- Если текущий маршрут не может реально прочитать вложение, кратко сказать, что
+  анализ медиа сейчас недоступен, и попросить прислать текстовое описание либо
+  повторить запрос после восстановления vision-маршрута. Не притворяться, что
+  изображение, аудио или видео было проанализировано.
 
 ## Подпись сообщения (footer)
 
@@ -207,7 +214,7 @@ embeddings-маршрут требует оплаченной квоты/credent
 `python3 /home/node/.openclaw/workspace/bin/wiki_import_tool.py trigger` с JSON payload из `TOOLS.md`.
 Не запускать из Telegram-контекста дополнительные infra-debug команды и не публиковать сырой вывод
 (`getent hosts`, `curl`, `docker`, stack trace, `(agent) failed`) отдельным сообщением после успешного
-сохранения. Для LightRAG/wiki API-only LLM задач маршрут: OmniRoute first, затем DeepSeek API fallback.
+сохранения. Для LightRAG/wiki API-only LLM задач после деплоя маршрут: OmniRoute first, затем Qwen, затем DeepSeek API fallback.
 DeepSeek допустим только как LLM-резерв, но не как embeddings fallback.
 
 ```
