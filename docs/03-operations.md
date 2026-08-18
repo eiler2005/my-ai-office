@@ -1308,8 +1308,9 @@ LLM summarization and dedup use OpenClaw/OpenAI first, then OmniRoute
 fallback.
 
 **Scheduling:** host cron triggers one-shot runs at
-`08:00, 11:00, 14:00, 17:00, 21:00 MSK` by calling
-`/opt/telethon-digest/trigger-digest.sh`. No long-running digest worker daemon.
+`08:00, 11:00, 14:00, 17:00, 21:00 MSK` through
+`/bin/bash /opt/telethon-digest/trigger-digest.sh`. This keeps delivery independent
+of the script executable bit. No long-running digest worker daemon.
 The always-on `telethon-digest-cron-bridge` consumes the Redis job and runs the
 worker. OpenClaw Telethon agent-turn cron jobs are disabled on the live server
 because the 2026.5.x lightweight cron context can report `ok` while refusing the
@@ -1336,11 +1337,11 @@ legacy Telethon Digest OpenClaw cron jobs if they are still present.
 
 **Managed host cron slots:**
 
-- `0 5 * * *` UTC → `trigger-digest.sh morning 8 0`
-- `0 8 * * *` UTC → `trigger-digest.sh interval 11 0`
-- `0 11 * * *` UTC → `trigger-digest.sh interval 14 0`
-- `0 14 * * *` UTC → `trigger-digest.sh interval 17 0`
-- `0 18 * * *` UTC → `trigger-digest.sh editorial 21 0`
+- `0 5 * * *` UTC → `/bin/bash /opt/telethon-digest/trigger-digest.sh morning 8 0`
+- `0 8 * * *` UTC → `/bin/bash /opt/telethon-digest/trigger-digest.sh interval 11 0`
+- `0 11 * * *` UTC → `/bin/bash /opt/telethon-digest/trigger-digest.sh interval 14 0`
+- `0 14 * * *` UTC → `/bin/bash /opt/telethon-digest/trigger-digest.sh interval 17 0`
+- `0 18 * * *` UTC → `/bin/bash /opt/telethon-digest/trigger-digest.sh editorial 21 0`
 
 Each cron slot sends one authenticated HTTP trigger to `telethon-digest-cron-bridge`
 from inside the bridge container. The bridge then runs `python digest_worker.py --now`

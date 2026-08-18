@@ -7,6 +7,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- **Telegram Digest scheduled delivery:** host cron now invokes
+  `trigger-digest.sh` through `/bin/bash`, so a source sync that restores the
+  tracked non-executable file mode cannot silently stop digest triggers.
+
 ### Changed
 
 - **Qwen-first staged rollout (2026-08-14):** transferred the DashScope
