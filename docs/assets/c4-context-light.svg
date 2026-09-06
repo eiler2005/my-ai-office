@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="660" viewBox="0 0 1180 660" role="img" aria-labelledby="t d">
+  <title id="t">System context: My AI Office</title>
+  <desc id="d">C4 level 1. Denis interacts with My AI Office, which reads approved mail, Telegram and research sources, calls external model providers, and publishes briefings back into Telegram.</desc>
+  <defs>
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M32 0H0V32" fill="none" stroke="#2c6070" stroke-opacity=".05"/>
+    </pattern>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 10 5 0 10z" fill="#7b98a3"/>
+    </marker>
+    <marker id="ara" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 10 5 0 10z" fill="#0f7d6b"/>
+    </marker>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 10 5 0 10z" fill="#a4472c"/>
+    </marker>
+    <marker id="arb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 10 5 0 10z" fill="#2f5fa4"/>
+    </marker>
+    <marker id="arm" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 10 5 0 10z" fill="#8a6011"/>
+    </marker>
+  </defs>
+  <rect width="1180" height="660" rx="14" fill="#f6fafb"/>
+  <rect width="1180" height="660" rx="14" fill="url(#grid)"/>
+  <g font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">    <text x="40" y="44" fill="#0f7d6b" font-size="11.5" font-weight="600" letter-spacing="2.2">C4 LEVEL 1 · SYSTEM CONTEXT</text>
+    <text x="40" y="71" fill="#0e222c" font-size="21" font-weight="700">My AI Office</text>
+    <text x="40" y="98" text-anchor="start" fill="#5f7d89" font-size="11">Who uses it, what it reads, and what it depends on.</text>
+    <rect x="415" y="266" width="350" height="128" rx="12" fill="#e2f5f1" stroke="#0f7d6b" stroke-width="2"/>
+    <text x="590" y="300" text-anchor="middle" fill="#0f7d6b" font-size="10.5">SOFTWARE SYSTEM</text>
+    <text x="590" y="333" text-anchor="middle" fill="#0e222c" font-size="22" font-weight="700">My AI Office</text>
+    <text x="590" y="356" text-anchor="middle" fill="#476470" font-size="12">Self-hosted agent, workers, knowledge base</text>
+    <text x="590" y="375" text-anchor="middle" fill="#476470" font-size="12">One private VPS · 13 containers</text>
+    <circle cx="140" cy="284" r="15" fill="#e2f5f1" stroke="#0f7d6b" stroke-width="1.6"/>
+    <path d="M118 326a22 22 0 0 1 44 0" fill="#e2f5f1" stroke="#0f7d6b" stroke-width="1.6"/>
+    <text x="140" y="348" text-anchor="middle" fill="#0e222c" font-size="14" font-weight="600">Denis</text>
+    <text x="140" y="365" text-anchor="middle" fill="#476470" font-size="11.5">Owner and operator</text>
+    <rect x="40" y="452" width="300" height="92" rx="9" fill="#e8f0fb" stroke="#8fb2dd" stroke-width="1.4"/>
+    <text x="54" y="474" fill="#2f5fa4" font-size="10.5" font-weight="600" letter-spacing="1.4">INTERFACE + SOURCE</text>
+    <text x="54" y="495" fill="#0e222c" font-size="15" font-weight="600">Telegram</text>
+    <text x="54" y="513" fill="#476470" font-size="11.5">Bot DM, forum topics, MTProto session</text>
+    <text x="54" y="528" fill="#476470" font-size="11.5">~150–200 followed channels</text>
+    <rect x="370" y="452" width="240" height="92" rx="9" fill="#e8f0fb" stroke="#8fb2dd" stroke-width="1.4"/>
+    <text x="384" y="474" fill="#2f5fa4" font-size="10.5" font-weight="600" letter-spacing="1.4">SOURCE</text>
+    <text x="384" y="495" fill="#0e222c" font-size="15" font-weight="600">AgentMail</text>
+    <text x="384" y="513" fill="#476470" font-size="11.5">Personal mailbox</text>
+    <text x="384" y="528" fill="#476470" font-size="11.5">Work mailbox</text>
+    <rect x="640" y="452" width="300" height="92" rx="9" fill="#e8f0fb" stroke="#8fb2dd" stroke-width="1.4"/>
+    <text x="654" y="474" fill="#2f5fa4" font-size="10.5" font-weight="600" letter-spacing="1.4">SOURCE</text>
+    <text x="654" y="495" fill="#0e222c" font-size="15" font-weight="600">Research platforms</text>
+    <text x="654" y="513" fill="#476470" font-size="11.5">Reddit · Hacker News · GitHub · X</text>
+    <text x="654" y="528" fill="#476470" font-size="11.5">Bluesky · YouTube · Polymarket · web</text>
+    <rect x="840" y="150" width="300" height="96" rx="9" fill="#fbf1de" stroke="#d9b878" stroke-width="1.4"/>
+    <text x="854" y="172" fill="#8a6011" font-size="10.5" font-weight="600" letter-spacing="1.4">DEPENDENCY</text>
+    <text x="854" y="193" fill="#0e222c" font-size="15" font-weight="600">Model providers</text>
+    <text x="854" y="211" fill="#476470" font-size="11.5">OpenAI — primary interactive route</text>
+    <text x="854" y="226" fill="#476470" font-size="11.5">Qwen, DeepSeek — fallback chain</text>
+    <rect x="40" y="150" width="300" height="96" rx="9" fill="#fbf1de" stroke="#d9b878" stroke-width="1.4"/>
+    <text x="54" y="172" fill="#8a6011" font-size="10.5" font-weight="600" letter-spacing="1.4">DEPENDENCY</text>
+    <text x="54" y="193" fill="#0e222c" font-size="15" font-weight="600">Obsidian vault on the Mac</text>
+    <text x="54" y="211" fill="#476470" font-size="11.5">Syncthing, bidirectional</text>
+    <text x="54" y="226" fill="#476470" font-size="11.5">The wiki the owner can edit by hand</text>
+    <rect x="970" y="452" width="170" height="92" rx="9" fill="#ffffff" stroke="#b4cbd3" stroke-width="1.4"/>
+    <text x="984" y="474" fill="#476470" font-size="10.5" font-weight="600" letter-spacing="1.4">OPERATOR</text>
+    <text x="984" y="495" fill="#0e222c" font-size="15" font-weight="600">Dashboard</text>
+    <text x="984" y="513" fill="#476470" font-size="11.5">Caddy, TLS + mTLS</text>
+    <text x="984" y="528" fill="#476470" font-size="11.5">Hermes auth</text>
+    <path d="M182 292H405" fill="none" stroke="#0f7d6b" stroke-width="1.6" marker-end="url(#ara)"/>
+    <text x="295" y="283" text-anchor="middle" fill="#0f7d6b" font-size="11">asks, saves, decides</text>
+    <path d="M405 340H182" fill="none" stroke="#0f7d6b" stroke-width="1.6" marker-end="url(#ara)"/>
+    <text x="295" y="361" text-anchor="middle" fill="#0f7d6b" font-size="11">briefings, alerts, answers</text>
+    <path d="M190 246V266H415" fill="none" stroke="#8a6011" stroke-width="1.6" marker-end="url(#arm)" marker-start="url(#arm)"/>
+    <path d="M840 198H765V266" fill="none" stroke="#7b98a3" stroke-width="1.6" marker-end="url(#ar)"/>
+    <text x="806" y="190" text-anchor="middle" fill="#5f7d89" font-size="11">bounded calls</text>
+    <path d="M190 452V420H415V394" fill="none" stroke="#7b98a3" stroke-width="1.6" marker-end="url(#ar)"/>
+    <path d="M490 452V394" fill="none" stroke="#7b98a3" stroke-width="1.6" marker-end="url(#ar)"/>
+    <path d="M790 452V420H700V394" fill="none" stroke="#7b98a3" stroke-width="1.6" marker-end="url(#ar)"/>
+    <path d="M1010 452V420H765V394" fill="none" stroke="#7b98a3" stroke-width="1.6" stroke-dasharray="5 5" marker-end="url(#ar)"/>
+    <path d="M40 596H1140" stroke="#cadbe1"/>
+    <text x="40" y="624" text-anchor="start" fill="#5f7d89" font-size="11">Solid: data flows continuously.   Dashed: on demand or on a schedule.</text>
+    <text x="1140" y="624" text-anchor="end" fill="#5f7d89" font-size="11">ADR-0001 · ADR-0002 · ADR-0008</text>
+  </g>
+</svg>

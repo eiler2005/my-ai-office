@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="560" viewBox="0 0 1180 560" role="img" aria-labelledby="t d">
+  <title id="t">Lifecycle of one scheduled job</title>
+  <desc id="d">A cron slot becomes a stable run id, a queued job, a claimed job, a validated artifact, and finally a confirmed delivery. An unknown outcome goes to manual reconciliation and is never retried automatically.</desc>
+  <defs>
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M32 0H0V32" fill="none" stroke="#a2cfdb" stroke-opacity=".05"/>
+    </pattern>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 10 5 0 10z" fill="#587885"/>
+    </marker>
+    <marker id="ara" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 10 5 0 10z" fill="#64dac7"/>
+    </marker>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 10 5 0 10z" fill="#f0a08c"/>
+    </marker>
+    <marker id="arb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 10 5 0 10z" fill="#8cbaf3"/>
+    </marker>
+    <marker id="arm" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 10 5 0 10z" fill="#e8be7b"/>
+    </marker>
+  </defs>
+  <rect width="1180" height="560" rx="14" fill="#0c1923"/>
+  <rect width="1180" height="560" rx="14" fill="url(#grid)"/>
+  <g font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">    <text x="40" y="44" fill="#64dac7" font-size="11.5" font-weight="600" letter-spacing="2.2">STATE MACHINE</text>
+    <text x="40" y="71" fill="#eef4f6" font-size="21" font-weight="700">One slot, one run — and what happens when it is unclear</text>
+    <rect x="40" y="150" width="196" height="104" rx="9" fill="#15252f" stroke="#3c5c69" stroke-width="1.4"/>
+    <text x="54" y="172" fill="#9fbbc4" font-size="10.5" font-weight="600" letter-spacing="1.4">01</text>
+    <text x="54" y="193" fill="#eef4f6" font-size="15" font-weight="600">cron slot</text>
+    <text x="54" y="211" fill="#9fbbc4" font-size="11.5">Hermes cron fires for a</text>
+    <text x="54" y="226" fill="#9fbbc4" font-size="11.5">time slot in Europe/Moscow</text>
+    <rect x="256" y="150" width="196" height="104" rx="9" fill="#15252f" stroke="#3c5c69" stroke-width="1.4"/>
+    <text x="270" y="172" fill="#9fbbc4" font-size="10.5" font-weight="600" letter-spacing="1.4">02</text>
+    <text x="270" y="193" fill="#eef4f6" font-size="15" font-weight="600">stable run id</text>
+    <text x="270" y="211" fill="#9fbbc4" font-size="11.5">Derived from the slot,</text>
+    <text x="270" y="226" fill="#9fbbc4" font-size="11.5">not from the clock</text>
+    <rect x="472" y="150" width="196" height="104" rx="9" fill="#15252f" stroke="#3c5c69" stroke-width="1.4"/>
+    <text x="486" y="172" fill="#9fbbc4" font-size="10.5" font-weight="600" letter-spacing="1.4">03</text>
+    <text x="486" y="193" fill="#eef4f6" font-size="15" font-weight="600">queued</text>
+    <text x="486" y="211" fill="#9fbbc4" font-size="11.5">XADD to the stream;</text>
+    <text x="486" y="226" fill="#9fbbc4" font-size="11.5">slot dedupe is atomic</text>
+    <rect x="688" y="150" width="196" height="104" rx="9" fill="#15252f" stroke="#3c5c69" stroke-width="1.4"/>
+    <text x="702" y="172" fill="#9fbbc4" font-size="10.5" font-weight="600" letter-spacing="1.4">04</text>
+    <text x="702" y="193" fill="#eef4f6" font-size="15" font-weight="600">claimed</text>
+    <text x="702" y="211" fill="#9fbbc4" font-size="11.5">Consumer group; entry</text>
+    <text x="702" y="226" fill="#9fbbc4" font-size="11.5">sits in the pending list</text>
+    <rect x="904" y="150" width="196" height="104" rx="9" fill="#15252f" stroke="#3c5c69" stroke-width="1.4"/>
+    <text x="918" y="172" fill="#9fbbc4" font-size="10.5" font-weight="600" letter-spacing="1.4">05</text>
+    <text x="918" y="193" fill="#eef4f6" font-size="15" font-weight="600">processing</text>
+    <text x="918" y="211" fill="#9fbbc4" font-size="11.5">Fetch · cursor · rules ·</text>
+    <text x="918" y="226" fill="#9fbbc4" font-size="11.5">bounded model call</text>
+    <path d="M236 202H256" fill="none" stroke="#587885" stroke-width="1.6" marker-end="url(#ar)"/>
+    <path d="M452 202H472" fill="none" stroke="#587885" stroke-width="1.6" marker-end="url(#ar)"/>
+    <path d="M668 202H688" fill="none" stroke="#587885" stroke-width="1.6" marker-end="url(#ar)"/>
+    <path d="M884 202H904" fill="none" stroke="#587885" stroke-width="1.6" marker-end="url(#ar)"/>
+    <rect x="256" y="336" width="196" height="104" rx="9" fill="#15252f" stroke="#3c5c69" stroke-width="1.4"/>
+    <text x="270" y="358" fill="#9fbbc4" font-size="10.5" font-weight="600" letter-spacing="1.4">06</text>
+    <text x="270" y="379" fill="#eef4f6" font-size="15" font-weight="600">validated</text>
+    <text x="270" y="397" fill="#9fbbc4" font-size="11.5">Strict JSON or the</text>
+    <text x="270" y="412" fill="#9fbbc4" font-size="11.5">deterministic fallback</text>
+    <rect x="472" y="336" width="196" height="104" rx="9" fill="#15252f" stroke="#3c5c69" stroke-width="1.4"/>
+    <text x="486" y="358" fill="#9fbbc4" font-size="10.5" font-weight="600" letter-spacing="1.4">07</text>
+    <text x="486" y="379" fill="#eef4f6" font-size="15" font-weight="600">sent</text>
+    <text x="486" y="397" fill="#9fbbc4" font-size="11.5">hermes send to an</text>
+    <text x="486" y="412" fill="#9fbbc4" font-size="11.5">allowlisted route</text>
+    <rect x="688" y="336" width="236" height="104" rx="9" fill="#15353e" stroke="#5cb9ad" stroke-width="1.4"/>
+    <text x="702" y="358" fill="#64dac7" font-size="10.5" font-weight="600" letter-spacing="1.4">08</text>
+    <text x="702" y="379" fill="#eef4f6" font-size="15" font-weight="600">confirmed</text>
+    <text x="702" y="397" fill="#9fbbc4" font-size="11.5">success + message_id,</text>
+    <text x="702" y="412" fill="#9fbbc4" font-size="11.5">no skipped flag</text>
+    <path d="M1002 254V300H452V336" fill="none" stroke="#587885" stroke-width="1.6" marker-end="url(#ar)"/>
+    <text x="700" y="292" text-anchor="middle" fill="#7695a1" font-size="11">result</text>
+    <path d="M452 388H472" fill="none" stroke="#587885" stroke-width="1.6" marker-end="url(#ar)"/>
+    <path d="M668 388H688" fill="none" stroke="#587885" stroke-width="1.6" marker-end="url(#ar)"/>
+    <rect x="40" y="336" width="196" height="104" rx="9" fill="#152b38" stroke="#4d7186" stroke-width="1.4"/>
+    <text x="54" y="358" fill="#8cbaf3" font-size="10.5" font-weight="600" letter-spacing="1.4">FALLBACK</text>
+    <text x="54" y="379" fill="#eef4f6" font-size="15" font-weight="600">deterministic</text>
+    <text x="54" y="397" fill="#9fbbc4" font-size="11.5">Rule-based output when</text>
+    <text x="54" y="412" fill="#9fbbc4" font-size="11.5">every provider fails</text>
+    <path d="M236 372H256" fill="none" stroke="#8cbaf3" stroke-width="1.6" marker-end="url(#arb)"/>
+    <rect x="944" y="336" width="196" height="104" rx="9" fill="#2b2028" stroke="#8d6161" stroke-width="1.4"/>
+    <text x="958" y="358" fill="#f0a08c" font-size="10.5" font-weight="600" letter-spacing="1.4">UNCERTAIN</text>
+    <text x="958" y="379" fill="#eef4f6" font-size="15" font-weight="600">reconcile</text>
+    <text x="958" y="397" fill="#9fbbc4" font-size="11.5">benka:reconcile —</text>
+    <text x="958" y="412" fill="#9fbbc4" font-size="11.5">a human decides</text>
+    <path d="M924 388H944" fill="none" stroke="#f0a08c" stroke-width="1.6" marker-end="url(#arr)"/>
+    <text x="1042" y="462" text-anchor="middle" fill="#f0a08c" font-size="11">Never retried automatically.</text>
+    <text x="1042" y="479" text-anchor="middle" fill="#f0a08c" font-size="11">No automatic cleanup.</text>
+    <text x="806" y="462" text-anchor="middle" fill="#7695a1" font-size="11">The completed record is written</text>
+    <text x="806" y="479" text-anchor="middle" fill="#7695a1" font-size="11">before XACK, so a crash between</text>
+    <text x="806" y="496" text-anchor="middle" fill="#7695a1" font-size="11">the two repeats work rather than losing it.</text>
+    <path d="M40 512H1140" stroke="#2c4552"/>
+    <text x="40" y="538" text-anchor="start" fill="#64dac7" font-size="11">A successful exit code is not a delivery. Only a message_id is.</text>
+    <text x="1140" y="538" text-anchor="end" fill="#7695a1" font-size="11">ADR-0003 · ADR-0007</text>
+  </g>
+</svg>

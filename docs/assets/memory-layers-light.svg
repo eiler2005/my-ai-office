@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="620" viewBox="0 0 1180 620" role="img" aria-labelledby="t d">
+  <title id="t">The five memory layers</title>
+  <desc id="d">Live state, raw evidence, the curated wiki, the retrieval index, and compact agent memory each answer a different question. The wiki is the store; retrieval is derived from it.</desc>
+  <defs>
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M32 0H0V32" fill="none" stroke="#2c6070" stroke-opacity=".05"/>
+    </pattern>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 10 5 0 10z" fill="#7b98a3"/>
+    </marker>
+    <marker id="ara" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 10 5 0 10z" fill="#0f7d6b"/>
+    </marker>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 10 5 0 10z" fill="#a4472c"/>
+    </marker>
+    <marker id="arb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 10 5 0 10z" fill="#2f5fa4"/>
+    </marker>
+    <marker id="arm" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 10 5 0 10z" fill="#8a6011"/>
+    </marker>
+  </defs>
+  <rect width="1180" height="620" rx="14" fill="#f6fafb"/>
+  <rect width="1180" height="620" rx="14" fill="url(#grid)"/>
+  <g font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">    <text x="40" y="44" fill="#0f7d6b" font-size="11.5" font-weight="600" letter-spacing="2.2">KNOWLEDGE MODEL</text>
+    <text x="40" y="71" fill="#0e222c" font-size="21" font-weight="700">Five layers, five different questions</text>
+    <rect x="40" y="140" width="470" height="76" rx="9" fill="#fbeae5" stroke="#dda694" stroke-width="1.4"/>
+    <text x="54" y="162" fill="#a4472c" font-size="10.5" font-weight="600" letter-spacing="1.4">LIVE STATE</text>
+    <text x="54" y="183" fill="#0e222c" font-size="15" font-weight="600">Running services, current jobs, fresh source data</text>
+    <text x="546" y="170" fill="#0e222c" font-size="14" font-weight="600">What is true right now?</text>
+    <text x="546" y="192" text-anchor="start" fill="#476470" font-size="12">Checked against the system, never recalled from memory.</text>
+    <rect x="40" y="232" width="470" height="76" rx="9" fill="#ffffff" stroke="#b4cbd3" stroke-width="1.4"/>
+    <text x="54" y="254" fill="#476470" font-size="10.5" font-weight="600" letter-spacing="1.4">RAW EVIDENCE</text>
+    <text x="54" y="275" fill="#0e222c" font-size="15" font-weight="600">Imported material, original sources, private transcripts</text>
+    <text x="546" y="262" fill="#0e222c" font-size="14" font-weight="600">What exactly was said?</text>
+    <text x="546" y="284" text-anchor="start" fill="#476470" font-size="12">Kept for provenance. Not indexed, not loaded into context.</text>
+    <rect x="40" y="324" width="470" height="76" rx="9" fill="#e2f5f1" stroke="#63bfb0" stroke-width="1.4"/>
+    <text x="54" y="346" fill="#0f7d6b" font-size="10.5" font-weight="600" letter-spacing="1.4">CURATED WIKI</text>
+    <text x="54" y="367" fill="#0e222c" font-size="15" font-weight="600">Decisions, research, entities, idea chains — plain Markdown</text>
+    <text x="546" y="354" fill="#0e222c" font-size="14" font-weight="600">What did we conclude?</text>
+    <text x="546" y="376" text-anchor="start" fill="#476470" font-size="12">The source of truth. Obsidian-compatible and owner-editable.</text>
+    <rect x="40" y="416" width="470" height="76" rx="9" fill="#fbf1de" stroke="#d9b878" stroke-width="1.4"/>
+    <text x="54" y="438" fill="#8a6011" font-size="10.5" font-weight="600" letter-spacing="1.4">RETRIEVAL INDEX</text>
+    <text x="54" y="459" fill="#0e222c" font-size="15" font-weight="600">LightRAG graph + vector over an allowlist of roots</text>
+    <text x="546" y="446" fill="#0e222c" font-size="14" font-weight="600">Where have I seen this?</text>
+    <text x="546" y="468" text-anchor="start" fill="#476470" font-size="12">Derived from the wiki. Rebuildable; never the only copy.</text>
+    <rect x="40" y="508" width="470" height="76" rx="9" fill="#e8f0fb" stroke="#8fb2dd" stroke-width="1.4"/>
+    <text x="54" y="530" fill="#2f5fa4" font-size="10.5" font-weight="600" letter-spacing="1.4">AGENT MEMORY</text>
+    <text x="54" y="551" fill="#0e222c" font-size="15" font-weight="600">Compact stable facts and preferences</text>
+    <text x="546" y="538" fill="#0e222c" font-size="14" font-weight="600">What should I already know?</text>
+    <text x="546" y="560" text-anchor="start" fill="#476470" font-size="12">Small on purpose. Not a place to accumulate history.</text>
+    <path d="M22 150V576" fill="none" stroke="#7b98a3" stroke-width="1.6"/>
+    <path d="M22 178H36" fill="none" stroke="#7b98a3" stroke-width="1.6" marker-end="url(#ar)"/>
+    <path d="M22 270H36" fill="none" stroke="#7b98a3" stroke-width="1.6" marker-end="url(#ar)"/>
+    <path d="M22 362H36" fill="none" stroke="#7b98a3" stroke-width="1.6" marker-end="url(#ar)"/>
+    <path d="M22 454H36" fill="none" stroke="#7b98a3" stroke-width="1.6" marker-end="url(#ar)"/>
+    <path d="M22 546H36" fill="none" stroke="#7b98a3" stroke-width="1.6" marker-end="url(#ar)"/>
+    <text x="1140" y="150" text-anchor="end" fill="#0f7d6b" font-size="12" font-weight="600" letter-spacing="1.6">CAPTURE IS EXPLICIT</text>
+    <text x="1140" y="172" text-anchor="end" fill="#5f7d89" font-size="11">Whole mailboxes and ordinary chat</text>
+    <text x="1140" y="189" text-anchor="end" fill="#5f7d89" font-size="11">are not indexed by default.</text>
+    <path d="M40 596H1140" stroke="#cadbe1"/>
+    <text x="40" y="604" text-anchor="middle" fill="#5f7d89" font-size="11"></text>
+    <text x="40" y="608" fill="#476470" font-size="12" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace">source → explicit capture → wiki artifact → index → grounded answer</text>
+    <text x="1140" y="608" text-anchor="end" fill="#5f7d89" font-size="11">ADR-0005</text>
+  </g>
+</svg>
