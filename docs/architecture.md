@@ -36,6 +36,22 @@ flowchart TB
 
 The agent runtime is containerized without the host Docker socket. Private deployment manifests bind source accounts, destinations, credentials, and domain paths. The public repository contains templates and code, not those bindings.
 
+## Production topology
+
+The production `benka-hermes` Compose project defines 13 services:
+
+| Group | Compose services | Responsibility |
+| --- | --- | --- |
+| Agent access | `gateway`, `dashboard`, `caddy` | Telegram polling and profile routing; isolated browser UI; TLS/mTLS ingress. |
+| State and knowledge | `redis`, `wiki`, `lightrag`, `omniroute` | Integration bus and receipts; durable wiki; graph retrieval; assigned provider routing. |
+| Business workers | `worker-email-personal`, `worker-email-work`, `worker-telegram`, `worker-signals`, `worker-last30days`, `worker-maintenance` | Separate source processing, state, manifests, Redis groups, and delivery permissions. |
+
+The `redis` service is the current **integration bus**. Hermes cron enqueues jobs into named streams; dedicated consumer groups process them; job status, confirmed delivery receipts, and reconciliation records remain in Redis. The inherited [`artifacts/integration-bus`](../artifacts/integration-bus) directory documents the predecessor's standalone Redis deployment and is not started as a second production bus.
+
+External integrations are not containers. AgentMail, Telegram/Telethon, Reddit, Hacker News, GitHub, X, Bluesky, YouTube, Polymarket, and web discovery are source APIs or transports consumed by the relevant worker when enabled. Reddit's native JSON/RSS hybrid adapter is part of the Last30Days build under [`signals-bridge/last30days_patches`](../artifacts/signals-bridge/last30days_patches).
+
+The VPS also hosts independent Compose projects: `reddit-compass`, `moex-futoi`, `cheap-intelligence`, and `stealth`. They share the host only. They are outside My AI Office's service graph, networks, state, and lifecycle commands. `reddit-compass` is therefore distinct from the external Reddit source used by Last30Days. See the [README service and source map](../README.md#services) and the [migration inventory](hermes/inventory.md#vps-hermes-и-соседние-проекты).
+
 ## Scheduling, execution, and delivery
 
 Hermes cron owns application schedules after activation. Script jobs enqueue work into Redis and disable cron's automatic delivery; workers own processing and the shared delivery module owns publication.

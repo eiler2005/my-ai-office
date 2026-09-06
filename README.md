@@ -29,6 +29,7 @@ Benka runs on [Hermes Agent](https://github.com/NousResearch/hermes-agent). The 
 - [How it works](#how-it-works)
 - [Architecture](#architecture)
 - [Services](#services)
+- [Source integrations and VPS boundary](#source-integrations-and-vps-boundary)
 - [Telegram surfaces](#telegram-surfaces)
 - [Model routing](#model-routing)
 - [Memory that improves with work](#memory-that-improves-with-work)
@@ -83,14 +84,14 @@ flowchart TB
     Workers --> Models["Bounded model calls + validation"]
     Models --> Delivery["Delivery receipts / reconciliation"]
     Delivery --> Telegram["Briefings, alerts, and follow-ups"]
-    Person["Denis — Telegram / CLI / Web"] <--> Hermes["Hermes Agent + Benka"]
+    Operator["Owner / operator — Telegram / CLI / Web"] <--> Hermes["Hermes Agent + Benka"]
     Hermes <--> Knowledge["Wiki · LightRAG · private archive"]
     Workers --> Knowledge
 ```
 
 The flow has two complementary modes.
 
-1. **Conversation:** Denis asks Benka in Telegram, CLI, or the dashboard. Hermes selects the configured interactive model route, Benka retrieves only relevant context, and the response returns to the same conversation.
+1. **Conversation:** the owner asks Benka in Telegram, CLI, or the dashboard. Hermes selects the configured interactive model route, Benka retrieves only relevant context, and the response returns to the same conversation.
 2. **Background work:** Hermes cron puts a scheduled job into Redis. A dedicated worker collects material, applies deterministic processing, makes a restricted model call where needed, validates the output, and records the delivery result.
 
 This separation keeps source-specific logic ordinary Python code and prevents the agent runtime from becoming a monolith. Model calls run with restricted context, limited tools, deadlines, validated output, and deterministic fallbacks. A delivery with an unknown result is not silently replayed.
@@ -100,7 +101,7 @@ This separation keeps source-specific logic ordinary Python code and prevents th
 One private VPS runs the office as a Docker Compose project. Telegram is the everyday entrance; CLI and a protected web dashboard provide operator access. The runtime owns conversation routing and cron, while ordinary Python workers own source-specific processing.
 
 ```text
-Denis
+Owner / operator
  ├─ Telegram ───────────────────────────────┐
  ├─ Hermes CLI ─────────────────────────────┼─► Hermes Gateway ─► Benka profiles + native tools
  └─ Caddy + mTLS + dashboard ───────────────┘           │
@@ -114,9 +115,9 @@ Every worker: collect → apply rules → bounded model call → validate → re
 
 ```mermaid
 flowchart TB
-    Denis["Denis"] --> Telegram["Telegram"]
-    Denis --> CLI["Hermes CLI"]
-    Denis --> Panel["Dashboard"]
+    Operator["Owner / operator"] --> Telegram["Telegram"]
+    Operator --> CLI["Hermes CLI"]
+    Operator --> Panel["Dashboard"]
     Caddy["Caddy: TLS, mTLS, application auth"] --> Panel
     Telegram <--> Gateway["Hermes Gateway"]
     CLI <--> Gateway
@@ -139,18 +140,64 @@ The queue is the handoff between scheduling and work. A slot receives one stable
 
 ## Services
 
-| Service | Role | Boundary |
+The production [`benka-hermes`](deploy/hermes/compose.production.yaml) Compose project defines **13 containers**. The names below match the deployment file, so the public architecture can be compared directly with runtime inventory.
+
+| Compose service | Role | State and integration boundary |
 | --- | --- | --- |
-| **Hermes Gateway** | Telegram ingress, Benka profiles, CLI, native cron, interactive agent sessions | The only process that owns production Telegram polling. |
-| **Dashboard + Caddy** | Browser interface behind TLS/mTLS and Hermes authentication | Dashboard is separate from the Gateway; Caddy is the externally reachable proxy. |
-| **Redis** | Job streams, consumer groups, slot deduplication, cursors, receipts, and reconciliation records | Internal state bus; it does not publish messages itself. |
-| **Personal and work email workers** | Poll, classify, deduplicate, and prepare mailbox briefings | Separate manifests, state, and routes for each mailbox. |
-| **Telegram Digest worker** | Reads selected channels through Telethon, balances material, renders and posts scheduled issues | Delivery is target-allowlisted and receipt-tracked. |
-| **Signals and Last30Days workers** | Apply rules and research presets, isolate failing sources, deliver useful alerts and reports | Shared integration family with independent jobs and state. |
-| **Wiki worker** | Creates and maintains source-backed Markdown knowledge artifacts | Wiki-first: capture succeeds before retrieval indexing is considered complete. |
-| **LightRAG** | Graph-assisted search over selected knowledge | Retrieval layer; the Markdown wiki remains the durable source of truth. |
-| **OmniRoute** | Preserved provider routing for workloads explicitly assigned to it | It is not assumed to proxy every Hermes model call. |
-| **Maintenance worker** | Wiki lifecycle and LightRAG maintenance jobs | Receives only the data paths and operations needed for maintenance. |
+| `gateway` | Hermes Gateway: Telegram polling, profile routing, native tools, interactive sessions, and cron ownership | The only production Telegram polling owner; mounts reviewed profiles, schedules, read-only vault data, and its own Hermes state. |
+| `dashboard` | Separate Hermes browser UI | Shares the Gateway state required for sessions, but runs as a distinct process behind Caddy. |
+| `caddy` | TLS reverse proxy for the dashboard | The only office container with a published listener; applies mTLS before Hermes authentication. |
+| `redis` | **Integration bus**: streams, consumer groups, slot dedupe, job state, delivery receipts, and reconciliation | Persistent AOF-backed internal service; it schedules or records work but never publishes Telegram messages itself. |
+| `omniroute` | Provider routing retained for explicitly assigned workloads | Keeps separate provider/OAuth state; it is not the universal route for every Hermes call. |
+| `lightrag` | Graph-assisted retrieval over selected knowledge | Reads the approved personal vault input and keeps independent graph/vector/KV state. |
+| `wiki` | Wiki ingestion and query service | Writes source-backed Markdown first and then asks LightRAG to index selected artifacts. |
+| `worker-email-personal` | Personal mailbox polling, classification, dedupe, and digest generation | Own manifest, config, cursor state, Redis group, and Telegram delivery allowlist. |
+| `worker-email-work` | Work mailbox polling, forwarded-sender resolution, triage, and digests | Isolated from the personal mailbox by manifest, config, state, stream, and consumer group. |
+| `worker-telegram` | Telethon channel reading, scoring, dedupe, digest rendering, persistence, and delivery | Uses an approved channel catalog and private Telethon session; deliveries require confirmed receipts. |
+| `worker-signals` | Rule-based monitoring of configured mail and Telegram sources | Runs frequent small checks and publishes only matched, configured signals. |
+| `worker-last30days` | Personal Feed / Platform Pulse research across Reddit and other configured platforms | Uses the Signals codebase with independent jobs and state; source failures are recorded per source. |
+| `worker-maintenance` | Wiki lifecycle and LightRAG maintenance | Receives only maintenance operations and the data mounts needed for them. |
+
+### Where the integration bus lives
+
+The Hermes deployment does not run a second container named `integration-bus`. The integration bus is the `redis` service plus the scheduling, queue, delivery, and worker contracts in [`src/benka_integrations`](src/benka_integrations):
+
+```text
+Hermes cron
+  └─► Redis Streams
+       ├─► ingest:jobs:email:personal ─► worker-email-personal
+       ├─► ingest:jobs:email:work     ─► worker-email-work
+       ├─► ingest:jobs:telegram       ─► worker-telegram
+       ├─► ingest:jobs:signals        ─► worker-signals
+       ├─► ingest:jobs:last30days     ─► worker-last30days
+       └─► benka:maintenance:personal ─► worker-maintenance
+
+Confirmed work ─► job state / delivery receipt
+Unknown outcome ─► benka:reconcile ─► operator review
+```
+
+[`artifacts/integration-bus`](artifacts/integration-bus) preserves the predecessor's standalone Redis Compose artifact for history and migration compatibility. Production Hermes owns Redis through [`compose.production.yaml`](deploy/hermes/compose.production.yaml), so starting the historical artifact as another bus would create two competing state planes.
+
+## Source integrations and VPS boundary
+
+Containers, source adapters, and neighboring VPS projects are deliberately different concepts:
+
+| Layer | Included systems | Meaning |
+| --- | --- | --- |
+| **My AI Office containers** | The 13 `benka-hermes` services above | Deployed and operated by this repository as one isolated Compose project. |
+| **External source integrations** | AgentMail mailboxes, selected Telegram channels, Reddit, Hacker News, GitHub, X, Bluesky, YouTube, Polymarket, and general web results | Remote data sources used by a worker when enabled in its private deployment configuration; they are not local containers. |
+| **Neighboring VPS projects** | `reddit-compass`, `moex-futoi`, `cheap-intelligence`, and `stealth` | Independent Compose projects sharing the host. They are neither dependencies nor workers of My AI Office and are kept outside its networks and lifecycle commands. |
+
+`Reddit` and `reddit-compass` are unrelated in the topology. **Reddit** is an external Last30Days source. Its adapter uses native JSON/RSS discovery with an optional configured backup and lives under [`signals-bridge/last30days_patches`](artifacts/signals-bridge/last30days_patches). **Reddit Compass** is a separate application on the same VPS; My AI Office reuses only established host access and adjacent infrastructure conventions, not its application container or data.
+
+| Source family | Consuming workflow | Repository implementation |
+| --- | --- | --- |
+| Personal and work mail | Email polling, actionable/informational triage, scheduled digests | [`artifacts/agentmail-email`](artifacts/agentmail-email) |
+| Selected Telegram channels | Scheduled Telegram Digest | [`artifacts/telethon-digest`](artifacts/telethon-digest) |
+| Email and Telegram event sources | Signals rules and mini-batches | [`artifacts/signals-bridge`](artifacts/signals-bridge) |
+| Reddit | Last30Days native JSON/RSS hybrid path; optional backup when configured | [`reddit_hybrid.py`](artifacts/signals-bridge/last30days_patches/reddit_hybrid.py) |
+| Hacker News | Last30Days companion discovery through the public Algolia API | [`last30days_runner.py`](artifacts/signals-bridge/last30days_runner.py) |
+| GitHub, X, Bluesky, YouTube, Polymarket, web | Last30Days source bundle, enabled per private preset and credentials | [`config.example.json`](artifacts/signals-bridge/config.example.json) |
 
 ## Telegram surfaces
 
@@ -236,9 +283,11 @@ Model selection is configured per workload. Interactive and auxiliary tasks have
 │   ├── agentmail-email/           Personal and work mailbox workflow
 │   ├── telethon-digest/           Telegram channel digest reader, scorer, renderer
 │   ├── signals-bridge/            Signals and Last30Days source adapters
+│   │   └── last30days_patches/    Reddit hybrid adapter and pinned upstream patches
+│   ├── integration-bus/          Historical standalone Redis Compose artifact
 │   ├── wiki-import/               Curated wiki ingestion service
 │   └── llm-wiki/                  Wiki schema and templates
-├── deploy/hermes/                Compose, Dockerfile, Caddy, and sanitized examples
+├── deploy/hermes/                Current 13-service Compose, Dockerfile, Caddy, examples
 ├── plugins/benka/                Hermes plugin manifest and metadata
 ├── skills/                       Benka workflow skills
 ├── workspace/                    Persona, Telegram policy, memory index, tool contracts

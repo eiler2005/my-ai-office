@@ -39,6 +39,9 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Expanded the README into a navigable Hermes operating guide: end-to-end text and Mermaid architecture,
   service boundaries, Telegram surfaces, the GPT-5.6 model ladder, memory, repository map, documentation
   index, and security model. It uses only public, sanitized facts and links to the corresponding runbooks.
+- Replaced the owner's name in architecture diagrams with the neutral operator role, enumerated all 13
+  production Compose services, and documented the Redis integration bus, external source adapters including
+  Reddit, and the boundary from neighboring VPS projects such as Reddit Compass.
 
 ### Changed — Business-facing project narrative (2026-09-06)
 
