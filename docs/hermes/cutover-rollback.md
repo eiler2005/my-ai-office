@@ -1,41 +1,59 @@
-# Переключение и откат
+# Cutover and rollback
 
-> Фактическое переключение выполнено 2026-09-06 после отдельной команды Дениса. Свежий snapshot
-> хранится в приватном production state VPS Hermes, без копии на Mac; все Docker-сервисы source VPS
-> остановлены и сохранены. См. [cutover record](cutover-record-2026-09-06.md). Дальнейшие разделы —
-> процедура отката и повторного переноса, а не команда автоматически перезапускать OpenClaw.
+> [!IMPORTANT]
+> The actual cutover was performed on 2026-09-06 after a separate instruction from Denis. The fresh
+> snapshot is held in the private production state of the Hermes VPS, with no copy on the Mac; all
+> Docker services on the source VPS are stopped and retained. See the
+> [cutover record](cutover-record-2026-09-06.md).
+>
+> The sections below are the rollback and re-transfer procedure — **not** an instruction to restart
+> OpenClaw automatically.
 
-**Выполнять только после отдельной команды Дениса.** Двухнедельное ожидание не открывает окно автоматически.
-До переключения закрыть [приёмку кандидата](acceptance.md) и [журнал расхождений](drift-log.md).
+**Execute only after a separate instruction from Denis.** The two-week waiting period does not open
+the window by itself. Before the switch, close out the [candidate acceptance](acceptance.md) and the
+[drift log](drift-log.md).
 
-## До остановки
+## Before stopping anything
 
-Повторно проверить inventory обоих VPS, наличие работающей резервной копии, доступ Mac и достаточность диска.
-На исходном VPS мало свободного места: не создавать там дополнительный многогигабайтный архив.
-Потоковый экспорт направляется на защищённый диск Mac. Измерить скорость передачи и восстановления заранее.
-Бюджет окна — четыре часа; начать откат не позднее третьего, если приёмка не проходит.
+Re-verify the inventory of both VPS hosts, the existence of a working backup, Mac access, and
+sufficient disk. The source VPS has little free space: do not create an additional multi-gigabyte
+archive there. The streaming export goes to a protected disk on the Mac. Measure transfer and
+restore speed in advance.
 
-Зафиксировать окончательные Git SHA, upstream pins, image IDs, deployment manifest и секреты по назначению.
-Rehearsal state отделить от чистого production destination; удалить его из путей финального импорта.
-Повторить изменившиеся проверки. При функциональном пробеле OpenClaw продолжает работу до его устранения.
+The window budget is four hours; begin rollback no later than the third hour if acceptance is not
+passing.
 
-## Свежий холодный снимок
+Record the final Git SHAs, upstream pins, image IDs, deployment manifest, and secrets by purpose.
+Separate rehearsal state from the clean production destination and remove it from the final import
+paths. Repeat any check whose inputs changed. If a functional gap is found, OpenClaw keeps running
+until it is closed.
 
-1. Отключить постановку новых заданий OpenClaw, дождаться завершения активных; экспортировать pending и uncertain deliveries.
-2. Остановить только относящиеся к Беньке cron, polling, bridge workers и процессы записи. Приостановить Syncthing на Mac и старом VPS.
-3. Записать Bot API update watermark, Telethon cursors, оба почтовых watermark, Redis PEL и подтверждённые message IDs.
-4. Остановить Redis/LightRAG/OmniRoute перед копированием их файлов либо использовать проверенный согласованный механизм snapshot конкретной БД.
-5. Скопировать по SSH на Mac все компоненты и образы; сверить manifest файлов и SHA. Соседние проекты не останавливать.
+## Fresh cold snapshot
 
-Подготовленный `benka snapshot` работает с **уже согласованным локальным layout**, а не сам останавливает сервер.
-Структура корня: `openclaw/`, `workspace/`, `vault/`, `integrations/`, `redis/`, `lightrag/`, `omniroute/`, `config/`, `secrets/`.
-Для томов использовать реальные mount sources из закрытого inventory. Копирование работающей БД обычным `cp` не допускается.
-Symlinks и специальные файлы требуют явной подготовки; мигратор их отвергает.
-Образы Docker и host-level конфигурацию хранить отдельными проверенными архивами рядом со snapshot, вне Git.
+1. Stop new OpenClaw jobs from being enqueued, wait for active ones to finish, and export pending
+   and uncertain deliveries.
+2. Stop only the Benka-related cron, polling, bridge workers, and writing processes. Pause Syncthing
+   on the Mac and on the old VPS.
+3. Record the Bot API update watermark, Telethon cursors, both mail watermarks, the Redis PEL, and
+   the confirmed message IDs.
+4. Stop Redis / LightRAG / OmniRoute before copying their files, or use that database's own verified
+   consistent-snapshot mechanism.
+5. Copy every component and image to the Mac over SSH; verify the file manifest and SHAs. Do not
+   stop neighbouring projects.
 
-Cold receipt JSON содержит `writers_stopped: true`, `syncthing_paused: true`, список всех девяти `components`.
-Отсутствующие компоненты тоже должны быть явно учтены оператором; `absent_components` в manifest проверить до импорта.
-Receipt фиксирует выполненные действия, а не заменяет остановку writers.
+The prepared `benka snapshot` operates on an **already consistent local layout** — it does not stop
+the server itself. The root structure is: `openclaw/`, `workspace/`, `vault/`, `integrations/`,
+`redis/`, `lightrag/`, `omniroute/`, `config/`, `secrets/`.
+
+Use the real mount sources from the private inventory for volumes. Copying a running database with
+an ordinary `cp` is not permitted. Symlinks and special files require explicit preparation; the
+migrator rejects them. Keep Docker images and host-level configuration as separate verified archives
+next to the snapshot, outside Git.
+
+The cold receipt JSON records `writers_stopped: true`, `syncthing_paused: true`, and the list of all
+nine `components`. Missing components must also be explicitly accounted for by the operator; check
+`absent_components` in the manifest before importing. **The receipt records that actions were
+performed; it does not substitute for stopping the writers.**
 
 ```bash
 umask 077
@@ -44,67 +62,97 @@ umask 077
 .venv/bin/benka restore /private/final-export/snapshot.tar /private/final-export/manifest.json /private/restores --apply
 ```
 
-Без `--apply` выполняется только проверка. Импорт идёт через staging и atomic rename в каталог по SHA snapshot.
-Повторный запуск проверяет все ранее импортированные файлы; изменённый импорт не считается успешным.
-Прерывание и неполный архив должны оставлять старый runtime нетронутым.
-После проверки перенести staging в соответствующие volumes/bind mounts и выставить UID/GID/права для каждого сервиса.
+Without `--apply`, only verification runs. The import goes through staging and an atomic rename into
+a directory named by the snapshot SHA. A repeat run verifies every previously imported file; a
+changed import is not treated as successful. An interruption or an incomplete archive must leave the
+old runtime untouched.
 
-## Перенос пользовательских данных Hermes
+After verification, move staging into the corresponding volumes and bind mounts and set the UID,
+GID, and permissions for each service.
 
-Исходный OpenClaw хранит config и workspace раздельно. В отдельном curated workspace подготовить проверенные
-SOUL, IDENTITY, AGENTS, USER и MEMORY. MEMORY ограничена 2200 символами, USER — 1375; дневники не помещать в эту память.
-Пересмотреть инструменты, инструкции OpenClaw, пути и доверенные границы; исходные prompt-инструкции не копируются слепо.
+## Transferring Hermes user data
+
+The source OpenClaw stores `config` and `workspace` separately. In a separate curated workspace,
+prepare reviewed `SOUL`, `IDENTITY`, `AGENTS`, `USER`, and `MEMORY` files. `MEMORY` is limited to
+2,200 characters and `USER` to 1,375; diaries do not belong in that memory.
+
+Review tools, OpenClaw instructions, paths, and trust boundaries. Source prompt instructions are not
+copied blindly.
 
 ```bash
 .venv/bin/benka claw-layout /private/restored/openclaw /private/curated-workspace /private/claw-layout
 HERMES_HOME=/private/new-hermes-home .venv/bin/hermes claw migrate --source /private/claw-layout --preset user-data --dry-run
 ```
 
-Изучить вывод pinned importer, затем выполнить ту же команду без `--dry-run` с проверенным workspace target.
-Hermes 0.21.0 создаёт стандартный `SOUL.md` при первом запуске CLI, включая dry-run. Конфликт с ним
-может остановить весь импорт при exit code 0. Проверять фактические файлы и отчёт, а не только код процесса.
-Только в новом изолированном destination, после проверки списка конфликтов, повторить dry-run с `--overwrite`,
-затем применить с этим флагом и сохранить штатный pre-migration backup. Не использовать `--overwrite`
-для непроверенного каталога с существующими пользовательскими данными. Сверить SOUL и `memories/{USER,MEMORY}.md`.
-Проверенные навыки переносить отдельно, установить `plugins/benka` и `skills/benka-*`, применить domain profiles и paused cron.
-Штатный импорт не превращает OpenClaw bridges/plugins/cron/Telegram bindings в Hermes-интеграции автоматически.
+Read the pinned importer's output, then run the same command without `--dry-run` against a verified
+workspace target.
+
+> [!WARNING]
+> Hermes 0.21.0 creates a default `SOUL.md` on the first CLI run, including a dry run. A conflict
+> with it can abort the entire import **while still exiting 0**. Check the actual files and the
+> report, not just the process exit code.
+
+Only in a new isolated destination, and only after reviewing the conflict list, repeat the dry run
+with `--overwrite`, then apply with that flag and keep the standard pre-migration backup. Do not use
+`--overwrite` against an unverified directory that already holds user data. Reconcile `SOUL` and
+`memories/{USER,MEMORY}.md`.
+
+Transfer reviewed skills separately: install `plugins/benka` and `skills/benka-*`, apply the domain
+profiles, and install the paused cron jobs. The standard import does **not** turn OpenClaw bridges,
+plugins, cron, or Telegram bindings into Hermes integrations automatically.
 
 ```bash
 .venv/bin/benka archive-index /private/domain-transcripts /private/domain-state/archive.sqlite
 ```
 
-Сверить импортированные источники и отчёт `skipped`. Полные разговоры доступны через поиск с источником и строкой;
-в Hermes начинаются новые сессии. Каждый контур получает свой архив и компактную память.
+Reconcile the imported sources against the `skipped` report. Full conversations remain available
+through search with source and line number; Hermes starts new sessions. Each domain gets its own
+archive and its own compact memory.
 
-## Включение
+## Activation
 
-Настроить и проверить секреты/OAuth, модели и каждый резерв, embedding endpoint, wiki, Redis и разрешения профилей.
-Для каждого production manifest оператор создаёт отдельный read-only activation receipt:
-`command=ACTIVATE_HERMES_BY_DENIS`, точный `manifest_sha256`, SHA **финального** snapshot, `old_writers_stopped=true`.
-Значения заполняются после реальной команды и проверки остановки; файл не хранится в Git и недоступен tools агента.
+Configure and verify secrets and OAuth, the models and every fallback, the embedding endpoint, the
+wiki, Redis, and the profile permissions.
 
-Включить единственный production polling Gateway, проверить Telegram inbound → ответ в нужной теме и follow-up.
-Затем включить проверенные cron jobs/workers, наблюдать накопившуюся очередь и дедупликацию.
-Перед возобновлением Syncthing сравнить vault с Mac; подключить новое device identity без неожиданных удалений.
-Проверять все функции минимум 48 часов; еженедельную wiki-процедуру дополнительно прогнать на копии.
+For each production manifest the operator creates a separate read-only activation receipt:
+`command=ACTIVATE_HERMES_BY_DENIS`, the exact `manifest_sha256`, the SHA of the **final** snapshot,
+and `old_writers_stopped=true`. The values are filled in after the real instruction and after
+verifying that writers stopped. The file is not stored in Git and is not reachable by the agent's
+tools.
 
-## Откат
+Enable the single production polling Gateway and verify Telegram inbound → a reply in the correct
+topic → a follow-up. Then enable the verified cron jobs and workers, and watch the accumulated queue
+and its deduplication.
 
-Триггеры: нет Telegram ingress, нарушены темы/ACL, потеря данных, повторные публикации, отказ wiki/RAG, нестабильный runtime.
+Before resuming Syncthing, compare the vault against the Mac; connect the new device identity
+without unexpected deletions.
 
-До новых записей: остановить Hermes Gateway/workers/cron/Syncthing; вернуть исходные данные и известные образы,
-сверить единственного polling owner, возобновить OpenClaw.
+Verify all functions for at least 48 hours; additionally run the weekly wiki procedure against a
+copy.
 
-После новых записей: сначала сохранить холодное состояние Hermes. Не заменять актуальные данные старым архивом.
+## Rollback
+
+Triggers: no Telegram ingress, broken topics or ACLs, data loss, repeated publications, wiki/RAG
+failure, or an unstable runtime.
+
+**Before any new writes:** stop the Hermes Gateway, workers, cron, and Syncthing; restore the source
+data and the known images, confirm the single polling owner, and resume OpenClaw.
+
+**After new writes:** first capture Hermes's cold state. Do not overwrite current data with the old
+archive.
 
 ```bash
 .venv/bin/benka rollback-delta /private/baseline-vault /private/hermes-vault /private/old-vault > /private/rollback-report.json
 ```
 
-Команда составляет трёхсторонний отчёт: безопасные новые/изменённые файлы, уже совпавшие, конфликты и удаления для сверки.
-Она ничего не перезаписывает. Оператор переносит согласованные wiki/raw артефакты, архивирует новые диалоги Hermes,
-сверяет подтверждённые deliveries, cursor advances и Redis pending в обоих runtime.
-Новый RDB нельзя механически подменить старым: согласовать streams/PEL/dedupe семантически, включая неопределённые отправки.
-Повторный запуск старых обработчиков разрешён только после этой сверки.
+The command produces a three-way report: safe new and changed files, files that already match,
+conflicts, and deletions to reconcile. **It overwrites nothing.** The operator moves the agreed
+wiki and raw artifacts, archives the new Hermes conversations, and reconciles confirmed deliveries,
+cursor advances, and Redis pending entries across both runtimes.
 
-Старый стек и проверенный архив хранить минимум 14 дней **после приёмки Hermes**. Удаление — отдельная операция.
+A new RDB cannot be mechanically replaced by the old one: streams, PEL, and dedupe must be
+reconciled semantically, including the uncertain sends. Restarting the old handlers is permitted
+only after that reconciliation.
+
+Keep the old stack and the verified archive for at least 14 days **after Hermes acceptance**.
+Deleting them is a separate operation.

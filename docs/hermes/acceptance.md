@@ -1,151 +1,188 @@
-# Протокол проверок и готовности
+# Verification and readiness record
 
-Дата: 2026-09-06. **Статус `ACTIVE_ON_HERMES`; 48-часовое наблюдение продолжается.**
-Фактическое переключение, свежий snapshot и остановка source Docker-сервисов зафиксированы в
-[cutover record](cutover-record-2026-09-06.md). Публикация кода сама по себе не является активацией;
-этот cutover выполнен только после отдельной команды владельца.
-По указанию Дениса дальнейшие сборки и тесты выполняются на VPS; GitHub Actions не используется.
-Производственные токены/бот/почта/Syncthing в репетиционных тестах не используются.
+Date: 2026-09-06. **Status `ACTIVE_ON_HERMES`; the 48-hour observation window is still open.**
 
-## Корректирующее развёртывание Telegram и profile manifests
+The actual switch, the fresh snapshot, and the stopping of the source Docker services are recorded
+in the [cutover record](cutover-record-2026-09-06.md). Publishing code is not by itself an
+activation; this cutover was performed only after a separate instruction from the owner.
 
-После production cutover выполнено корректирующее развёртывание на VPS Hermes. Изолированный candidate-прогон
-подтвердил сборку runtime и test images, **209** регрессионных проверок, native Hermes contracts, synthetic
-`claw migrate` и Redis recovery. Полный `finalize` дополнительно был выполнен на отдельной локальной копии
-production-state на VPS с `network=none` до изменения живого состояния.
+By Denis's instruction, further builds and tests run on the VPS; GitHub Actions is not used for
+them. Production tokens, the production bot, mail, and Syncthing are never used in rehearsal tests.
 
-В production финализатор назначил home channel личному DM единственного trusted owner, отключил
-`onboarding.profile_build`, выпустил четыре profile manifests и четыре activation receipts. Gateway был
-пересоздан на проверенном образе и вернулся в состояние `healthy`; загрузка personal manifest внутри запущенного
-контейнера подтверждена. Compose также пересоздал сервис wiki как зависимость Gateway; его persistent volume
-не изменялся, а остальные Benka workers продолжили работу без перезапуска.
+## Corrective deployment of Telegram and profile manifests
 
-Проверка не отправляла искусственное сообщение в реальный Telegram-чат и не повторяла delivery. Внешний
-Telegram smoke остаётся частью наблюдения: владелец проверяет обычное сообщение в личном DM Беньки после
-развёртывания.
+After the production cutover, a corrective deployment was performed on the Hermes VPS. An isolated
+candidate run confirmed the build of the runtime and test images, **209** regression checks, the
+native Hermes contracts, a synthetic `claw migrate`, and Redis recovery. A full `finalize` was
+additionally executed against a separate local copy of the production state on the VPS with
+`network=none`, before any live state was changed.
 
-## Восстановление Telegram Digest в 17:00 МСК
+In production the finalizer assigned the home channel to the personal DM of the single trusted
+owner, disabled `onboarding.profile_build`, issued four profile manifests, and issued four
+activation receipts. The Gateway was recreated on the verified image and returned to `healthy`;
+loading the personal manifest inside the running container was confirmed.
 
-Нативный cron своевременно поставил выпуск в Redis, но production worker не нашёл `hermes send` в своём
-`PATH`. Бинарник находился рядом с Python worker в virtualenv; ошибка возникала до подтверждения Telegram
-message identifier и была правильно сохранена как `uncertain`, без автоматического повтора.
+Compose also recreated the `wiki` service as a Gateway dependency; its persistent volume was not
+modified, and the remaining Benka workers continued running without a restart.
 
-Исправление выбирает CLI из virtualenv, а затем использует `PATH` только как резерв. Новый staged candidate
-на VPS прошёл те же **209** регрессионных проверок, native contracts и Redis recovery. В production был
-пересоздан исключительно `worker-telegram` с Compose `--no-deps`; Gateway, wiki и соседние сервисы не
-перезапускались.
+The check did not send an artificial message into a real Telegram chat and did not repeat a
+delivery. The external Telegram smoke test remains part of the observation window: the owner
+verifies an ordinary message in Benka's personal DM after deployment.
 
-Перед восстановлением read-only проверка истории целевой темы не нашла сообщения Беньки за 16:55–17:10 МСК.
-После этого один контролируемый run сформировал выпуск для номинального окна 14:00–17:00 МСК, завершился
-нормально и получил подтверждённые receipts. Повторная независимая проверка истории нашла обе части выпуска.
-Первоначальные `uncertain` receipt и запись reconciliation сохранены в закрытом операционном журнале и не
-должны воспроизводиться.
+## Recovery of the 17:00 MSK Telegram Digest
 
-## Операционное восстановление почты и Signals
+Native cron enqueued the release into Redis on time, but the production worker could not find
+`hermes send` on its `PATH`. The binary sat next to the Python worker inside the virtualenv. The
+error occurred **before** a Telegram message identifier was confirmed and was correctly stored as
+`uncertain`, with no automatic retry.
 
-Во время наблюдения обнаружились пропущенные mail digests и Signals при работающих источниках и Redis workers.
-Причины были разделены: устаревший runtime image вызывал `hermes send` через несуществующий host-style `PATH`,
-а подготовка production schedules читала только inline Signals rules и пропускала reviewed `rule_files`.
-Дополнительно у send-capable workers отсутствовали private bind-mount каталоги `uploads` и `worker-logs`, поэтому
-восстановление исходного Telegram-контекста с медиа не могло завершиться.
+The fix selects the CLI from the virtualenv and only then falls back to `PATH`. A new staged
+candidate on the VPS passed the same **209** regression checks, the native contracts, and Redis
+recovery. In production, only `worker-telegram` was recreated, using Compose `--no-deps`; the
+Gateway, `wiki`, and the neighbouring services were not restarted.
 
-Исправление использует Hermes CLI рядом с Python worker, раскрывает reviewed Signals rule fragments перед
-созданием registry и создаёт writable worker directories при preparation. После подтверждённой проверки источников
-были выполнены контролируемые догоняющие выпуски обоих ящиков. Для одного подтверждённого пропуска Signals применён
-source-scoped job с `source_id` и `target_message_id`: он читает только заданный пост и проходит обычные matching,
-Redis dedupe, Hermes receipt и source-context delivery, без replay накопившейся ленты. Job завершился без записи в
-reconciliation; новые delivery receipts подтверждены. Исходные `uncertain` receipts сохранены для ручной сверки и
-не переотправляются автоматически.
+Before recovery, a read-only check of the target topic's history found no Benka message between
+16:55 and 17:10 MSK. A single controlled run then produced the release for the nominal 14:00–17:00
+MSK window, completed normally, and obtained confirmed receipts. An independent re-check of the
+history found both parts of the release.
 
-На VPS обновлён только `worker-signals`; Gateway и соседние сервисы не пересоздавались. Новый runtime/test image
-прошёл **209** изолированных проверок. После восстановления Gateway остался `healthy`, а все активные Signals
-sources находятся в состоянии healthy без stale/error.
+The original `uncertain` receipt and the reconciliation entry are kept in the private operations log
+and must not be replayed.
 
-## Проверено на VPS Hermes
+## Operational recovery of mail and Signals
 
-Серверный прогон выполнен в контейнерах с read-only root, без production secrets, с ограничением 2 CPU / 2 GiB RAM.
-Регрессии и native contracts работают с `network=none`; Redis проверялся в отдельной `internal` Docker-сети без опубликованных портов.
-Test dataset — только синтетические fixtures. GitHub Actions отсутствует.
+During observation, missed mail digests and Signals were found while the sources and the Redis
+workers were running. The causes were separated:
 
-| Набор | Результат |
+- A stale runtime image invoked `hermes send` through a non-existent host-style `PATH`.
+- Production schedule preparation read only the inline Signals rules and skipped the reviewed
+  `rule_files`.
+- Send-capable workers were missing the private `uploads` and `worker-logs` bind-mount directories,
+  so restoring the original Telegram context with media could not complete.
+
+The fix uses the Hermes CLI next to the Python worker, expands the reviewed Signals rule fragments
+before building the registry, and creates the writable worker directories during preparation.
+
+After a confirmed source check, controlled catch-up releases were run for both mailboxes. For one
+confirmed Signals miss, a source-scoped job with `source_id` and `target_message_id` was used: it
+reads only the specified post and goes through the normal matching, Redis dedupe, Hermes receipt,
+and source-context delivery, without replaying the accumulated feed. The job finished without
+writing to reconciliation, and the new delivery receipts were confirmed. The original `uncertain`
+receipts are retained for manual reconciliation and are not resent automatically.
+
+On the VPS only `worker-signals` was updated; the Gateway and the neighbouring services were not
+recreated. The new runtime and test image passed **209** isolated checks. After recovery the Gateway
+remained `healthy`, and all active Signals sources are healthy with no stale or error state.
+
+## Verified on the Hermes VPS
+
+The server-side run executed in containers with a read-only root, no production secrets, and a
+2 CPU / 2 GiB RAM limit. Regressions and native contracts run with `network=none`; Redis was
+verified on a separate `internal` Docker network with no published ports. The test dataset consists
+of synthetic fixtures only. There is no GitHub Actions involvement.
+
+| Suite | Result |
 |---|---|
-| Hermes safety/migration/archive/cron/profiles/maintenance + native model fixtures | 45 passed |
+| Hermes safety / migration / archive / cron / profiles / maintenance + native model fixtures | 45 passed |
 | AgentMail | 19 passed |
 | Telegram Digest | 21 passed |
 | Signals / Last30Days | 98 passed |
 | Wiki-import | 26 passed |
-| Итого | **209 passed** |
-| Native Hermes plugin / cron / AIAgent contract | 7 tools зарегистрированы; paused cron idempotent; API-параметры совместимы |
-| Compose configuration | `config --quiet` проходит |
-| История и working tree на секреты | Перед merge commit: 1226 объектов, 34 reviewed совпадения, 0 неразобранных; self-test сканера проходит |
-| VPS inventory | Read-only проверены оба VPS; подробности в закрытых JSON-отчётах |
+| **Total** | **209 passed** |
+| Native Hermes plugin / cron / AIAgent contract | 7 tools registered; paused cron idempotent; API parameters compatible |
+| Compose configuration | `config --quiet` passes |
+| History and working tree secret scan | Before the merge commit: 1,226 objects, 34 reviewed matches, 0 unresolved; the scanner self-test passes |
+| VPS inventory | Both hosts checked read-only; details in private JSON reports |
 
-Native model tests используют настоящий закреплённый `AIAgent` и локальный HTTP/SSE fixture:
-проверены отсутствие инструментов/унаследованной памяти, 401 → резерв и завершение по timeout.
-Они не доказывают доступность реальных OAuth/provider аккаунтов.
+The native model tests use the real pinned `AIAgent` and a local HTTP/SSE fixture: they verify the
+absence of tools and inherited memory, the 401 → fallback path, and termination on timeout. **They
+do not prove that the real OAuth or provider accounts are reachable.**
 
-Snapshot tests проверяют SHA всего архива/каждого файла, tamper, path traversal, повторный импорт,
-прерванный restore и отсутствие перезаписи. Queue/delivery tests проверяют slot dedupe, pending reconciliation,
-confirmed message IDs и запрет повторения uncertain sends. Это не замена реальному Telegram smoke.
+Snapshot tests verify the SHA of the whole archive and of each file, tampering, path traversal,
+repeated import, an interrupted restore, and the absence of overwrites. Queue and delivery tests
+verify slot dedupe, pending reconciliation, confirmed message IDs, and the prohibition on repeating
+uncertain sends. **None of this replaces a real Telegram smoke test.**
 
-## Проверки на VPS
+## VPS check matrix
 
-Результаты серверного прогона добавляются после выполнения. Использовать отдельные имена контейнеров, volumes и
-ограничения ресурсов. Состояние production и соседние проекты не подключать.
+Server-run results are added as they are produced. Use separate container names, volumes, and
+resource limits. Never attach production state or neighbouring projects.
 
-| Проверка | Статус до серверной репетиции | Что закрывает |
+| Check | Status before the server rehearsal | What it closes |
 |---|---|---|
-| Сборка закреплённого Docker image, включая dashboard и Last30Days | PASS | Linux runtime и отдельный test target собраны |
-| Регрессии в контейнере на VPS | PASS, 209 тестов | Все пять suites проходят |
-| Standby с отключённой сетью | PASS, CLI и работающий контейнер | standby/sandbox/automatic_cutover=false; healthy до и после restart, network none |
-| Native plugin/cron/model contracts на VPS | PASS | 7 tools, paused cron, native model fixtures |
-| Реальный Redis и рестарт контейнера | PASS | AOF сохраняет slot, delivery receipt и pending; pending уходит на сверку, повторного send нет |
-| TLS/mTLS, authentication, WebSocket dashboard | PASS, 9 checks | Без client certificate отказ; missing session/wrong password отказ; login, Secure/HttpOnly cookies, HTML/config/sessions API; WS upgrade и запрет replay |
-| Native OpenClaw importer | PASS, synthetic data | dry-run, import, повтор, неизменность source, исключение private config и pre-import backup |
-| Соседние проекты VPS Hermes | PASS | У всех 9 исходных контейнеров сохранены image ID, status и health |
+| Build of the pinned Docker image, including dashboard and Last30Days | PASS | Linux runtime and a separate test target build |
+| Regressions in a container on the VPS | PASS, 209 tests | All five suites pass |
+| Standby with networking disabled | PASS, CLI and a running container | `standby` / `sandbox` / `automatic_cutover=false`; healthy before and after restart, `network=none` |
+| Native plugin / cron / model contracts on the VPS | PASS | 7 tools, paused cron, native model fixtures |
+| Real Redis and a container restart | PASS | AOF preserves the slot, the delivery receipt, and pending; pending goes to reconciliation with no repeated send |
+| TLS/mTLS, authentication, WebSocket dashboard | PASS, 9 checks | Refusal without a client certificate; refusal on missing session or wrong password; login, Secure/HttpOnly cookies, HTML/config/sessions API; WS upgrade and replay prohibition |
+| Native OpenClaw importer | PASS, synthetic data | dry-run, import, repeat, source immutability, exclusion of private config, and pre-import backup |
+| Neighbouring projects on the Hermes VPS | PASS | All 9 pre-existing containers keep their image ID, status, and health |
 
-Повторный проверенный Git tree: `e3350692a5fcb801b57414a4a2121dd88dc8f1c4` (staged candidate export 07).
+Re-verified Git tree: `e3350692a5fcb801b57414a4a2121dd88dc8f1c4` (staged candidate export 07).
 Runtime image ID: `sha256:ba86d71c6b9fc882ca8d664ed3170a5827a6a8002f95bfb0774e15accd3ce40b`.
-Первый полный прогон: tree `f96facd124bc812143fe09152ec6e4ee70dea0ed` (код `c2ab557`).
-Закрытые логи: `/opt/benka-hermes/reports/<TREE>/`; итоговый exit code — 0.
-Нативный Hermes обнаружил SQLite 3.46.1 и выбрал DELETE journal; WAL не включался.
-Первый прогон выявил и помог исправить CRLF при экспорте Git, путь к dashboard build output и отсутствие
-reference-скрипта в тестовом образе. Повторный прогон прошёл полностью. До указания о VPS локально ранее проходили 206 тестов.
+First full run: tree `f96facd124bc812143fe09152ec6e4ee70dea0ed` (code `c2ab557`).
+Private logs: `/opt/benka-hermes/reports/<TREE>/`; the final exit code was 0.
 
-Затем проверены изменения Compose панели и operator scripts непосредственно на VPS: отдельная ingress сеть Caddy,
-bounded trusted proxy в Hermes, Secure cookies, повторный запуск dashboard и native importer rehearsal.
-Они не требуют изменения runtime image. HTTPS работает на домене Reddit Compass с отдельным портом 8451;
-source Caddy/DNS/SNI маршруты не менялись. Подробности и закрытые access files описаны в [инструкции панели](panel.md).
-Полноценный чат с реальными моделями ещё не проверен. TLS certificate refresh пока выполняется оператором.
+Native Hermes detected SQLite 3.46.1 and selected the DELETE journal; WAL was not enabled.
 
-На source 14 остальных ранее зарегистрированных контейнеров не изменились; отдельный сторонний кандидат OpenClaw
-из D003 исчез за время работы. Производственный Gateway сохранён. Перед cutover повторно сверить этот параллельный rollout.
+The first run found — and helped fix — CRLF handling in the Git export, the path to the dashboard
+build output, and a reference script missing from the test image. The repeat run passed completely.
+Before the instruction to move to the VPS, 206 tests had previously passed locally.
 
-## До `READY_NOT_ACTIVE`
+The panel Compose changes and the operator scripts were then verified directly on the VPS: the
+separate Caddy ingress network, the bounded trusted proxy in Hermes, Secure cookies, a dashboard
+restart, and the native importer rehearsal. These do not require a change to the runtime image.
 
-- Закрыть реестр фактических source files, cron всех уровней, размеров томов и pinned образов LightRAG/OmniRoute/Syncthing.
-- Перенести необходимые изменения незакоммиченного OpenClaw проекта, не включая незавершённое обновление runtime автоматически.
-- Подготовить полный закрытый deployment manifest: все workers, scoped Redis/wiki/RAG, модели, пути, volumes, домен панели.
-- Проверить domain routing/ACL/context isolation с реальным Gateway и отдельным тестовым ботом; подготовить проверенные SOUL/USER/MEMORY/skills.
-- Выполнить репетицию на проверенной резервной копии, native importer dry-run/import, повтор/прерывание/восстановление и поиск архива.
-- Проверить оба ящика, Telegram sources/cursors, оба Last30Days пресета, triage, идеи/promotion, контрольные LightRAG запросы.
-- Проверить каждый provider/reserve, неверный JSON, auth errors, timeout и отказ всех моделей с детерминированным результатом.
-- Провести совместный прогон Telegram запроса, дайджеста и индексации; оценить OOM/restarts/рост очереди.
-- Проверить рестарт, перезагрузку и восстановление на VPS; соседние сервисы остаются здоровыми.
-- Проверить откат до и после новых записей, включая deliveries, cursor merge и pending; одного vault-delta отчёта недостаточно.
-- Оставить production connections выключенными и все производственные cron paused. Только после этого зафиксировать READY.
+HTTPS works on the Reddit Compass domain with the separate port 8451; the source Caddy, DNS, and
+SNI routes were not modified. Details and the private access files are described in the
+[panel runbook](panel.md).
 
-Для внешних проверок ещё нужны место хранения конфигурации отдельного тестового Telegram-бота,
-проверенная резервная копия и окончательные закрытые привязки контуров. Секреты в чат или Git не помещать.
+Full chat against the real models is **not yet verified**. TLS certificate refresh is still an
+operator action.
 
-## После отдельной команды переключения
+On the source host, the other 14 previously registered containers were unchanged; the separate
+third-party OpenClaw candidate from D003 disappeared during the work. The production Gateway was
+preserved. This parallel rollout must be re-checked before cutover.
 
-Повторить inventory/drift review, перенести свежую холодную копию за весь период ожидания, проверить единственного polling owner.
-Закрыть всю функциональную матрицу плана. Наблюдать минимум 48 часов с реальными ежедневными запусками.
-Еженедельное обслуживание проверить на копии; подтвердить восстановление. До этого миграция не считается завершённой.
+## Remaining before `READY_NOT_ACTIVE`
 
-## Формат записи каждого прогона
+- Close the registry of actual source files, cron at all levels, volume sizes, and the pinned
+  LightRAG / OmniRoute / Syncthing images.
+- Port the necessary changes from the uncommitted OpenClaw project, without automatically including
+  the unfinished runtime upgrade.
+- Prepare the full private deployment manifest: every worker, scoped Redis/wiki/RAG, models, paths,
+  volumes, and the panel domain.
+- Verify domain routing, ACLs, and context isolation against a real Gateway with a separate test
+  bot; prepare reviewed SOUL/USER/MEMORY/skills.
+- Run the rehearsal against a verified backup: native importer dry-run and import, repeat,
+  interruption, recovery, and archive search.
+- Verify both mailboxes, Telegram sources and cursors, both Last30Days presets, triage, ideas and
+  promotion, and the control LightRAG queries.
+- Verify every provider and fallback, malformed JSON, auth errors, timeout, and the all-models-fail
+  path with a deterministic result.
+- Run a combined pass of a Telegram request, a digest, and indexing; assess OOM, restarts, and queue
+  growth.
+- Verify restart, reboot, and recovery on the VPS, with the neighbouring services staying healthy.
+- Verify rollback both before and after new writes, including deliveries, cursor merge, and pending;
+  a vault-delta report alone is not sufficient.
+- Leave production connections disabled and all production cron paused. Only then record READY.
 
-Записывать дату, Git SHA + dirty flag, image ID, pinned Hermes SHA, dataset class, команду, counts/result и оставшиеся gaps.
-Логи с содержимым писем/диалогов, receipt IDs, endpoint details и auth хранятся приватно; в Git — только обезличенный результат.
-Health-check не закрывает функциональную приёмку.
+External checks still require somewhere to store the configuration of a separate test Telegram bot,
+a verified backup, and the final private domain bindings. Secrets go into neither chat nor Git.
+
+## After a separate cutover instruction
+
+Repeat the inventory and drift review, transfer a fresh cold copy covering the whole waiting period,
+and confirm the single polling owner. Close the plan's entire functional matrix. Observe for at
+least 48 hours with real daily runs. Verify weekly maintenance against a copy and confirm recovery.
+Until then the migration is not considered complete.
+
+## Record format for each run
+
+Record the date, the Git SHA plus dirty flag, the image ID, the pinned Hermes SHA, the dataset
+class, the command, the counts and result, and the remaining gaps.
+
+Logs containing mail or conversation content, receipt IDs, endpoint details, and auth are kept
+private; only the de-identified result goes into Git. **A health check does not close functional
+acceptance.**

@@ -1,115 +1,138 @@
-# Реестр переноса
+# Transfer inventory
 
-Срез: 2026-09-06. Статус: `MIGRATION_IN_PROGRESS`. Адреса и секреты находятся в закрытом deployment manifest.
+Snapshot: 2026-09-06. Status: `MIGRATION_IN_PROGRESS`. Addresses and secrets live in the private
+deployment manifest, never here.
 
-## Исходный набор
+## Source set
 
-Кандидат создан отдельным клоном `openclaw_firststeps` от `1d7ffedd7a6fcb6ef10dba5d7ed52e48417f2279`.
+The candidate was created as a separate clone, `openclaw_firststeps`, from
+`1d7ffedd7a6fcb6ef10dba5d7ed52e48417f2279`.
 
-В target сохранены также четыре первоначальных коммита My AI Office с обзором, архитектурой, ignore rules и MIT license.
-Исходные активные ветки опубликованы под прежними `agent/...` именами; исходный main доступен как `legacy/openclaw-main`.
-Миграционный код публикуется в main и migration/hermes-native. Истории объединяются без force push.
-Исходный рабочий каталог содержит незакоммиченные изменения подготовки OpenClaw 2026.9.1 и другие правки.
-Они не скопированы поверх проверенного runtime автоматически: их сопоставление с сервером ведётся в [журнале расхождений](drift-log.md).
-Исторические ветки сохраняются локально. Резервная `backup/pre-scrub-20260411-144635` не предназначена для публикации без отдельной проверки причин очистки истории.
+The target also retains the four original My AI Office commits carrying the overview, architecture,
+ignore rules, and MIT license. The source's active branches are published under their previous
+`agent/...` names; the source `main` is available as `legacy/openclaw-main`. Migration code is
+published to `main` and `migration/hermes-native`. The histories are merged without force pushes.
 
-В живом Gateway при первом read-only probe используется image ID
-`sha256:b4419b44f35397314015301ea5a248eb31037f05b2c82a777f12ad67d0fb5b97`; контейнер здоров.
-Это зафиксированная исходная точка, а не указание обновлять OpenClaw.
+The source working directory contains uncommitted OpenClaw 2026.9.1 preparation and other edits.
+They were **not** copied over the verified runtime automatically: their reconciliation against the
+server is tracked in the [drift log](drift-log.md).
 
-## VPS Hermes и соседние проекты
+Historical branches are kept locally. The `backup/pre-scrub-20260411-144635` backup is not intended
+for publication without a separate review of why the history was scrubbed.
 
-Сведения найдены в `reddit-compass/docs/HOSTING.md`, `reddit-compass/deploy/hostkey/README.md`, Compose этого проекта,
-а также `vps_management/docs/ownership-matrix.md` и `docs/containers.md`. Доступ — через alias `vps-hostkey-hermes`
-и `vps_management/ansible/scripts/ssh-vps.sh`; секреты читаются штатным механизмом зашифрованного Ansible vault.
+At the first read-only probe the live Gateway used image ID
+`sha256:b4419b44f35397314015301ea5a248eb31037f05b2c82a777f12ad67d0fb5b97`, and the container was
+healthy. This is a recorded starting point, not an instruction to upgrade OpenClaw.
 
-| Параметр | Проверено read-only 2026-09-06 |
+## The Hermes VPS and its neighbours
+
+Details were found in `reddit-compass/docs/HOSTING.md`,
+`reddit-compass/deploy/hostkey/README.md`, this project's Compose files, and
+`vps_management/docs/ownership-matrix.md` plus `docs/containers.md`. Access goes through the
+`vps-hostkey-hermes` alias and `vps_management/ansible/scripts/ssh-vps.sh`; secrets are read via
+the standard encrypted Ansible vault mechanism.
+
+| Property | Verified read-only, 2026-09-06 |
 |---|---|
-| Target CPU / RAM | 8 CPU / 15 955 MiB RAM; доступно около 13.4 GiB |
-| Target диск `/opt` | Около 113 GiB свободно, 25% занято |
-| Существующие Compose-проекты | reddit-compass, moex-futoi, cheap-intelligence, stealth |
-| Порты | 80, 443, 8450 заняты; 8451 и 9119 были свободны |
-| Hermes Agent / каталог | Команда Hermes и `/opt/benka-hermes` при исходной проверке отсутствовали |
-| Source CPU / RAM | 2 CPU / 3 819 MiB RAM; около 1.1 GiB доступно |
-| Source диск | 87% занято; около 4.7 GiB свободно |
+| Target CPU / RAM | 8 CPU / 15,955 MiB RAM; roughly 13.4 GiB available |
+| Target disk `/opt` | Roughly 113 GiB free, 25% used |
+| Existing Compose projects | `reddit-compass`, `moex-futoi`, `cheap-intelligence`, `stealth` |
+| Ports | 80, 443, 8450 occupied; 8451 and 9119 were free |
+| Hermes Agent / directory | The Hermes command and `/opt/benka-hermes` were both absent at the initial check |
+| Source CPU / RAM | 2 CPU / 3,819 MiB RAM; roughly 1.1 GiB available |
+| Source disk | 87% used; roughly 4.7 GiB free |
 
-Порты 80/443 и SNI-маршрутизация принадлежат существующей инфраструктуре. Reddit Compass уже использует 8450.
-Кандидат получает отдельный Compose-проект `benka-hermes-candidate`, каталог `/opt/benka-hermes` и Caddy на 8451;
-9119 доступен только внутри сети контейнеров. Нужный SNI-маршрут на 443 — отдельная инфраструктурная настройка после выбора домена.
-При переносе нельзя выполнять общий `docker compose down`, `docker system prune` или перезапуск чужого прокси.
+Ports 80/443 and SNI routing belong to existing infrastructure. Reddit Compass already uses 8450.
+The candidate receives its own Compose project `benka-hermes-candidate`, the `/opt/benka-hermes`
+directory, and Caddy on 8451; 9119 is reachable only inside the container network. The required SNI
+route on 443 is a separate infrastructure change made after the domain is chosen.
 
-Повторяемая инвентаризация: `scripts/inventory-hermes-host.py --role source|target`.
-Скрипт только читает состояние, выводит имена переменных без значений, не выводит SSH-адреса и тела cron-команд.
-Подробные JSON-отчёты сохраняются вне Git. Недоступные размеры отмечаются `unverified`, а не нулём.
+During the transfer, a blanket `docker compose down`, `docker system prune`, or a restart of
+another project's proxy must never be run.
 
-Повторный source probe в 10:03 UTC показал около 3.57 GiB свободного места, config около 4.72 GiB,
-LightRAG около 1.05 GiB и vault около 56 MiB. Размер Signals не подтверждён из-за прав/таймаута.
-Найден дополнительный OpenClaw candidate вне Compose: production image остался прежним, кандидат не включается в baseline.
-Автоматический поиск OpenClaw cron в config не дал подтверждённого реестра; отсутствие результата не означает отсутствие заданий.
+Inventory is repeatable: `scripts/inventory-hermes-host.py --role source|target`. The script only
+reads state; it prints variable names without values and emits neither SSH addresses nor cron
+command bodies. Detailed JSON reports are stored outside Git. Sizes that cannot be read are marked
+`unverified` rather than zero.
 
-Зафиксированные live image IDs зависимых сервисов: LightRAG
+A repeat source probe at 10:03 UTC showed roughly 3.57 GiB free space, `config` at roughly
+4.72 GiB, LightRAG at roughly 1.05 GiB, and the vault at roughly 56 MiB. The Signals size was not
+confirmed because of permissions or a timeout.
+
+An additional OpenClaw candidate was found outside Compose: the production image was unchanged, and
+the candidate is not admitted to the baseline. An automated search for OpenClaw cron entries in
+`config` produced no confirmed registry; the absence of a result does not mean the absence of jobs.
+
+Recorded live image IDs of the dependent services: LightRAG
 `sha256:baf0d07eaa73d2e0fa044fdab76767c69480737368a3fd88ffc86af1290f5259`, OmniRoute
 `sha256:a70d7cb45db50d409b75c7a69b0255d856098abbc8ed6da48930a308a1953aa8`, Redis
-`sha256:8b81dd37ff027bec4e516d41acfbe9fe2460070dc6d4a4570a2ac5b9d59df065`.
-Для переноса нужны export/load этих образов либо подтверждённые registry digests; image ID сам по себе не является registry pull URL.
+`sha256:8b81dd37ff027bec4e516d41acfbe9fe2460070dc6d4a4570a2ac5b9d59df065`. The transfer needs either
+an export/load of these images or confirmed registry digests; **an image ID is not a registry pull
+URL.**
 
-## Функции и данные
+## Functions and data
 
-| Функция | Код Hermes | Переносимое состояние | Приёмка |
+| Function | Hermes code | State to transfer | Acceptance |
 |---|---|---|---|
-| Личность и память | curated `claw-layout`, native importer, domain profiles | SOUL/IDENTITY/USER/MEMORY, проверенные skills | Стиль и устойчивые сведения; новые сессии |
-| Старые разговоры и дневники | `archive.py`, SQLite FTS5 | JSONL, Markdown, источник и номер строки | Поиск, повторная индексация, отчёт пропусков |
-| Telegram ingress / темы | Native Gateway, `profiles.py` | Доверенные numeric IDs, темы, update watermark | Реальный inbound, follow-up, отрицательные ACL-тесты |
-| Личная / рабочая почта | `pipelines.py` → `agentmail-email` | Inbox configs, cursors, dedupe, pending и triage | Оба ящика, пересылки, actionable/informational, отсутствие дублей |
-| Telegram Digest | `pipelines.py` → `telethon-digest` | Telethon session, folders/channels, cursors, persisted releases | Источники, баланс категорий, корректные ссылки |
-| Signals | `pipelines.py` → `signals-bridge` | Rulesets, event streams, locks, source refs, dedupe | Частичный отказ источника, доставка исходных материалов |
-| Last30Days | Тот же native worker и pinned skill | Оба пресета, source settings, repeat history | personal-feed / platform-pulse, деградация отдельных источников |
-| Wiki / Ideas | `wiki.py`, native plugin, прежний wiki-import | Vault, fingerprint, lifecycle metadata, ingest receipts | Capture, promotion без дубля, `обсуди:` без сохранения |
-| LightRAG | `maintenance.py`, прежний embedding endpoint | Граф, KV/vector data, размерность 3072, model identity | Контрольные запросы; upload accepted отдельно от indexed |
-| Redis | `queue.py`, `delivery.py` | RDB/AOF, streams/groups/pending, dedupe, доставки | Один slot, повторный запуск, сверка неопределённых отправок |
-| OmniRoute | Сохранённый сервис, модельные конфигурации | SQLite/OAuth/routes и provider credentials | Каждый primary/reserve, время отказа, полный fallback |
-| Syncthing | Отдельный сервис с новой device identity | Vault и проверенная карта папок | Сверка Mac/target без неожиданных удалений |
-| Веб-панель / CLI | Native Hermes, отдельный dashboard, Caddy | Конфигурация, scoped sessions, auth | Вход, чат, WS, настройки, отказ посторонним |
+| Identity and memory | curated `claw-layout`, native importer, domain profiles | SOUL/IDENTITY/USER/MEMORY, reviewed skills | Style and stable facts; new sessions |
+| Old conversations and diaries | `archive.py`, SQLite FTS5 | JSONL, Markdown, source and line number | Search, re-indexing, gap report |
+| Telegram ingress / topics | Native Gateway, `profiles.py` | Trusted numeric IDs, topics, update watermark | Real inbound, follow-up, negative ACL tests |
+| Personal / work mail | `pipelines.py` → `agentmail-email` | Inbox configs, cursors, dedupe, pending, and triage | Both mailboxes, forwards, actionable/informational, no duplicates |
+| Telegram Digest | `pipelines.py` → `telethon-digest` | Telethon session, folders/channels, cursors, persisted releases | Sources, category balance, correct links |
+| Signals | `pipelines.py` → `signals-bridge` | Rulesets, event streams, locks, source refs, dedupe | Partial source failure, delivery of source material |
+| Last30Days | The same native worker and pinned skill | Both presets, source settings, repeat history | `personal-feed` / `platform-pulse`, degradation of individual sources |
+| Wiki / Ideas | `wiki.py`, native plugin, the previous `wiki-import` | Vault, fingerprint, lifecycle metadata, ingest receipts | Capture, promotion without duplicates, `обсуди:` without saving |
+| LightRAG | `maintenance.py`, the previous embedding endpoint | Graph, KV/vector data, dimension 3072, model identity | Control queries; "upload accepted" recorded separately from "indexed" |
+| Redis | `queue.py`, `delivery.py` | RDB/AOF, streams/groups/pending, dedupe, deliveries | One slot, repeated run, reconciliation of uncertain sends |
+| OmniRoute | Retained service, model configurations | SQLite/OAuth/routes and provider credentials | Every primary/reserve, failure timing, full fallback |
+| Syncthing | Separate service with a new device identity | Vault and a verified folder map | Mac/target reconciliation with no unexpected deletions |
+| Web panel / CLI | Native Hermes, separate dashboard, Caddy | Configuration, scoped sessions, auth | Login, chat, WebSocket, settings, refusal for outsiders |
 
-Форматы существующих Redis-полей и wiki `source_type`, `source`, `capture_mode`, `promote_fingerprint`,
-`wiki_page_paths`, `raw_path`, `rag_status` сохраняются. Новые ключи имеют префикс `benka:`.
-Полные письма не включаются в RAG по умолчанию. В архив каждого контура импортируются только его данные.
+The existing Redis field formats and the wiki `source_type`, `source`, `capture_mode`,
+`promote_fingerprint`, `wiki_page_paths`, `raw_path`, and `rag_status` keys are preserved. New keys
+are prefixed `benka:`.
 
-## Расписания
+Full email bodies are not included in RAG by default. Only a given domain's own data is imported
+into that domain's archive.
 
-Окончательный источник — подтверждённый серверный реестр. Таблица служит сверкой, а не основанием включать отключённое.
+## Schedules
 
-| Сценарий | Europe/Moscow | Особенности |
+The confirmed server-side registry is the final source of truth. This table is a reconciliation
+aid, never a reason to enable something that is disabled.
+
+| Workflow | Europe/Moscow | Notes |
 |---|---|---|
-| Telegram Digest | 08, 11, 14, 17, 21 | Сохранять `digest_type` и slot; в текущем source используется host cron |
-| Личная почта | 08, 13, 16, 20 | Раздельные morning/interval/editorial |
-| Рабочая почта | 8 слотов от 08:30 до 19:00 | Промежуточные минуты брать из фактического config |
-| Опрос обоих ящиков | Каждые 5 минут | Раздельные streams/groups/inbox refs |
-| Signals | Каждые 5 минут | Только включённые rulesets |
-| Signals retention | Раз в час по исходному internal scheduler | Переносится в явное Hermes cron-задание после сверки |
-| Last30Days | 07:00 | Только фактически включённый preset; второй доступен по запросу |
-| LightRAG | Каждые 30 минут | Явный список разрешённых корней; не вся файловая система |
+| Telegram Digest | 08, 11, 14, 17, 21 | Preserve `digest_type` and slot; the current source uses host cron |
+| Personal mail | 08, 13, 16, 20 | Separate morning / interval / editorial |
+| Work mail | 8 slots from 08:30 to 19:00 | Take the intermediate minutes from the actual config |
+| Polling of both mailboxes | Every 5 minutes | Separate streams / groups / inbox refs |
+| Signals | Every 5 minutes | Enabled rulesets only |
+| Signals retention | Hourly, via the source's internal scheduler | Moves to an explicit Hermes cron job after reconciliation |
+| Last30Days | 07:00 | Only the preset actually enabled; the second is available on request |
+| LightRAG | Every 30 minutes | An explicit list of permitted roots, not the whole filesystem |
 | Wiki daily | 05:45 | `dry_run`, `report` |
-| Wiki weekly | Вс 06:15 | `apply`: report, archive, refresh_topics, refresh_overview |
+| Wiki weekly | Sun 06:15 | `apply`: report, archive, refresh_topics, refresh_overview |
 
-`benka jobs-prepare` переводит проверенный JSON-реестр в определения jobs/workers; `benka cron-prepare` создаёт
-нативные **paused** задания с `no_agent=true`, `deliver=local`, `failure_deliver=local`.
-`local` — поддерживаемый Hermes способ не отправлять вывод в канал. Только общий sender публикует результаты.
+`benka jobs-prepare` turns the reviewed JSON registry into job and worker definitions;
+`benka cron-prepare` creates native **paused** jobs with `no_agent=true`, `deliver=local`, and
+`failure_deliver=local`. `local` is the supported Hermes way of not sending output to a channel.
+Only the shared sender publishes results.
 
-## Секреты по назначению
+## Secrets by purpose
 
-| Назначение | Хранение / перенос |
+| Purpose | Storage / transfer |
 |---|---|
-| SSH | Существующий Ansible vault, не Git проекта |
-| Telegram Bot API | Отдельный тестовый токен для репетиции; production только при переключении |
-| Telethon | API ID/hash и `.session`, приватный том с корректным владельцем |
-| Два ящика | API/OAuth отдельно по контурам, исходные inbox refs |
-| LLM | Private model-providers JSON или штатный Hermes auth; ключи не в prompts/cron |
-| Redis | ACL/URL; отдельные scoped credentials и права на streams |
-| Wiki / LightRAG | Раздельные токены и URL каждого контура |
-| OmniRoute | SQLite с OAuth и ключами, согласованная холодная копия |
-| Dashboard | Username, password hash, stable auth secret; Caddy server cert/key и client CA |
-| Syncthing | Новая идентичность target; pairing с Mac после сверки данных |
+| SSH | The existing Ansible vault, not this project's Git |
+| Telegram Bot API | A separate test token for the rehearsal; production only at the switch |
+| Telethon | API ID/hash and `.session`, on a private volume with the correct owner |
+| The two mailboxes | API/OAuth held separately per domain, with the source inbox refs |
+| LLM | Private model-providers JSON or standard Hermes auth; keys never in prompts or cron |
+| Redis | ACL/URL; separate scoped credentials and stream permissions |
+| Wiki / LightRAG | Separate tokens and URLs per domain |
+| OmniRoute | SQLite holding OAuth and keys, taken as a consistent cold copy |
+| Dashboard | Username, password hash, stable auth secret; Caddy server cert/key and client CA |
+| Syncthing | A new target identity; pairing with the Mac after the data is reconciled |
 
-Для `READY_NOT_ACTIVE` ещё нужно завершить сопоставление server files ↔ Git, собрать точные размеры всех томов,
-cron всех уровней, маршруты и ACL, закрепить live digests LightRAG/OmniRoute/Syncthing и проверить их восстановление.
+`READY_NOT_ACTIVE` additionally requires: finishing the server-files ↔ Git mapping, collecting exact
+sizes for every volume, enumerating cron at all levels, recording routes and ACLs, pinning the live
+digests for LightRAG / OmniRoute / Syncthing, and verifying that they restore.

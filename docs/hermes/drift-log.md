@@ -1,31 +1,34 @@
-# Журнал расхождений OpenClaw ↔ Hermes
+# Drift log: OpenClaw ↔ Hermes
 
-OpenClaw остаётся production на протяжении подготовки и последующего ожидания около двух недель.
-Обычные новые сообщения/письма/заметки/курсоры переносятся свежим финальным snapshot.
-Изменения **поведения, кода, источников, расписаний, настроек и секретов** учитываются отдельно.
+OpenClaw remained production throughout preparation and the roughly two-week waiting period that
+followed. Ordinary new messages, mail, notes, and cursors transfer with the final fresh snapshot.
+Changes to **behaviour, code, sources, schedules, settings, and secrets** are tracked separately
+here, because a snapshot cannot carry them.
 
-| ID / дата | Изменение исходной системы | Что сделать в Hermes | Проверка | Статус |
+| ID / date | Change in the source system | Action required in Hermes | Verification | Status |
 |---|---|---|---|---|
-| D001 / 2026-09-06 | Source checkout содержит незакоммиченные правки и подготовку OpenClaw 2026.9.1 | Сопоставить каждый diff с живыми файлами; перенести применимые исправления | Реестр файлов и регрессии | OPEN |
-| D002 / 2026-09-06 | Telegram Digest запускается host cron; OpenClaw agent-turn job отключён | Сохранить пять слотов и типы digest в Hermes cron, позднее остановить host trigger | Один запуск на слот | Код готов; серверная сверка OPEN |
-| D003 / 2026-09-06 | Разделены config и workspace; на source замечен дополнительный кандидат OpenClaw вне Compose | Зафиксировать только фактический production baseline; кандидата не принимать за работающую версию | Inventory повторно перед cutover | OPEN |
-| D004 / 2026-09-06 | Новый private remote my-ai-office; проверки по указанию владельца только на VPS | Не создавать GitHub Actions / автодеплой | Отсутствие workflow; VPS protocol | Применено |
-| D005 / 2026-09-06 | Денис выбрал домен как у Reddit Compass или рядом | Тот же RC_PUBLIC_HOST, отдельный порт 8451, собственный Caddy; без изменения соседнего проекта | mTLS, login, WebSocket и отказ неавторизованного доступа | PASS на изолированной панели |
-| D006 / 2026-09-06 | Денис дал отдельную команду на production cutover и отменил требование хранить snapshot на Mac | Свежий cold snapshot создан и проверен непосредственно на VPS Hermes; source Docker-сервисы остановлены после запуска Hermes | Gateway, модель, Redis, wiki, LightRAG, panel mTLS и native cron smoke | ACTIVE_ON_HERMES; 48h observation OPEN |
+| D001 / 2026-09-06 | Source checkout contains uncommitted edits and OpenClaw 2026.9.1 preparation | Map every diff against the live files; port the applicable fixes | File registry and regression run | OPEN |
+| D002 / 2026-09-06 | Telegram Digest is started by host cron; the OpenClaw agent-turn job is disabled | Preserve the five slots and digest types in Hermes cron, then stop the host trigger | One run per slot | Code ready; server-side reconciliation OPEN |
+| D003 / 2026-09-06 | `config` and `workspace` were split; an additional OpenClaw candidate outside Compose was found on the source host | Record only the actual production baseline; do not treat the candidate as a running version | Re-run inventory immediately before cutover | OPEN |
+| D004 / 2026-09-06 | New private remote `my-ai-office`; by the owner's instruction, verification runs on the VPS only | Do not create GitHub Actions or automated deployment | Absence of deployment workflows; VPS protocol | Applied |
+| D005 / 2026-09-06 | Denis chose a domain matching or adjacent to Reddit Compass | Same `RC_PUBLIC_HOST`, separate port 8451, own Caddy; no change to the neighbouring project | mTLS, login, WebSocket, and rejection of unauthorised access | PASS on the isolated panel |
+| D006 / 2026-09-06 | Denis gave a separate instruction for production cutover and lifted the requirement to keep the snapshot on the Mac | A fresh cold snapshot was created and verified directly on the Hermes VPS; source Docker services were stopped after Hermes started | Gateway, model, Redis, wiki, LightRAG, panel mTLS, and native cron smoke | ACTIVE_ON_HERMES; 48 h observation OPEN |
 
-Добавлять строку при каждом изменении OpenClaw. Для ротаций указывать только имя секрета/назначение и дату;
-значение переносить через закрытое хранилище, затем проверять доступ на тестовом контуре допустимым способом.
+Add a row for every change to the source system. For rotations, record only the secret name or
+purpose and the date; transfer the value through private storage and then verify access on the test
+contour by an approved method.
 
-Перед `READY_NOT_ACTIVE` закрыть функциональные gaps. В период ожидания фиксировать candidate SHA и повторять
-затронутые проверки при переносе исправлений. Перед окном переключения таблица должна не содержать
-неразобранных изменений поведения. Не считать rehearsal snapshot актуальным production state.
+Functional gaps must be closed before `READY_NOT_ACTIVE`. During the waiting period, record the
+candidate SHA and repeat the affected checks whenever a fix is ported. Before the switch window,
+this table must contain no unresolved behavioural changes. A rehearsal snapshot is never treated as
+current production state.
 
-| Контрольная точка | Значение |
+| Checkpoint | Value |
 |---|---|
-| Исходный Git baseline | `1d7ffedd7a6fcb6ef10dba5d7ed52e48417f2279` |
+| Source Git baseline | `1d7ffedd7a6fcb6ef10dba5d7ed52e48417f2279` |
 | Hermes upstream | `01ae7a5668ce0fa2efca524a4567cacdd0786c95` |
-| READY_NOT_ACTIVE объявлен | Пропущен отдельной командой production cutover |
-| Начало примерно двух недель ожидания | Завершено отдельной командой владельца |
-| Команда Дениса на production activation | Получена 2026-09-06 |
-| Финальный snapshot | Создан и проверен на VPS Hermes; private state |
-| Начало 48 часов наблюдения | 2026-09-06 |
+| `READY_NOT_ACTIVE` declared | Skipped by a separate production-cutover instruction |
+| Start of the ~two-week waiting period | Ended by a separate instruction from the owner |
+| Denis's instruction for production activation | Received 2026-09-06 |
+| Final snapshot | Created and verified on the Hermes VPS; private state |
+| Start of the 48-hour observation window | 2026-09-06 |

@@ -147,7 +147,7 @@ The `redis` service is the current **integration bus**. Hermes cron enqueues job
 
 External integrations are not containers. AgentMail, Telegram/Telethon, Reddit, Hacker News, GitHub, X, Bluesky, YouTube, Polymarket, and web discovery are source APIs or transports consumed by the relevant worker when enabled. Reddit's native JSON/RSS hybrid adapter is part of the Last30Days build under [`signals-bridge/last30days_patches`](../artifacts/signals-bridge/last30days_patches).
 
-The VPS also hosts independent Compose projects: `reddit-compass`, `moex-futoi`, `cheap-intelligence`, and `stealth`. They share the host only. They are outside My AI Office's service graph, networks, state, and lifecycle commands. `reddit-compass` is therefore distinct from the external Reddit source used by Last30Days. See the [README service and source map](../README.md#services) and the [migration inventory](hermes/inventory.md#vps-hermes-и-соседние-проекты).
+The VPS also hosts independent Compose projects: `reddit-compass`, `moex-futoi`, `cheap-intelligence`, and `stealth`. They share the host only. They are outside My AI Office's service graph, networks, state, and lifecycle commands. `reddit-compass` is therefore distinct from the external Reddit source used by Last30Days. See the [README service and source map](../README.md#services) and the [migration inventory](hermes/inventory.md#the-hermes-vps-and-its-neighbours).
 
 ## Scheduling, execution, and delivery
 

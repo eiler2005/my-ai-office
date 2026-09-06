@@ -535,9 +535,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   previous direct-sender behavior.
 - **AgentMail digest windows**: scheduled runs are now anchored to the fixed Moscow schedule
   boundaries (`08:00`, `13:00`, `16:00`, `20:00`) instead of drifting after a manual trigger.
-- **`artifacts/telethon-digest/pulse.py`**: `Пульс дня` вынесен в отдельный модуль с общими
-  правилами дедупликации по смысловому факту, fallback на реальные storyline из digest-контента,
-  и без пустой заглушки про отсутствие сквозных тем.
+- **`artifacts/telethon-digest/pulse.py`**: the `Пульс дня` ("pulse of the day") section moved into
+  its own module with shared deduplication rules based on the underlying fact rather than the
+  wording, a fallback to real storylines from the digest content, and no empty "no cross-cutting
+  themes" placeholder.
 - **`artifacts/telethon-digest/pulse.py`**: added interest-bucket ranking with persisted profile
   state in `/app/state/pulse-profile.json`; pulse selection now balances repeated signal, Denis-fit
   buckets, novelty, and diversity instead of only repeated news pressure.
@@ -545,7 +546,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   **`artifacts/agentmail-email/sync-openclaw-cron-jobs.sh`**: no longer depend on
   `openclaw cron list/add/remove`; they now patch the gateway cron store directly,
   back it up, and restart the gateway to avoid the hanging CLI path on this server.
-- **Telethon Digest schedule**: окна обновлены до `08:00`, `11:00`, `14:00`, `17:00`, `21:00`
+- **Telethon Digest schedule**: windows updated to `08:00`, `11:00`, `14:00`, `17:00`, `21:00`
   Moscow time across config, cron sync, deploy helper, and ops docs.
 - **`README.md`**: repository structure, integration-bus status, quick ops, and feature list now
   include the AgentMail inbox-email pipeline.
