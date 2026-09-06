@@ -42,6 +42,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Replaced the owner's name in architecture diagrams with the neutral operator role, enumerated all 13
   production Compose services, and documented the Redis integration bus, external source adapters including
   Reddit, and the boundary from neighboring VPS projects such as Reddit Compass.
+- Reframed the public documentation as a layered office: a visual business capability map, the complete
+  workflow catalog, Hermes orchestration, cron rhythm, integration execution, and the memory/knowledge layer.
 
 ### Changed — Business-facing project narrative (2026-09-06)
 

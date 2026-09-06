@@ -25,14 +25,16 @@ Benka runs on [Hermes Agent](https://github.com/NousResearch/hermes-agent). The 
 ## Table of contents
 
 - [Overview](#overview)
-- [Business capabilities](#business-capabilities)
-- [How it works](#how-it-works)
+- [Business layer](#business-layer)
+- [How Hermes runs the office](#how-hermes-runs-the-office)
 - [Architecture](#architecture)
 - [Services](#services)
 - [Source integrations and VPS boundary](#source-integrations-and-vps-boundary)
 - [Telegram surfaces](#telegram-surfaces)
 - [Model routing](#model-routing)
 - [Memory that improves with work](#memory-that-improves-with-work)
+- [Engineering choices](#engineering-choices)
+- [Stack](#stack)
 - [Repository structure](#repository-structure)
 - [Documentation](#documentation)
 - [Security](#security)
@@ -52,16 +54,76 @@ The result is a practical personal operating system for business and life:
 
 The first version ran on OpenClaw. The current implementation moved the assistant runtime to Hermes while preserving the processing pipelines, state contracts, and migration/rollback discipline from the [predecessor](https://github.com/eiler2005/clawden-ai).
 
-## Business capabilities
+## Business layer
 
-| Capability | What it does for the workday | How it is implemented |
-| --- | --- | --- |
-| **Inbox clarity** | Turns personal and work mail into briefings, separates actionable items from information, and preserves the original sender of a forwarded message. | [Email integration](artifacts/agentmail-email) |
-| **Executive information radar** | Watches selected Telegram channels and research sources, balances categories, deduplicates repeats, and delivers concise digests with links to primary material. | [Telegram digest](artifacts/telethon-digest) |
-| **Signals and opportunity watch** | Applies rules and source presets to surface relevant market, product, technology, or business signals without turning every input into an alert. | [Signals / Last30Days](artifacts/signals-bridge) |
-| **Research that stays usable** | Captures a useful post, link, or thought into a source-backed wiki page; later promotion deepens the same chain instead of creating duplicates. | [Wiki tools](src/benka_integrations/wiki.py) |
-| **Answers with context** | Uses curated knowledge, graph retrieval, and a private conversation archive to prepare grounded answers with traceable sources. | [Benka plugin](src/benka_integrations/plugin.py) |
-| **Reliable recurring work** | Runs scheduled workflows once per slot, records confirmed deliveries, and sends uncertain outcomes to review instead of blindly retrying. | [Queue](src/benka_integrations/queue.py) · [Delivery](src/benka_integrations/delivery.py) |
+The office is organized around work outcomes rather than around containers. Personal and work communication stay separate, information is compressed before it reaches the owner, and anything worth keeping can become searchable knowledge.
+
+```mermaid
+flowchart LR
+    subgraph Inputs["Information entering the office"]
+        direction TB
+        PersonalMail["Personal mail"]
+        WorkMail["Work mail"]
+        TelegramSources["Selected Telegram channels"]
+        ResearchSources["Reddit · HN · GitHub · X<br/>Bluesky · YouTube · Polymarket · web"]
+        OwnerInput["Questions · links · notes · ideas"]
+    end
+
+    subgraph Office["Business services"]
+        direction TB
+        Inbox["Inbox intelligence<br/>triage · actions · briefings"]
+        Digest["Telegram intelligence<br/>selection · dedupe · summaries"]
+        Radar["Signals & trend radar<br/>rules · Personal Feed · Platform Pulse"]
+        Copilot["Benka co-pilot<br/>questions · decisions · follow-ups"]
+        Knowledge["Knowledge & ideas<br/>capture · promotion · grounded search"]
+    end
+
+    subgraph Outcomes["What the owner receives"]
+        direction TB
+        Attention["A short list of what needs attention"]
+        Briefings["Source-linked briefings and alerts"]
+        Decisions["Context for decisions and next actions"]
+        Memory["Editable, reusable organizational memory"]
+    end
+
+    PersonalMail --> Inbox
+    WorkMail --> Inbox
+    TelegramSources --> Digest
+    TelegramSources --> Radar
+    ResearchSources --> Radar
+    OwnerInput --> Copilot
+    OwnerInput --> Knowledge
+    Inbox --> Attention
+    Digest --> Briefings
+    Radar --> Briefings
+    Copilot --> Decisions
+    Knowledge <--> Copilot
+    Knowledge --> Memory
+
+    classDef input fill:#eef4f8,stroke:#7792a5,color:#13232d;
+    classDef service fill:#e6f7f4,stroke:#2f9d8f,color:#102a27;
+    classDef outcome fill:#fff4d9,stroke:#c7922b,color:#33260d;
+    class PersonalMail,WorkMail,TelegramSources,ResearchSources,OwnerInput input;
+    class Inbox,Digest,Radar,Copilot,Knowledge service;
+    class Attention,Briefings,Decisions,Memory outcome;
+```
+
+### Capability map
+
+| Business area | Capability | Input | Result |
+| --- | --- | --- | --- |
+| **Communication** | Personal inbox | Personal AgentMail mailbox | Deduplicated mini-batches and scheduled summaries that separate actions from reference mail. |
+| **Communication** | Work inbox | Work mailbox, including forwarded messages | Work briefings with the original sender resolved and actionable/informational triage preserved. |
+| **Communication** | Telegram intelligence | An approved catalog of Telegram channels and folders | Balanced, source-linked digests with repeated material removed. |
+| **Intelligence** | Signals | Configured mail and Telegram event rules | Small, timely alerts for matched subjects without forwarding every source event. |
+| **Intelligence** | Last30Days research | Reddit, Hacker News, GitHub, X, Bluesky, YouTube, Polymarket, and web discovery | `Personal Feed` and `Platform Pulse` reports; one failed source does not discard the rest of a run. |
+| **Direct work** | Benka co-pilot | Telegram DM, Hermes CLI, or the protected dashboard | Contextual answers, critique, follow-ups, and help turning information into a decision or next action. |
+| **Knowledge** | Knowledge capture | A link, forwarded post, document, or explicit save request | A source-backed Markdown wiki artifact followed by retrieval indexing. |
+| **Knowledge** | Idea lifecycle | Early thoughts and fragments | Lightweight idea capture, then explicit promotion into the existing research chain without duplicates. |
+| **Knowledge** | Grounded search | A question in the Knowledge surface | Relevant wiki and LightRAG references opened before a source-linked answer is composed. |
+| **Knowledge** | Historical recall | An explicit archive query | Searchable excerpts from imported conversations and diaries without loading the full archive into a live session. |
+| **Control** | Domain separation | Personal, work, family, or sandbox route | Different tools, files, memory, source bindings, and delivery destinations for each context. |
+| **Reliability** | Scheduled delivery and recovery | Hermes cron or an approved manual run | One logical run per slot, confirmed Telegram receipts, and operator review for uncertain outcomes. |
 
 ### A day with the office
 
@@ -73,28 +135,99 @@ The first version ran on OpenClaw. The current implementation moved the assistan
 
 **After work:** the useful conclusions survive as editable wiki pages and a compact profile, ready for the next conversation rather than trapped in an old chat.
 
-## How it works
+## How Hermes runs the office
+
+Hermes is the agent orchestration layer. It owns the human interfaces, trusted profile routing, interactive agent sessions, native tools, model selection, and the cron schedule. The business algorithms remain in dedicated Python integrations, while Redis and the knowledge services hold durable state.
 
 ```mermaid
 flowchart TB
-    Sources["Mail · Telegram channels · Research sources"] --> Filter["Rules, source policies, and cursors"]
-    Filter --> Queue["Redis Streams"]
-    Cron["Hermes cron"] --> Queue
-    Queue --> Workers["Python integration workers"]
-    Workers --> Models["Bounded model calls + validation"]
-    Models --> Delivery["Delivery receipts / reconciliation"]
-    Delivery --> Telegram["Briefings, alerts, and follow-ups"]
-    Operator["Owner / operator — Telegram / CLI / Web"] <--> Hermes["Hermes Agent + Benka"]
-    Hermes <--> Knowledge["Wiki · LightRAG · private archive"]
-    Workers --> Knowledge
+    subgraph Entry["1 · Triggers"]
+        direction LR
+        Human["Owner request<br/>Telegram · CLI · dashboard"]
+        Schedule["Hermes cron<br/>scheduled or manual job"]
+    end
+
+    subgraph Hermes["2 · Hermes agent layer"]
+        direction LR
+        Gateway["Gateway<br/>ingress · session · reply"]
+        Profile["Trusted route<br/>personal · work · family · sandbox"]
+        Agent["Benka agent<br/>model ladder · native tools"]
+        Scheduler["Cron dispatcher<br/>stable job identity"]
+    end
+
+    subgraph Execution["3 · Execution layer"]
+        direction LR
+        Queue["Redis Streams<br/>dedupe · groups · pending"]
+        Workers["Dedicated workers<br/>mail · digest · signals · trends"]
+        Bounded["Fresh bounded model call<br/>rules · limits · validation · fallback"]
+        Send["Hermes send<br/>allowlist · receipt · reconciliation"]
+    end
+
+    subgraph Context["4 · Memory and knowledge"]
+        direction LR
+        ShortMemory["Hermes memory<br/>stable facts and preferences"]
+        Wiki["Markdown wiki<br/>decisions · research · idea chains"]
+        RAG["LightRAG<br/>selected retrieval index"]
+        Archive["Private FTS archive<br/>historical conversations"]
+    end
+
+    Reply["Contextual reply"]
+    Published["Configured Telegram<br/>briefing · alert · system update"]
+
+    Human --> Gateway --> Profile --> Agent
+    Profile --> ShortMemory
+    Agent <--> Wiki
+    Agent <--> RAG
+    Agent -. explicit search .-> Archive
+    Agent --> Reply
+
+    Schedule --> Scheduler --> Queue --> Workers --> Bounded --> Send
+    Workers <--> Wiki
+    Wiki --> RAG
+    Send --> Published
+
+    classDef trigger fill:#eef4f8,stroke:#7792a5,color:#13232d;
+    classDef agent fill:#e6f7f4,stroke:#2f9d8f,color:#102a27;
+    classDef execution fill:#eaf0ff,stroke:#6986c7,color:#14213d;
+    classDef knowledge fill:#fff4d9,stroke:#c7922b,color:#33260d;
+    classDef output fill:#fff0dc,stroke:#c77a2f,color:#35200d;
+    class Human,Schedule trigger;
+    class Gateway,Profile,Agent,Scheduler agent;
+    class Queue,Workers,Bounded,Send execution;
+    class ShortMemory,Wiki,RAG,Archive knowledge;
+    class Reply,Published output;
 ```
 
-The flow has two complementary modes.
+There are two execution paths:
 
-1. **Conversation:** the owner asks Benka in Telegram, CLI, or the dashboard. Hermes selects the configured interactive model route, Benka retrieves only relevant context, and the response returns to the same conversation.
-2. **Background work:** Hermes cron puts a scheduled job into Redis. A dedicated worker collects material, applies deterministic processing, makes a restricted model call where needed, validates the output, and records the delivery result.
+1. **Interactive path.** A trusted message reaches the Gateway. Hermes selects the `personal`, `work`, `family`, or `sandbox` profile, assembles only that profile's permitted context, chooses the configured model tier, and exposes the allowed Benka tools. A knowledge question can search LightRAG and open source pages; an explicit save creates the wiki artifact before indexing it.
+2. **Background path.** Hermes cron derives a stable identity for the time slot and enqueues a small job in Redis. A dedicated worker fetches the source, advances its cursor, applies deterministic filters, and uses a fresh isolated agent call only where language judgment is useful. The result is validated, persisted, and sent through an allowlisted Telegram route.
 
-This separation keeps source-specific logic ordinary Python code and prevents the agent runtime from becoming a monolith. Model calls run with restricted context, limited tools, deadlines, validated output, and deterministic fallbacks. A delivery with an unknown result is not silently replayed.
+Hermes therefore orchestrates the work without absorbing every business rule into the agent prompt. The Gateway handles conversations and profiles; cron decides *when* work starts; Redis records *which* run owns a slot; workers define *how* each source is processed; memory and knowledge services decide *what context can be reused*; delivery receipts establish *whether an external message was confirmed*.
+
+### Business rhythm
+
+The production rhythm is expressed as native Hermes cron jobs in `Europe/Moscow`. Private deployment manifests remain the operational source of truth for the exact enabled jobs and times.
+
+| Workflow | Production rhythm | What Hermes starts |
+| --- | --- | --- |
+| Benka conversation | On every trusted owner request | An interactive session with the routed profile, permitted context, native tools, and the configured model tier. |
+| Mailbox polling | Personal and work inboxes every five minutes | Independent polling jobs with separate streams, cursors, and consumer groups. |
+| Signals | Every five minutes | Rule evaluation over enabled mail and Telegram sources. |
+| Telegram Digest | 08:00, 11:00, 14:00, 17:00, and 21:00 | A scheduled digest run with its slot and digest type preserved. |
+| Personal mail briefing | 08:00, 13:00, 16:00, and 20:00 | Personal morning/interval/editorial summaries. |
+| Work mail briefing | Eight slots between 08:30 and 19:00 | Work-only summaries with forwarded-sender resolution and triage. |
+| Last30Days | 07:00 | The enabled research preset; the second preset remains available on request. |
+| LightRAG refresh | Every 30 minutes | Indexing of explicitly allowed knowledge roots. |
+| Wiki maintenance | Daily and weekly jobs | Reports, lifecycle updates, archive work, and overview/topic refresh according to the job action. |
+
+Every scheduled path follows the same control loop:
+
+```text
+cron slot → stable run ID → Redis stream → dedicated worker → validated artifact
+          → allowlisted delivery → confirmed message ID
+                                  ↘ uncertain outcome → reconciliation queue
+```
 
 ## Architecture
 
@@ -314,7 +447,7 @@ The repository keeps the public engineering story, reproducible deployment templ
 
 | Document | What it covers |
 | --- | --- |
-| [Architecture](docs/architecture.md) | Runtime boundaries, queue and delivery semantics, model execution, knowledge, interfaces, and recovery. |
+| [Architecture](docs/architecture.md) | Layered business and agent architecture, workflow catalog, runtime boundaries, queue and delivery semantics, models, knowledge, interfaces, and recovery. |
 | [Engineering case study](docs/engineering-case-study.md) | The design decisions behind the office: integration boundaries, model limits, provenance, delivery uncertainty, and migration. |
 | [Hermes migration plan](docs/25-hermes-migration-plan.md) | The original staged migration, rehearsal, cutover, rollback, and acceptance plan. |
 | [Transfer inventory](docs/hermes/inventory.md) | Service and data mapping, schedules, dependencies, and secret categories without their values. |
