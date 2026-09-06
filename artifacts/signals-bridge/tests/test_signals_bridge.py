@@ -1210,7 +1210,7 @@ class DeliveryAndStateTests(unittest.TestCase):
         telegram_mock.assert_awaited_once_with(telegram_event)
         email_mock.assert_awaited_once_with(email_event)
 
-    def test_relay_telegram_event_via_telethon_forwards_into_topic(self) -> None:
+    def test_relay_telegram_event_reads_with_telethon_and_delivers_with_hermes(self) -> None:
         class FakeForwardMessagesRequest:
             def __init__(self, **kwargs) -> None:
                 self.from_peer = kwargs["from_peer"]
@@ -1242,7 +1242,7 @@ class DeliveryAndStateTests(unittest.TestCase):
         client.connect = AsyncMock()
         client.is_user_authorized = AsyncMock(return_value=True)
         client.disconnect = AsyncMock()
-        client.get_messages = AsyncMock()
+        client.get_messages = AsyncMock(return_value=types.SimpleNamespace(message="Source text", media=None))
         client.send_message = AsyncMock()
         fake_telethon = types.SimpleNamespace(
             functions=types.SimpleNamespace(
@@ -1253,21 +1253,19 @@ class DeliveryAndStateTests(unittest.TestCase):
         with patch("cron_bridge.build_telethon_client", return_value=client), patch("cron_bridge.SUPERGROUP_ID", -100555), patch(
             "cron_bridge.TOPIC_ID",
             414,
-        ), patch.dict(sys.modules, {"telethon": fake_telethon}):
+        ), patch.dict(sys.modules, {"telethon": fake_telethon}), patch(
+            "benka_integrations.legacy_delivery.post_text", new=AsyncMock(return_value=True)
+        ) as native_send:
             delivered = asyncio.run(_relay_telegram_event_via_telethon(telegram_event))
 
         self.assertTrue(delivered)
-        client.assert_awaited_once()
-        request = client.await_args.args[0]
-        self.assertEqual(request.from_peer, -1001)
-        self.assertEqual(request.id, [5])
-        self.assertEqual(request.to_peer, -100555)
-        self.assertEqual(request.top_msg_id, 414)
-        client.get_messages.assert_not_awaited()
+        client.assert_not_awaited()
+        native_send.assert_awaited_once_with("Source text", chat_id=-100555, topic_id=414, html=False)
+        client.get_messages.assert_awaited_once_with(-1001, ids=5)
         client.send_message.assert_not_awaited()
         client.disconnect.assert_awaited_once()
 
-    def test_relay_telegram_event_via_telethon_resends_message_object_when_forward_fails(self) -> None:
+    def test_relay_telegram_event_downloads_media_for_native_delivery(self) -> None:
         class FakeForwardMessagesRequest:
             def __init__(self, **kwargs) -> None:
                 self.kwargs = kwargs
@@ -1298,6 +1296,7 @@ class DeliveryAndStateTests(unittest.TestCase):
         client.is_user_authorized = AsyncMock(return_value=True)
         client.disconnect = AsyncMock()
         client.get_messages = AsyncMock(return_value=source_message)
+        client.download_media = AsyncMock(return_value=b"fixture attachment")
         client.send_message = AsyncMock(return_value=object())
         fake_telethon = types.SimpleNamespace(
             functions=types.SimpleNamespace(
@@ -1311,12 +1310,15 @@ class DeliveryAndStateTests(unittest.TestCase):
         ), patch.dict(sys.modules, {"telethon": fake_telethon}), patch(
             "cron_bridge.post_plain_text_message",
             new=AsyncMock(return_value=True),
-        ) as plain_mock:
+        ) as plain_mock, patch("benka_integrations.legacy_delivery.post_media", new=AsyncMock(return_value=True)) as native_media:
             delivered = asyncio.run(_relay_telegram_event_via_telethon(telegram_event))
 
         self.assertTrue(delivered)
         client.get_messages.assert_awaited_once_with(-1001, ids=5)
-        client.send_message.assert_awaited_once_with(-100555, source_message, reply_to=414)
+        client.send_message.assert_not_awaited()
+        client.download_media.assert_awaited_once_with(source_message, file=bytes)
+        native_media.assert_awaited_once_with(b"fixture attachment", filename="source.bin", caption="Полный текст из Telegram",
+                                              chat_id=-100555, topic_id=414, document=True)
         plain_mock.assert_not_awaited()
         client.disconnect.assert_awaited_once()
 

@@ -1,5 +1,7 @@
 # Git And Redaction Policy
 
+> Историческая справка исходного OpenClaw. Для Hermes используйте [реестр](hermes/inventory.md), [эксплуатацию](hermes/operations.md) и [переключение/откат](hermes/cutover-rollback.md). Production остаётся на OpenClaw; эти старые команды не развёртывают Hermes.
+
 This folder is intended to become a safe operational repository, but only after strict redaction discipline.
 
 ## Commit policy

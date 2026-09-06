@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools==80.9.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "benka-integrations"
+version = "0.1.0"
+description = "Hermes integrations and reversible state migration for Benka"
+requires-python = ">=3.11,<3.14"
+dependencies = [
+    "redis==5.3.1",
+    "PyYAML==6.0.3",
+    "requests==2.33.0",
+    "aiohttp==3.14.3",
+    "python-dotenv==1.2.2",
+    "telethon==1.43.2",
+    "apscheduler==3.10.4",
+    "pytz==2024.1",
+    "httpx==0.28.1",
+    "beautifulsoup4==4.14.3",
+    "markdownify==0.13.1",
+    "pypdf==5.4.0",
+    "python-docx==1.1.2",
+    "croniter==6.0.0",
+    "yt-dlp>=2026.8.19",
+]
+
+[project.scripts]
+benka = "benka_integrations.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[project.optional-dependencies]
+test = ["pytest==8.4.2", "fakeredis==2.31.1", "lupa==2.5"]
+hermes = ["hermes-agent", "python-telegram-bot[webhooks]==22.8"]
+
+[tool.uv.sources]
+hermes-agent = {path = "vendor/hermes-agent", editable = true}

@@ -311,35 +311,18 @@ async def _telegram_form_request(method: str, form_data) -> bool:
 
 
 async def post_html_message(text: str, *, chat_id: int | None = None, topic_id: int | None = None) -> bool:
-    chunks = _split_text(text)
-    resolved_chat_id, resolved_topic_id = _resolve_target(chat_id, topic_id)
-    for chunk in chunks:
-        payload = {
-            "chat_id": resolved_chat_id,
-            "text": chunk,
-            "parse_mode": "HTML",
-            "disable_web_page_preview": True,
-        }
-        if resolved_topic_id:
-            payload["message_thread_id"] = resolved_topic_id
-        if not await _telegram_json_request("sendMessage", payload):
-            return False
+    from benka_integrations.legacy_delivery import post_text
+    chat, topic = _resolve_target(chat_id, topic_id)
+    for chunk in _split_text(text):
+        await post_text(chunk, chat_id=chat, topic_id=topic)
     return True
 
 
 async def post_plain_text_message(text: str, *, chat_id: int | None = None, topic_id: int | None = None) -> bool:
-    chunks = _split_text(text)
-    resolved_chat_id, resolved_topic_id = _resolve_target(chat_id, topic_id)
-    for chunk in chunks:
-        payload = {
-            "chat_id": resolved_chat_id,
-            "text": chunk,
-            "disable_web_page_preview": True,
-        }
-        if resolved_topic_id:
-            payload["message_thread_id"] = resolved_topic_id
-        if not await _telegram_json_request("sendMessage", payload):
-            return False
+    from benka_integrations.legacy_delivery import post_text
+    chat, topic = _resolve_target(chat_id, topic_id)
+    for chunk in _split_text(text):
+        await post_text(chunk, chat_id=chat, topic_id=topic, html=False)
     return True
 
 
@@ -350,15 +333,9 @@ async def copy_message(
     chat_id: int | None = None,
     topic_id: int | None = None,
 ) -> bool:
-    resolved_chat_id, resolved_topic_id = _resolve_target(chat_id, topic_id)
-    payload = {
-        "chat_id": resolved_chat_id,
-        "from_chat_id": int(from_chat_id),
-        "message_id": int(message_id),
-    }
-    if resolved_topic_id:
-        payload["message_thread_id"] = resolved_topic_id
-    return await _telegram_json_request("copyMessage", payload)
+    # Native Hermes has no copyMessage verb. Fetch source content through
+    # Telethon and publish it through the common receipt-aware sender.
+    return False
 
 
 async def post_binary_message(
@@ -372,22 +349,11 @@ async def post_binary_message(
     chat_id: int | None = None,
     topic_id: int | None = None,
 ) -> bool:
-    import aiohttp
-
+    from benka_integrations.legacy_delivery import post_media
     resolved_chat_id, resolved_topic_id = _resolve_target(chat_id, topic_id)
-    form = aiohttp.FormData()
-    form.add_field("chat_id", str(resolved_chat_id))
-    if resolved_topic_id:
-        form.add_field("message_thread_id", str(resolved_topic_id))
-    if caption:
-        form.add_field("caption", caption)
-    form.add_field(
-        field_name,
-        data,
-        filename=filename,
-        content_type=content_type,
-    )
-    return await _telegram_form_request(method, form)
+    return await post_media(data, filename=filename, caption=caption,
+                            chat_id=resolved_chat_id, topic_id=resolved_topic_id,
+                            document=method != "sendPhoto")
 
 
 async def post_photo_message(

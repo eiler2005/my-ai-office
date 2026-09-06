@@ -47,3 +47,19 @@ workspace/SOUL.md
 
 # OmniRoute secrets (contains JWT secrets, API keys)
 omniroute.env
+
+# Hermes candidate and private migration state
+.hermes/
+.runtime/
+.migration/
+.pytest_cache/
+*.egg-info/
+*.session
+*.session-journal
+*.sqlite*
+*.rdb
+*.aof
+*.tar
+*.tar.gz
+deploy/hermes/private/
+deploy/hermes/*.local.*

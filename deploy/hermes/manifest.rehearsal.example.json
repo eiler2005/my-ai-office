@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "mode": "rehearsal",
+  "domain": "sandbox",
+  "data_class": "test",
+  "production_connections": false,
+  "enabled_operations": [],
+  "delivery_targets": [],
+  "vault_root": "/vault",
+  "capture_root": "/vault/captures",
+  "media_root": "/state/hermes/uploads",
+  "archive_database": "/state/archive.sqlite",
+  "wiki_url": "http://wiki:8095",
+  "wiki_source_types": ["text", "server_path"],
+  "rag_url": "http://lightrag:9621",
+  "rag_source_root": "/vault",
+  "cron_connection_file": "/run/benka/cron-connection.json",
+  "worker": {"pipeline": "email", "stream": "ingest:jobs:email", "group": "email-workers"},
+  "jobs": {
+    "personal-email-poll": {"schedule": "*/5 * * * *", "stream": "ingest:jobs:email", "payload": {"job_type": "poll"}},
+    "personal-email-digest": {"schedule": "0 8,13,16,20 * * *", "stream": "ingest:jobs:email", "payload": {"job_type": "digest", "digest_type": "interval"}}
+  }
+}

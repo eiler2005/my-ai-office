@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "mode": "standby",
+  "domain": "sandbox",
+  "data_class": "test",
+  "production_connections": false,
+  "enabled_operations": [],
+  "delivery_targets": [],
+  "jobs": {}
+}

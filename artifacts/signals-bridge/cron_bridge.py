@@ -144,47 +144,21 @@ async def _relay_telegram_text_event(event, *, text: str | None = None) -> bool:
 
 
 async def _forward_telegram_event_via_telethon(client, event) -> bool:
-    from telethon import functions
-
-    chat_id = int(event.source_chat_id or 0)
-    message_id = int(event.source_message_id or 0)
-    if not chat_id or not message_id:
-        return False
-    try:
-        await client(
-            functions.messages.ForwardMessagesRequest(
-                from_peer=chat_id,
-                id=[message_id],
-                to_peer=SUPERGROUP_ID,
-                top_msg_id=TOPIC_ID if TOPIC_ID > 0 else None,
-            )
-        )
-    except Exception as exc:
-        logger.warning(
-            "Telethon forward fallback failed for telegram source %s:%s: %s",
-            chat_id,
-            message_id,
-            exc,
-        )
-        return False
-    return True
+    return False  # Delivery ownership belongs to Hermes, not the user session.
 
 
 async def _resend_telegram_message_via_telethon(client, message) -> bool:
-    try:
-        await client.send_message(
-            SUPERGROUP_ID,
-            message,
-            reply_to=TOPIC_ID if TOPIC_ID > 0 else None,
-        )
-    except Exception as exc:
-        logger.warning(
-            "Telethon resend fallback failed for telegram message %s: %s",
-            getattr(message, "id", "unknown"),
-            exc,
-        )
-        return False
-    return True
+    from benka_integrations.legacy_delivery import post_media, post_text
+    text = str(getattr(message, "message", "") or "")
+    if getattr(message, "media", None):
+        data = await client.download_media(message, file=bytes)
+        if not isinstance(data, bytes):
+            return False
+        file = getattr(message, "file", None)
+        filename = getattr(file, "name", None) or ("source.jpg" if getattr(message, "photo", None) else "source.bin")
+        return await post_media(data, filename=filename, caption=text, chat_id=SUPERGROUP_ID,
+                                topic_id=TOPIC_ID, document=not bool(getattr(message, "photo", None)))
+    return await post_text(text, chat_id=SUPERGROUP_ID, topic_id=TOPIC_ID, html=False) if text else False
 
 
 async def _relay_telegram_event_via_telethon(event) -> bool:
@@ -240,6 +214,8 @@ async def _deliver_source_contexts(events: list) -> tuple[int, int]:
                     delivered += 1
         except Exception as exc:
             logger.exception("Failed to relay original source content for %s: %s", event.event_id, exc)
+    if delivered != attempted:
+        raise RuntimeError("Source delivery requires reconciliation")
     return delivered, attempted
 
 
@@ -1033,25 +1009,7 @@ def _run_telegram_source(*, r, source: dict, ruleset: dict, rules: list[dict], l
 
 
 def main() -> None:
-    if not REDIS_URL:
-        raise SystemExit("REDIS_URL is required")
-    if not TOKEN:
-        raise SystemExit("SIGNALS_BRIDGE_TOKEN is required")
-    config = load_config()
-    _recover_interrupted_ruleset_locks(_make_redis(), config)
-    logger.info(
-        "Starting signals-bridge on :%s with 5m scheduler tick=%s and OmniRoute model=%s (last30days=%s)",
-        PORT,
-        config.get("scheduler", {}).get("tick_seconds", 300),
-        os.environ.get("OMNIROUTE_MODEL", "light"),
-        _last30days_enabled(config),
-    )
-    threading.Thread(target=_scheduler_loop, daemon=True, name="signals-scheduler").start()
-    threading.Thread(target=_signals_consumer_loop, daemon=True, name="signals-consumer").start()
-    threading.Thread(target=_last30days_consumer_loop, daemon=True, name="last30days-consumer").start()
-    threading.Thread(target=_cleanup_loop, daemon=True, name="signals-cleanup").start()
-    server = ThreadingHTTPServer(("0.0.0.0", PORT), Handler)
-    server.serve_forever()
+    raise SystemExit("Legacy bridge entrypoint disabled. Use benka worker with a reviewed manifest.")
 
 
 if __name__ == "__main__":

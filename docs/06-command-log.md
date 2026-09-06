@@ -1,5 +1,7 @@
 # Command Log
 
+> Историческая справка исходного OpenClaw. Для Hermes используйте [реестр](hermes/inventory.md), [эксплуатацию](hermes/operations.md) и [переключение/откат](hermes/cutover-rollback.md). Production остаётся на OpenClaw; эти старые команды не развёртывают Hermes.
+
 High-signal, sanitized setup log.
 
 This file intentionally records the sequence of work and the kinds of commands used, but avoids live credentials, raw tokens, and real connection coordinates.

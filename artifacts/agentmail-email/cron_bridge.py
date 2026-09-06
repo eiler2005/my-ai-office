@@ -1386,19 +1386,7 @@ def consumer_loop() -> None:
 
 
 def main() -> None:
-    if not REDIS_URL:
-        logger.warning("REDIS_URL is not set — consumer loop and internal scheduler are disabled, /trigger will return 503")
-    else:
-        _normalize_status_on_startup()
-        _clear_stale_locks_on_startup()
-        scheduler = threading.Thread(target=_scheduler_loop, daemon=True, name="email-scheduler")
-        scheduler.start()
-        thread = threading.Thread(target=consumer_loop, daemon=True, name="email-consumer")
-        thread.start()
-
-    server = ThreadingHTTPServer(("0.0.0.0", PORT), Handler)
-    logger.info("AgentMail email bridge listening on 0.0.0.0:%s", PORT)
-    server.serve_forever()
+    raise SystemExit("Legacy bridge entrypoint disabled. Use benka worker with a reviewed manifest.")
 
 
 if __name__ == "__main__":

@@ -1,5 +1,7 @@
 # Rollback And Backup
 
+> Историческая справка исходного OpenClaw. Для Hermes используйте [реестр](hermes/inventory.md), [эксплуатацию](hermes/operations.md) и [переключение/откат](hermes/cutover-rollback.md). Production остаётся на OpenClaw; эти старые команды не развёртывают Hermes.
+
 ## Rollback goals
 
 Rollback should preserve two invariants:

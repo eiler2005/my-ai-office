@@ -7,6 +7,22 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added — Hermes migration candidate (2026-09-06)
+
+- New private target repository `eiler2005/my-ai-office`, with the inherited OpenClaw Git history and a separate migration checkout.
+- `benka-integrations`: native Hermes plugin/CLI, isolated Python API model calls, cron-to-Redis jobs, delivery receipts and reconciliation of uncertain/pending work.
+- Cold snapshot verification, safe staged restore, compact OpenClaw import layout, searchable private transcript/diary archive and three-way vault rollback report.
+- Disabled domain-profile generator, wiki/Ideas tools, wiki lifecycle jobs and authenticated incremental LightRAG uploads.
+- Pinned Hermes submodule, dependency lock, container/Caddy templates and migration runbooks. Tests and builds run on the VPS; GitHub Actions is disabled per owner instruction.
+- Read-only host inventory and local regression/native-contract checks. Status remains `MIGRATION_IN_PROGRESS`; no production activation or source shutdown was performed.
+
+### Changed — Hermes candidate only
+
+- Background LLM calls use Hermes Python API instead of Docker/OpenClaw execution. Existing parsing, scoring, validation and deterministic fallbacks are retained.
+- Legacy HTTP/scheduler entrypoints are disabled in adapted bridges; new workers call their business functions directly. Telegram delivery goes through Hermes receipts.
+- Incomplete Signals source delivery and recovered Redis pending work require reconciliation before replay.
+- The previous README is retained as `README.openclaw.md`; old deployment documents are marked as source-runtime reference.
+
 ### Fixed
 
 - **Telegram Digest scheduled delivery:** host cron now invokes

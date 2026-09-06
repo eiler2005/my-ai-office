@@ -66,11 +66,17 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 ## Repository Role
 
-- This repository is a git-safe operations and handoff package for an OpenClaw deployment on a Hetzner server.
-- It is not the live OpenClaw application source tree.
-- Start with `README.md`, then use `docs/01-server-state.md`, `docs/02-openclaw-installation.md`, `docs/07-architecture-and-security.md`, and `docs/08-git-and-redaction-policy.md` for deeper context.
+- This repository is the Hermes migration candidate for Benka (`my-ai-office`), including integration source and git-safe operations documents.
+- Production still runs OpenClaw. The candidate is not READY until the acceptance matrix passes.
+- Start with `README.md`, `docs/25-hermes-migration-plan.md` and `docs/hermes/`. Numbered OpenClaw documents describe the inherited source deployment.
 
 ## Runtime Boundary
+
+- Hermes and its integrations run in their own containers under `/opt/benka-hermes` on the existing Hermes VPS; prepare locally until deployment is explicitly authorized.
+- Never give the agent the Docker socket, host administration tools or unrestricted filesystem tools.
+- Production activation requires a separate Denis command, a fresh consistent snapshot and verified old-writer shutdown. Neither two weeks elapsed nor a successful build authorizes activation.
+- Keep the neighboring reddit-compass, moex-futoi, cheap-intelligence and stealth services intact. Ports 80/443 belong to existing infrastructure; see `docs/hermes/inventory.md`.
+- The following OpenClaw rules apply when inspecting the source or preparing rollback:
 
 - OpenClaw runs in Docker Compose under `/opt/openclaw` on the Hetzner server.
 - If a tool is needed by OpenClaw, its agents, or gateway-executed workflows, install it into the derived OpenClaw image or run it with `docker compose exec`.

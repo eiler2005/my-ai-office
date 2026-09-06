@@ -13,7 +13,7 @@ import aiohttp
 
 from models import LLMCompletion
 
-OPENCLAW_FALLBACK_ENABLED = os.environ.get("OPENCLAW_FALLBACK_ENABLED", "1").strip().lower() not in {
+OPENCLAW_FALLBACK_ENABLED = os.environ.get("HERMES_MODEL_ENABLED", "1").strip().lower() not in {
     "0",
     "false",
     "no",
@@ -149,7 +149,7 @@ async def call_chat_completion(
         try:
             return _call_openclaw_fallback(payload, default_model=default_model)
         except Exception as exc:
-            route_errors.append(f"openclaw: {exc}")
+            route_errors.append(f"hermes: {exc}")
 
     headers = {"Content-Type": "application/json"}
     if api_key:
@@ -187,7 +187,7 @@ async def call_chat_completion(
 def _messages_to_agent_prompt(payload: dict[str, Any]) -> str:
     messages = payload.get("messages") or []
     lines = [
-        "You are running as the OpenClaw/OpenAI primary route for Telegram Digest.",
+        "You are running as the Hermes primary route for Telegram Digest.",
         "Return only the requested JSON payload. Do not add markdown fences or commentary.",
     ]
     for message in messages:
@@ -201,74 +201,9 @@ def _messages_to_agent_prompt(payload: dict[str, Any]) -> str:
 
 
 def _call_openclaw_fallback(payload: dict[str, Any], *, default_model: str) -> LLMCompletion:
-    if not OPENCLAW_EXEC_CONTAINER:
-        raise RuntimeError("OPENCLAW_EXEC_CONTAINER is empty")
-    try:
-        import docker
-        from docker.errors import DockerException, NotFound
-    except Exception as exc:
-        raise RuntimeError("docker SDK unavailable") from exc
-
-    client = None
-    prompt = _messages_to_agent_prompt(payload)
-    try:
-        client = docker.from_env()
-        container = client.containers.get(OPENCLAW_EXEC_CONTAINER)
-        result = container.exec_run(
-            [
-                "/usr/local/bin/openclaw",
-                "agent",
-                "--agent",
-                OPENCLAW_AGENT_ID,
-                "--model",
-                OPENCLAW_FALLBACK_MODEL,
-                "--session-key",
-                f"{OPENCLAW_FALLBACK_SESSION_PREFIX}:{uuid.uuid4().hex}",
-                "--timeout",
-                str(OPENCLAW_FALLBACK_TIMEOUT_SECONDS),
-                "--message",
-                prompt,
-                "--json",
-            ],
-            environment={"NO_COLOR": "1"},
-            stdout=True,
-            stderr=True,
-            user="1000:1000",
-        )
-    except NotFound as exc:
-        raise RuntimeError(f"OpenClaw container '{OPENCLAW_EXEC_CONTAINER}' not found") from exc
-    except DockerException as exc:
-        raise RuntimeError(f"OpenClaw docker exec failed: {exc}") from exc
-    finally:
-        with contextlib.suppress(Exception):
-            if client is not None:
-                client.close()
-
-    raw = (result.output or b"").decode("utf-8", errors="replace").strip()
-    if int(result.exit_code) != 0:
-        raise RuntimeError(f"openclaw agent failed exit={result.exit_code}: {raw[-500:]}")
-    try:
-        data = json.loads(raw)
-    except json.JSONDecodeError as exc:
-        raise RuntimeError(f"openclaw agent returned non-json: {raw[-500:]}") from exc
-
-    result_payload = data.get("result") or {}
-    meta = result_payload.get("meta") or {}
-    agent_meta = meta.get("agentMeta") or {}
-    payloads = result_payload.get("payloads") or []
-    text = ""
-    if payloads and isinstance(payloads[0], dict):
-        text = str(payloads[0].get("text") or "")
-    text = text or str(meta.get("finalAssistantVisibleText") or meta.get("finalAssistantRawText") or "")
-    if not text:
-        raise RuntimeError("openclaw agent returned empty text")
-    return LLMCompletion(
-        text=text.strip(),
-        model_id=str(agent_meta.get("model") or OPENCLAW_FALLBACK_MODEL.split("/", 1)[-1]),
-        prompt_tokens=int(agent_meta.get("promptTokens") or 0),
-        completion_tokens=int(((agent_meta.get("lastCallUsage") or {}).get("output")) or 0),
-        provider_fallback=False,
-    )
+    from benka_integrations.models import run_agent_text
+    text = run_agent_text(_messages_to_agent_prompt(payload), timeout_seconds=180)
+    return LLMCompletion(text=text, model_id="hermes-background", prompt_tokens=0, completion_tokens=0)
 
 
 async def _call_deepseek_fallback(

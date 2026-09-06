@@ -516,21 +516,7 @@ def consumer_loop() -> None:
 # ---------------------------------------------------------------------------
 
 def main() -> None:
-    _recover_interrupted_status()
-
-    if not REDIS_URL:
-        logger.warning(
-            "REDIS_URL is not set — consumer loops disabled, /trigger will return 503"
-        )
-    else:
-        t = threading.Thread(target=consumer_loop, daemon=True, name="digest-consumer")
-        t.start()
-        r = threading.Thread(target=rag_consumer_loop, daemon=True, name="rag-consumer")
-        r.start()
-
-    server = ThreadingHTTPServer(("0.0.0.0", PORT), Handler)
-    logger.info("Bridge listening on 0.0.0.0:%s", PORT)
-    server.serve_forever()
+    raise SystemExit("Legacy bridge entrypoint disabled. Use benka worker with a reviewed manifest.")
 
 
 if __name__ == "__main__":

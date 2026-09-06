@@ -1,0 +1,1 @@
+Hermes adapter migration v1 applied. See scripts/prepare-hermes-adapters.py.

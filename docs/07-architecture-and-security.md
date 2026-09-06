@@ -1,5 +1,7 @@
 # Architecture And Security
 
+> Историческая справка исходного OpenClaw. Для Hermes используйте [реестр](hermes/inventory.md), [эксплуатацию](hermes/operations.md) и [переключение/откат](hermes/cutover-rollback.md). Production остаётся на OpenClaw; эти старые команды не развёртывают Hermes.
+
 ## Architecture overview
 
 This deployment intentionally separates public access, application runtime, and unrelated workloads.

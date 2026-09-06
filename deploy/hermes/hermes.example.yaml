@@ -1,0 +1,24 @@
+timezone: Europe/Moscow
+toolsets: [benka]
+platform_toolsets:
+  telegram: [benka]
+  cli: [benka]
+agent:
+  max_turns: 12
+  disabled_toolsets: [terminal, file, browser, code_execution, delegation, cronjob, kanban]
+database:
+  journal_mode: delete
+memory:
+  memory_enabled: false
+  user_profile_enabled: false
+gateway:
+  multiplex_profiles: false
+plugins:
+  enabled: [benka]
+  entries:
+    benka:
+      settings:
+        manifest_path: /run/benka/manifest.json
+# Telegram credentials, allowlists, authenticated dashboard settings and provider
+# selection are configured in private profile files during rehearsal setup.
+# Domain routing is an acceptance gate; see docs/hermes/acceptance.md.

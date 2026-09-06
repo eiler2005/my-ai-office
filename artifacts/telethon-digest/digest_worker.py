@@ -269,7 +269,7 @@ async def run_digest(config: dict | None = None):
     if not await client.is_user_authorized():
         logger.error("Telethon session not authorized. Run auth.py first.")
         await client.disconnect()
-        return
+        raise RuntimeError("Telethon session is not authorized")
 
     try:
         # 1. Read channels
@@ -375,7 +375,7 @@ async def run_digest(config: dict | None = None):
     posted = await post_digest(digest_document)
     if not posted:
         logger.error("Digest publication failed — state not advanced")
-        return
+        raise RuntimeError("Digest publication failed")
 
     # 7. Persist processed digest after successful Telegram publication
     try:
@@ -387,6 +387,7 @@ async def run_digest(config: dict | None = None):
         )
     except Exception as exc:
         logger.error("Digest persistence failed: %s", exc)
+        raise
 
     # 8. Advance watermarks
     update_cursors(posts_in_period)

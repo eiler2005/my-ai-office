@@ -1283,27 +1283,7 @@ def _apply_part_headers(chunks: list[str]) -> list[str]:
 
 
 async def post_html_message(text: str) -> bool:
-    chunks = _apply_part_headers(_split_text(text))
-    async with aiohttp.ClientSession() as session:
-        for idx, chunk in enumerate(chunks, start=1):
-            payload = {
-                "chat_id": SUPERGROUP_ID,
-                "message_thread_id": TOPIC_ID,
-                "text": chunk,
-                "parse_mode": "HTML",
-                "disable_web_page_preview": True,
-            }
-            try:
-                async with session.post(
-                    f"{BASE_URL}/sendMessage",
-                    json=payload,
-                    timeout=aiohttp.ClientTimeout(total=15),
-                ) as resp:
-                    data = await resp.json()
-                    if not data.get("ok"):
-                        logger.error("Telegram API error (chunk %s/%s): %s", idx, len(chunks), data)
-                        return False
-            except Exception as exc:
-                logger.error("Failed to send chunk %s/%s: %s", idx, len(chunks), exc)
-                return False
+    from benka_integrations.legacy_delivery import post_text
+    for chunk in _apply_part_headers(_split_text(text)):
+        await post_text(chunk, chat_id=SUPERGROUP_ID, topic_id=TOPIC_ID)
     return True

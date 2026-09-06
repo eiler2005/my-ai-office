@@ -12,7 +12,7 @@ If a local `LEAN-CTX.md` is added later, follow it as the detailed lean-ctx rule
 
 ## Project Notes
 
-- This repository is a git-safe operations and handoff package for an OpenClaw deployment, not the live OpenClaw application source tree.
+- This repository contains Benka's Hermes migration candidate and git-safe operations documents. Production remains on OpenClaw until a separate Denis activation command. Read `docs/hermes/acceptance.md` before claiming readiness.
 - Keep tracked files sanitized. Never copy or quote live values from `LOCAL_ACCESS.md`, `secrets/`, raw `.env` files, certificates, tokens, or tokenized URLs.
 - Deployment to the server is a separate operation. Prepare local files freely, but only deploy after an explicit user request.
 - Significant operational changes should update `CHANGELOG.md` and the relevant docs in the same task.

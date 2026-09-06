@@ -1,0 +1,128 @@
+name: benka-hermes-candidate
+
+x-runtime: &runtime
+  image: benka-hermes:candidate
+  build:
+    context: ../..
+    dockerfile: deploy/hermes/Dockerfile
+    target: runtime
+  user: "1000:1000"
+  init: true
+  restart: unless-stopped
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  pids_limit: 256
+  mem_limit: 2g
+  cpus: 2
+  tmpfs: [/tmp:size=256m,mode=1777]
+  stop_grace_period: 90s
+  logging:
+    driver: json-file
+    options: {max-size: "10m", max-file: "3"}
+
+services:
+  candidate:
+    <<: *runtime
+    command: [standby]
+    network_mode: none
+    volumes:
+      - ./manifest.standby.example.json:/run/benka/manifest.json:ro
+      - candidate_state:/state
+    healthcheck:
+      test: [CMD, benka, status]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  redis:
+    image: redis:7.4@sha256:71da9275c5f3fcb97d0fa0c8c5b36cc995327265420f17a04bfd544f458059f7
+    profiles: [rehearsal]
+    command: [redis-server, /run/redis/redis.conf]
+    volumes:
+      - ./private/redis.conf:/run/redis/redis.conf:ro
+      - redis_state:/data
+    networks: [benka]
+    restart: unless-stopped
+    mem_limit: 512m
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+
+  gateway:
+    <<: *runtime
+    networks: [benka]
+    profiles: [rehearsal]
+    command: [gateway]
+    env_file: [{path: ./private/gateway.env, required: false}]
+    volumes:
+      - ./private/gateway-manifest.json:/run/benka/manifest.json:ro
+      - ./private/profiles:/run/benka/profiles:ro
+      - gateway_state:/state
+      - vault:/vault:ro
+      - ./../../plugins/benka:/state/hermes/plugins/benka:ro
+
+  dashboard:
+    <<: *runtime
+    networks: [benka]
+    profiles: [rehearsal]
+    command: [dashboard]
+    env_file: [{path: ./private/dashboard.env, required: false}]
+    volumes:
+      - ./private/dashboard-manifest.json:/run/benka/manifest.json:ro
+      - gateway_state:/state
+      - vault:/vault:ro
+    expose: ["9119"]
+
+  worker:
+    <<: *runtime
+    networks: [benka]
+    profiles: [rehearsal]
+    command: [worker]
+    env_file: [{path: ./private/worker.env, required: false}]
+    volumes:
+      - ./private/worker-manifest.json:/run/benka/manifest.json:ro
+      - ./private/model-providers.json:/run/benka/model-providers.json:ro
+      - worker_state:/state
+      - vault:/vault
+
+  wiki:
+    <<: *runtime
+    networks: [benka]
+    profiles: [rehearsal]
+    command: [wiki]
+    env_file: [{path: ./private/wiki.env, required: false}]
+    volumes:
+      - ./private/wiki-manifest.json:/run/benka/manifest.json:ro
+      - wiki_state:/state
+      - vault:/vault
+
+  caddy:
+    image: caddy:2.10@sha256:c3d7ee5d2b11f9dc54f947f68a734c84e9c9666c92c88a7f30b9cba5da182adb
+    profiles: [rehearsal]
+    ports: ["8451:8443"]
+    environment:
+      BENKA_PANEL_HOST: ${BENKA_PANEL_HOST:-benka.invalid}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./private/tls:/run/tls:ro
+      - caddy_state:/data
+    networks: [benka]
+    restart: unless-stopped
+    mem_limit: 128m
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+
+networks:
+  benka: {}
+volumes:
+  candidate_state: {}
+  gateway_state: {}
+  worker_state: {}
+  wiki_state: {}
+  redis_state: {}
+  vault: {}
+  caddy_state: {}

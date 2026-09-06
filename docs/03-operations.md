@@ -1,5 +1,7 @@
 # Operations
 
+> Историческая справка исходного OpenClaw. Для Hermes используйте [реестр](hermes/inventory.md), [эксплуатацию](hermes/operations.md) и [переключение/откат](hermes/cutover-rollback.md). Production остаётся на OpenClaw; эти старые команды не развёртывают Hermes.
+
 ## SSH convention
 
 Use a placeholder in committed docs and keep the real value only in `LOCAL_ACCESS.md`.
