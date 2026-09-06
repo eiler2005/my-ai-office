@@ -19,7 +19,7 @@ Operations: `ingest` | `lint` | `query-saved` | `migration`
 ---
 
 ## [YYYY-MM-DD] migration | LLM-Wiki bootstrap
-Source: manual (plan: docs/llm-wiki-design.md)
+Source: manual (plan: docs/archive/openclaw/llm-wiki-design.md)
 Pages created: _(fill after first ingest)_
 Pages updated: INDEX.md
 Key insight: Fresh wiki started; old unstructured Obsidian vault cleared.

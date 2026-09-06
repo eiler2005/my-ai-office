@@ -66,7 +66,7 @@ The migration tooling verifies cold snapshots, restores into staging, prepares t
 
 This work carries the original project's Git history forward and records the operational switch separately from code publication.
 
-**Inspect:** [Migration code](../src/benka_integrations/migration.py), [plan](25-hermes-migration-plan.md), [rollback procedure](hermes/cutover-rollback.md), and [executed cutover](hermes/cutover-record-2026-09-06.md).
+**Inspect:** [Migration code](../src/benka_integrations/migration.py), [plan](hermes/migration-plan.md), [rollback procedure](hermes/cutover-rollback.md), and [executed cutover](hermes/cutover-record-2026-09-06.md).
 
 ## Evidence and present limits
 

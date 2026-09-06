@@ -449,7 +449,7 @@ The repository keeps the public engineering story, reproducible deployment templ
 | --- | --- |
 | [Architecture](docs/architecture.md) | Layered business and agent architecture, workflow catalog, runtime boundaries, queue and delivery semantics, models, knowledge, interfaces, and recovery. |
 | [Engineering case study](docs/engineering-case-study.md) | The design decisions behind the office: integration boundaries, model limits, provenance, delivery uncertainty, and migration. |
-| [Hermes migration plan](docs/25-hermes-migration-plan.md) | The original staged migration, rehearsal, cutover, rollback, and acceptance plan. |
+| [Hermes migration plan](docs/hermes/migration-plan.md) | The original staged migration, rehearsal, cutover, rollback, and acceptance plan. |
 | [Transfer inventory](docs/hermes/inventory.md) | Service and data mapping, schedules, dependencies, and secret categories without their values. |
 | [Operations](docs/hermes/operations.md) | Build, manifests, profiles, model configuration, queues, knowledge services, panel, and observation procedures. |
 | [Acceptance record](docs/hermes/acceptance.md) | VPS verification scope, recorded results, production fixes, and remaining observation gates. |
@@ -457,7 +457,7 @@ The repository keeps the public engineering story, reproducible deployment templ
 | [Cutover and rollback](docs/hermes/cutover-rollback.md) | Fresh snapshot, activation, reconciliation, and safe rollback procedure. |
 | [Panel runbook](docs/hermes/panel.md) | Isolated dashboard proxy, authentication, WebSocket, and certificate maintenance. |
 | [Drift log](docs/hermes/drift-log.md) | Differences found between the predecessor and the Hermes implementation. |
-| [OpenClaw predecessor](README.openclaw.md) | Historical handoff material; not an installation guide for the current office. |
+| [OpenClaw predecessor](docs/archive/openclaw/README.md) | Historical handoff material; not an installation guide for the current office. |
 
 ## Security
 
@@ -471,7 +471,7 @@ Security is implemented as runtime boundaries and recovery rules, rather than a 
 - **Delivery is defensive.** A run is deduplicated before execution; a Telegram delivery is confirmed only after a message identifier is returned. Pending or uncertain results go to reconciliation, never automatic replay.
 - **Models are bounded.** Background work has a fresh Hermes home, no inherited conversation memory, limited tools and time, output validation, and deterministic fallback paths where suitable.
 
-See the [security and architecture boundary](docs/architecture.md#runtime-boundaries) and the [Git/redaction policy](docs/08-git-and-redaction-policy.md) for the inherited policy record.
+See the [security and architecture boundary](docs/architecture.md#runtime-boundaries) and the [Git/redaction policy](docs/archive/openclaw/08-git-and-redaction-policy.md) for the inherited policy record.
 
 ## Deployment status & evidence
 

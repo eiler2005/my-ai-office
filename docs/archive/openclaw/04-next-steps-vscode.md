@@ -1,5 +1,14 @@
 # Next Steps In VS Code
 
+> [!NOTE]
+> **Archived — OpenClaw era.** This document describes the predecessor runtime and is kept as a
+> historical engineering record. Production moved to Hermes Agent on **2026-09-06**; the commands
+> and state below do not deploy the current system.
+>
+> Current system: [architecture](../../architecture.md) ·
+> [operations](../../hermes/operations.md) ·
+> [cutover record](../../hermes/cutover-record-2026-09-06.md)
+
 This is the recommended sequence for continuing work safely.
 
 ## 1. Keep the working folder local until the docs are reviewed

@@ -1,5 +1,14 @@
 # OpenClaw Workspace Setup: Onboarding Guide
 
+> [!NOTE]
+> **Archived — OpenClaw era.** This document describes the predecessor runtime and is kept as a
+> historical engineering record. Production moved to Hermes Agent on **2026-09-06**; the commands
+> and state below do not deploy the current system.
+>
+> Current system: [architecture](../../architecture.md) ·
+> [operations](../../hermes/operations.md) ·
+> [cutover record](../../hermes/cutover-record-2026-09-06.md)
+
 This document describes how to configure OpenClaw's workspace files for a personalised bot experience. The workspace files define who the bot is, what it knows about you, and how it should behave.
 
 ## What Are Workspace Files?
@@ -48,7 +57,7 @@ Connect to the bot via the web UI and instruct it to write or update files direc
 ### Prerequisites
 
 - OpenClaw is running — verify: `ssh "$OPENCLAW_HOST" 'cd /opt/openclaw && docker compose ps'`
-- OpenClaw UI tunnel is available (see `docs/03-operations.md` → Connecting to the OpenClaw web UI)
+- OpenClaw UI tunnel is available (see `docs/archive/openclaw/03-operations.md` → Connecting to the OpenClaw web UI)
 
 ### Connection steps
 

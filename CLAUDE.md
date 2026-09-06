@@ -68,7 +68,7 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 - This repository is the Hermes migration candidate for Benka (`my-ai-office`), including integration source and git-safe operations documents.
 - Production still runs OpenClaw. The candidate is not READY until the acceptance matrix passes.
-- Start with `README.md`, `docs/25-hermes-migration-plan.md` and `docs/hermes/`. Numbered OpenClaw documents describe the inherited source deployment.
+- Start with `README.md`, `docs/hermes/migration-plan.md` and `docs/hermes/`. Numbered OpenClaw documents describe the inherited source deployment.
 
 ## Runtime Boundary
 
@@ -88,7 +88,7 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 ## OpenClaw Version Compatibility
 
 - Before preparing, building, or deploying an OpenClaw upgrade, read
-  `docs/22-openclaw-version-compatibility-ledger.md` together with the current server state.
+  `docs/archive/openclaw/22-openclaw-version-compatibility-ledger.md` together with the current server state.
 - Treat every `active-workaround`, `blocked`, or `candidate-held` record as a release gate. Carry an
   active local adaptation into the candidate unless a version-specific validation proves it obsolete.
 - Create or update the candidate's ledger record before changing the live image reference. Record the
@@ -126,14 +126,14 @@ Deploying is allowed only after an explicit command.
 
 - `README.md`
 - `CHANGELOG.md`
-- `docs/01-server-state.md`
-- `docs/02-openclaw-installation.md`
-- `docs/03-operations.md`
-- `docs/05-rollback-and-backup.md`
-- `docs/06-command-log.md`
-- `docs/07-architecture-and-security.md`
-- `docs/08-git-and-redaction-policy.md`
-- `docs/22-openclaw-version-compatibility-ledger.md`
+- `docs/archive/openclaw/01-server-state.md`
+- `docs/archive/openclaw/02-openclaw-installation.md`
+- `docs/archive/openclaw/03-operations.md`
+- `docs/archive/openclaw/05-rollback-and-backup.md`
+- `docs/archive/openclaw/06-command-log.md`
+- `docs/archive/openclaw/07-architecture-and-security.md`
+- `docs/archive/openclaw/08-git-and-redaction-policy.md`
+- `docs/archive/openclaw/22-openclaw-version-compatibility-ledger.md`
 
 ## Local-Only Complements
 

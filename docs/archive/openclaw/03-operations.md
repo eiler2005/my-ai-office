@@ -1,6 +1,13 @@
 # Operations
 
-> Историческая справка исходного OpenClaw. Для Hermes используйте [реестр](hermes/inventory.md), [эксплуатацию](hermes/operations.md) и [переключение/откат](hermes/cutover-rollback.md). Production остаётся на OpenClaw; эти старые команды не развёртывают Hermes.
+> [!NOTE]
+> **Archived — OpenClaw era.** This document describes the predecessor runtime and is kept as a
+> historical engineering record. Production moved to Hermes Agent on **2026-09-06**; the commands
+> and state below do not deploy the current system.
+>
+> Current system: [architecture](../../architecture.md) ·
+> [operations](../../hermes/operations.md) ·
+> [cutover record](../../hermes/cutover-record-2026-09-06.md)
 
 ## SSH convention
 
@@ -10,8 +17,8 @@ Use a placeholder in committed docs and keep the real value only in `LOCAL_ACCES
 export OPENCLAW_HOST="deploy@<server-host>"
 ```
 
-For the intuitive memory overview, read `docs/19-llm-wiki-memory-explained.md`. For the
-LLM-oriented doc map, read `docs/20-llm-project-orientation.md`.
+For the intuitive memory overview, read `docs/archive/openclaw/19-llm-wiki-memory-explained.md`. For the
+LLM-oriented doc map, read `docs/archive/openclaw/20-llm-project-orientation.md`.
 
 ## Container-only operational rule
 
@@ -882,7 +889,7 @@ sudo mkdir -p /var/tmp/openclaw-compile-cache
 
 ### Memory system overview
 
-The bot uses a three-layer memory system. See `docs/10-memory-architecture.md` for full details.
+The bot uses a three-layer memory system. See `docs/archive/openclaw/10-memory-architecture.md` for full details.
 
 ```
 LIVE > RAW > DERIVED

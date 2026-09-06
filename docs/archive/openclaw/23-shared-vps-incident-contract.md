@@ -1,5 +1,14 @@
 # Shared VPS incident contract
 
+> [!NOTE]
+> **Archived — OpenClaw era.** This document describes the predecessor runtime and is kept as a
+> historical engineering record. Production moved to Hermes Agent on **2026-09-06**; the commands
+> and state below do not deploy the current system.
+>
+> Current system: [architecture](../../architecture.md) ·
+> [operations](../../hermes/operations.md) ·
+> [cutover record](../../hermes/cutover-record-2026-09-06.md)
+
 This document is the safe handoff contract for an incident that affects
 OpenClaw and a routing/edge workload on the same VPS. It records stable
 diagnosis and ownership rules, not a raw incident transcript. All commands,

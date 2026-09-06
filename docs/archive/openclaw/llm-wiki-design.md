@@ -1,12 +1,20 @@
 # LLM-Wiki: Personal Knowledge Base
 
-> Historical design background. This file is no longer the current canonical guide.
+> [!NOTE]
+> **Archived — OpenClaw era.** This document describes the predecessor runtime and is kept as a
+> historical engineering record. Production moved to Hermes Agent on **2026-09-06**; the commands
+> and state below do not deploy the current system.
+>
+> Current system: [architecture](../../architecture.md) ·
+> [operations](../../hermes/operations.md) ·
+> [cutover record](../../hermes/cutover-record-2026-09-06.md)
+
 > Current source of truth:
-> `docs/10-memory-architecture.md`,
-> `docs/15-llm-wiki-query-flow.md`,
-> `docs/17-knowledge-management.md`,
-> `docs/19-llm-wiki-memory-explained.md`,
-> `docs/20-llm-project-orientation.md`,
+> `docs/archive/openclaw/10-memory-architecture.md`,
+> `docs/archive/openclaw/15-llm-wiki-query-flow.md`,
+> `docs/archive/openclaw/17-knowledge-management.md`,
+> `docs/archive/openclaw/19-llm-wiki-memory-explained.md`,
+> `docs/archive/openclaw/20-llm-project-orientation.md`,
 > `artifacts/llm-wiki/SCHEMA.md`.
 
 ## What This Is
@@ -233,7 +241,7 @@ ssh -i ~/.ssh/id_rsa deploy@<server> "cd /opt/lightrag && docker compose start"
 ### New files (created by this plan)
 | File | Purpose |
 |------|---------|
-| `docs/llm-wiki-design.md` | This document |
+| `docs/archive/openclaw/llm-wiki-design.md` | This document |
 | `artifacts/llm-wiki/SCHEMA.md` | Wiki schema + bot manual → deploy to server |
 | `artifacts/llm-wiki/INDEX.md` | Index template with bootstrap checklist |
 | `artifacts/llm-wiki/LOG.md` | Log template |
@@ -258,8 +266,8 @@ ssh -i ~/.ssh/id_rsa deploy@<server> "cd /opt/lightrag && docker compose start"
 | `artifacts/signals-bridge/last30days_runner.py` | Add `write_signal_digest()` after Telegram post |
 | `CHANGELOG.md` | Document LLM-Wiki rollout |
 | `README.md` | Add LLM-Wiki to architecture section |
-| `docs/07-architecture-and-security.md` | Add wiki layer to memory architecture |
-| `docs/11-lightrag-setup.md` | Update ingest paths, add wiki context |
+| `docs/archive/openclaw/07-architecture-and-security.md` | Add wiki layer to memory architecture |
+| `docs/archive/openclaw/11-lightrag-setup.md` | Update ingest paths, add wiki context |
 
 ---
 
@@ -287,6 +295,6 @@ Read `artifacts/llm-wiki/SCHEMA.md` first — it's the most important file.
 3. Update `workspace/MEMORY.md` boot algorithm to read `wiki/INDEX.md`
 4. Update `scripts/lightrag-ingest.sh` source paths to `wiki/` + `raw/`
 5. Modify `artifacts/signals-bridge/last30days_runner.py` — add `write_signal_digest()` after Telegram post (env var `LAST30DAYS_OBSIDIAN_ROOT` already exists at line 299)
-6. Update `CHANGELOG.md`, `README.md`, `docs/07-architecture-and-security.md`, `docs/11-lightrag-setup.md`
+6. Update `CHANGELOG.md`, `README.md`, `docs/archive/openclaw/07-architecture-and-security.md`, `docs/archive/openclaw/11-lightrag-setup.md`
 7. Run migration on server (migration commands above)
 8. Bootstrap: ingest 5–7 seed sources to populate initial wiki pages (see INDEX.md checklist)

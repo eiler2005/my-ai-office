@@ -1,12 +1,21 @@
 # Telegram Channel Architecture
 
+> [!NOTE]
+> **Archived — OpenClaw era.** This document describes the predecessor runtime and is kept as a
+> historical engineering record. Production moved to Hermes Agent on **2026-09-06**; the commands
+> and state below do not deploy the current system.
+>
+> Current system: [architecture](../../architecture.md) ·
+> [operations](../../hermes/operations.md) ·
+> [cutover record](../../hermes/cutover-record-2026-09-06.md)
+
 This document defines the Telegram topology, permissions model, context modes, memory policy, and
 RAG ingestion gates for Benka / Бенька.
 
 Use this file for Telegram surface design.
-For the global memory model, use `docs/10-memory-architecture.md`.
-For save/search semantics in `Ideas` and `Knowledgebase`, use `docs/17-knowledge-management.md`.
-For runtime retrieval behavior, use `docs/15-llm-wiki-query-flow.md`.
+For the global memory model, use `docs/archive/openclaw/10-memory-architecture.md`.
+For save/search semantics in `Ideas` and `Knowledgebase`, use `docs/archive/openclaw/17-knowledge-management.md`.
+For runtime retrieval behavior, use `docs/archive/openclaw/15-llm-wiki-query-flow.md`.
 
 The design goal is not "the bot reads everything." The design goal is controlled human interface,
 clean operational channels, conservative memory, and a path from noisy inputs to curated knowledge.

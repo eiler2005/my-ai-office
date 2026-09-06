@@ -1,6 +1,13 @@
 # OpenClaw Installation
 
-> Историческая справка исходного OpenClaw. Для Hermes используйте [реестр](hermes/inventory.md), [эксплуатацию](hermes/operations.md) и [переключение/откат](hermes/cutover-rollback.md). Production остаётся на OpenClaw; эти старые команды не развёртывают Hermes.
+> [!NOTE]
+> **Archived — OpenClaw era.** This document describes the predecessor runtime and is kept as a
+> historical engineering record. Production moved to Hermes Agent on **2026-09-06**; the commands
+> and state below do not deploy the current system.
+>
+> Current system: [architecture](../../architecture.md) ·
+> [operations](../../hermes/operations.md) ·
+> [cutover record](../../hermes/cutover-record-2026-09-06.md)
 
 ## Goals
 
@@ -148,7 +155,7 @@ this list is not implicitly approved for deployment.
 
 ## Voice transcription (currently disabled)
 
-Assumption: `OPENCLAW_HOST` is set as described in `docs/03-operations.md`.
+Assumption: `OPENCLAW_HOST` is set as described in `docs/archive/openclaw/03-operations.md`.
 
 Current policy:
 
@@ -189,8 +196,8 @@ Prefer one of these paths:
 
 ## Redacted artifacts in this folder
 
-- [`../artifacts/openclaw/docker-compose.redacted.yml`](../artifacts/openclaw/docker-compose.redacted.yml)
-- [`../artifacts/openclaw/caddy.redacted.Caddyfile`](../artifacts/openclaw/caddy.redacted.Caddyfile)
-- [`../artifacts/openclaw/openclaw.json`](../artifacts/openclaw/openclaw.json)
-- [`../artifacts/openclaw/env.redacted.example`](../artifacts/openclaw/env.redacted.example)
-- [`../artifacts/openclaw/auth-profile.redacted.json`](../artifacts/openclaw/auth-profile.redacted.json)
+- [`../artifacts/openclaw/docker-compose.redacted.yml`](../../../artifacts/openclaw/docker-compose.redacted.yml)
+- [`../artifacts/openclaw/caddy.redacted.Caddyfile`](../../../artifacts/openclaw/caddy.redacted.Caddyfile)
+- [`../artifacts/openclaw/openclaw.json`](../../../artifacts/openclaw/openclaw.json)
+- [`../artifacts/openclaw/env.redacted.example`](../../../artifacts/openclaw/env.redacted.example)
+- [`../artifacts/openclaw/auth-profile.redacted.json`](../../../artifacts/openclaw/auth-profile.redacted.json)

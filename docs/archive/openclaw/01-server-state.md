@@ -1,13 +1,20 @@
 # Server State
 
-> Историческая справка исходного OpenClaw. Для Hermes используйте [реестр](hermes/inventory.md), [эксплуатацию](hermes/operations.md) и [переключение/откат](hermes/cutover-rollback.md). Production остаётся на OpenClaw; эти старые команды не развёртывают Hermes.
+> [!NOTE]
+> **Archived — OpenClaw era.** This document describes the predecessor runtime and is kept as a
+> historical engineering record. Production moved to Hermes Agent on **2026-09-06**; the commands
+> and state below do not deploy the current system.
+>
+> Current system: [architecture](../../architecture.md) ·
+> [operations](../../hermes/operations.md) ·
+> [cutover record](../../hermes/cutover-record-2026-09-06.md)
 
 Snapshot date: `2026-05-31`
 
 This file is for live inventory and host state.
-For the actual memory model, use `docs/10-memory-architecture.md`.
-For the human explanation, use `docs/19-llm-wiki-memory-explained.md`.
-For Knowledgebase / Ideas behavior, use `docs/17-knowledge-management.md`.
+For the actual memory model, use `docs/archive/openclaw/10-memory-architecture.md`.
+For the human explanation, use `docs/archive/openclaw/19-llm-wiki-memory-explained.md`.
+For Knowledgebase / Ideas behavior, use `docs/archive/openclaw/17-knowledge-management.md`.
 
 ## Host
 
@@ -49,7 +56,7 @@ For Knowledgebase / Ideas behavior, use `docs/17-knowledge-management.md`.
   - legacy vault folders outside `wiki/` and `raw/signals/`
 - cron: every 30 minutes
 - validation on 2026-04-10: `processed=26`, `failed=0`; query for "Сто лет недосказанности Семихатов" returns `Книги и статьи.md`
-- see `docs/10-memory-architecture.md` and `docs/11-lightrag-setup.md`
+- see `docs/archive/openclaw/10-memory-architecture.md` and `docs/archive/openclaw/11-lightrag-setup.md`
 
 ### OpenClaw builtin memorySearch
 
@@ -198,7 +205,7 @@ Two forum topics in `Ben'ka_Clawbot_SuperGroup` (-1003592370241) for knowledge m
 | `📚 Knowledgebase` | 232 | knowledge | Question → search (LightRAG hybrid + memory, internet opt-in only); explicit save content → `raw/**` + `wiki/research/**` immediately via `wiki_ingest(capture_mode=knowledgebase)` |
 | `💡 Ideas` | 639 | idea_capture | Any content (forwarded post, link, text) → light-curated `raw/**` + `wiki/research/**` immediately; promote to Knowledgebase later for deeper enrichment |
 
-Config: `telegram-topic-map.json`, `telegram-surfaces.policy.json` on server. See `docs/17-knowledge-management.md`.
+Config: `telegram-topic-map.json`, `telegram-surfaces.policy.json` on server. See `docs/archive/openclaw/17-knowledge-management.md`.
 
 ## Deployment state
 
@@ -301,7 +308,7 @@ export OPENCLAW_HOST="deploy@<server-host>"
 ./scripts/deploy-workspace.sh
 ```
 
-See `docs/09-workspace-setup.md` for full onboarding guide.
+See `docs/archive/openclaw/09-workspace-setup.md` for full onboarding guide.
 
 ## Validation status note
 

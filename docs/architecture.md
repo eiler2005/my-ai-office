@@ -201,7 +201,7 @@ The OpenClaw-to-Hermes migration preserves processing behavior and state contrac
 
 Deployment preparation and production activation are separate operations. Activation requires an explicit operator decision, a fresh consistent snapshot, and stopping the former writers. Rollback after new writes requires reconciling new artifacts, cursors, confirmed deliveries, and pending work before restarting old processors.
 
-The [migration implementation](../src/benka_integrations/migration.py), [migration plan](25-hermes-migration-plan.md), and [cutover/rollback runbook](hermes/cutover-rollback.md) document the mechanics. The recorded switch retained the old state and stopped the former server's Docker services; observation and final acceptance are tracked separately.
+The [migration implementation](../src/benka_integrations/migration.py), [migration plan](hermes/migration-plan.md), and [cutover/rollback runbook](hermes/cutover-rollback.md) document the mechanics. The recorded switch retained the old state and stopped the former server's Docker services; observation and final acceptance are tracked separately.
 
 ## Verification boundary
 

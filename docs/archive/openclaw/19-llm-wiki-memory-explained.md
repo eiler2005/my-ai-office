@@ -1,11 +1,20 @@
 # LLM-Wiki Memory Explained
 
+> [!NOTE]
+> **Archived — OpenClaw era.** This document describes the predecessor runtime and is kept as a
+> historical engineering record. Production moved to Hermes Agent on **2026-09-06**; the commands
+> and state below do not deploy the current system.
+>
+> Current system: [architecture](../../architecture.md) ·
+> [operations](../../hermes/operations.md) ·
+> [cutover record](../../hermes/cutover-record-2026-09-06.md)
+
 This page is the shortest human-readable explanation of how memory works in this project.
 
 Recommended next step after this file:
-- technical model -> `docs/10-memory-architecture.md`
-- save and promotion behavior -> `docs/17-knowledge-management.md`
-- runtime answer path -> `docs/15-llm-wiki-query-flow.md`
+- technical model -> `docs/archive/openclaw/10-memory-architecture.md`
+- save and promotion behavior -> `docs/archive/openclaw/17-knowledge-management.md`
+- runtime answer path -> `docs/archive/openclaw/15-llm-wiki-query-flow.md`
 
 If you only want one mental model, use this:
 

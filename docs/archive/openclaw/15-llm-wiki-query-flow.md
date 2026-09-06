@@ -1,5 +1,14 @@
 # LLM-Wiki Query Flow
 
+> [!NOTE]
+> **Archived — OpenClaw era.** This document describes the predecessor runtime and is kept as a
+> historical engineering record. Production moved to Hermes Agent on **2026-09-06**; the commands
+> and state below do not deploy the current system.
+>
+> Current system: [architecture](../../architecture.md) ·
+> [operations](../../hermes/operations.md) ·
+> [cutover record](../../hermes/cutover-record-2026-09-06.md)
+
 This document explains the full end-to-end mechanics of the LLM-Wiki stack in this repo:
 
 - where the canonical knowledge lives;
@@ -12,8 +21,8 @@ This document explains the full end-to-end mechanics of the LLM-Wiki stack in th
 This is the **runtime/query doc**.
 
 Read first:
-- `docs/19-llm-wiki-memory-explained.md` for intuition
-- `docs/10-memory-architecture.md` for the technical memory model
+- `docs/archive/openclaw/19-llm-wiki-memory-explained.md` for intuition
+- `docs/archive/openclaw/10-memory-architecture.md` for the technical memory model
 
 Then use this file for the question:
 - "How does OpenClaw actually answer from memory?"
@@ -29,8 +38,8 @@ Use this document when the question is not "how do I deploy LightRAG?" but rathe
 
 See also:
 
-- `docs/10-memory-architecture.md` for the global memory model
-- `docs/11-lightrag-setup.md` for LightRAG deployment and operations
+- `docs/archive/openclaw/10-memory-architecture.md` for the global memory model
+- `docs/archive/openclaw/11-lightrag-setup.md` for LightRAG deployment and operations
 - `workspace/AGENTS.md` and `workspace/TOOLS.md` for the agent-facing behavior contract
 
 ---

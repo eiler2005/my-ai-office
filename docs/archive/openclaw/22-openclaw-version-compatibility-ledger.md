@@ -1,6 +1,13 @@
 # OpenClaw Version Compatibility Ledger
 
-> Историческая справка исходного OpenClaw. Для Hermes используйте [реестр](hermes/inventory.md), [эксплуатацию](hermes/operations.md) и [переключение/откат](hermes/cutover-rollback.md). Production остаётся на OpenClaw; эти старые команды не развёртывают Hermes.
+> [!NOTE]
+> **Archived — OpenClaw era.** This document describes the predecessor runtime and is kept as a
+> historical engineering record. Production moved to Hermes Agent on **2026-09-06**; the commands
+> and state below do not deploy the current system.
+>
+> Current system: [architecture](../../architecture.md) ·
+> [operations](../../hermes/operations.md) ·
+> [cutover record](../../hermes/cutover-record-2026-09-06.md)
 
 This is the canonical, versioned record of OpenClaw compatibility findings for this deployment.
 It answers three questions before any upgrade:
@@ -10,8 +17,8 @@ It answers three questions before any upgrade:
 3. What evidence is sufficient to promote, hold, or roll back the candidate?
 
 This ledger is intentionally separate from the image timeline in
-[docs/02-openclaw-installation.md](02-openclaw-installation.md) and the chronological narrative in
-[docs/06-command-log.md](06-command-log.md). The timeline says *what was used*; this ledger says
+[docs/archive/openclaw/02-openclaw-installation.md](02-openclaw-installation.md) and the chronological narrative in
+[docs/archive/openclaw/06-command-log.md](06-command-log.md). The timeline says *what was used*; this ledger says
 *why a version can or cannot be used*. No entry for a version means **unknown compatibility**, not
 approval.
 
@@ -113,7 +120,7 @@ and an outbound reply whenever the candidate changes OpenClaw or its Telegram im
 - **Upstream / derived image:** OpenClaw 2026.4.2 and later derived images.
 - **Status:** `active-workaround`.
 - **Known-good parent:** the current production derived image listed in
-  [docs/01-server-state.md](01-server-state.md).
+  [docs/archive/openclaw/01-server-state.md](01-server-state.md).
 - **Affected surface:** Gateway startup in `bind=lan` mode.
 - **Failure signature:** the upstream image lacked `ip`; the Gateway depends on `ip neigh show` in
   the selected network mode and could enter a bad startup state even with otherwise correct config.
@@ -125,8 +132,8 @@ and an outbound reply whenever the candidate changes OpenClaw or its Telegram im
 - **Rollback:** restore the known-good derived image reference and recreate only the Gateway.
 - **Removal condition:** a candidate image proves the required runtime command is present and the
   `bind=lan` startup path passes without the derived dependency.
-- **Evidence:** [docs/02-openclaw-installation.md](02-openclaw-installation.md),
-  [docs/07-architecture-and-security.md](07-architecture-and-security.md).
+- **Evidence:** [docs/archive/openclaw/02-openclaw-installation.md](02-openclaw-installation.md),
+  [docs/archive/openclaw/07-architecture-and-security.md](07-architecture-and-security.md).
 
 ### OCL-2026.4.5-STARTUP-SPIN
 
@@ -139,8 +146,8 @@ and an outbound reply whenever the candidate changes OpenClaw or its Telegram im
 - **Required gates if ever reconsidered:** cold-start CPU observation, bound-port check, `/healthz`,
   and an extended healthy period before any user-facing smoke.
 - **Rollback:** immediately restore the last known-good derived image.
-- **Evidence:** [docs/01-server-state.md](01-server-state.md),
-  [docs/02-openclaw-installation.md](02-openclaw-installation.md).
+- **Evidence:** [docs/archive/openclaw/01-server-state.md](01-server-state.md),
+  [docs/archive/openclaw/02-openclaw-installation.md](02-openclaw-installation.md).
 
 ### OCL-2026.4.8-STARTUP-RECOVERY
 
@@ -171,8 +178,8 @@ and an outbound reply whenever the candidate changes OpenClaw or its Telegram im
   heavy tools after rebasing the image.
 - **Rollback:** use the immediately previous known-good derived image if the slim candidate does not
   meet its runtime contract.
-- **Evidence:** [docs/01-server-state.md](01-server-state.md),
-  [docs/02-openclaw-installation.md](02-openclaw-installation.md).
+- **Evidence:** [docs/archive/openclaw/01-server-state.md](01-server-state.md),
+  [docs/archive/openclaw/02-openclaw-installation.md](02-openclaw-installation.md).
 
 ### OCL-2026.5.12-RUNTIME-AND-RETRIEVAL-STATE
 
@@ -246,7 +253,7 @@ and an outbound reply whenever the candidate changes OpenClaw or its Telegram im
   the Gateway.
 - **Removal condition:** a candidate proves the primary OAuth route after any storage/provider change
   without relying on a fallback.
-- **Evidence:** [docs/03-operations.md](03-operations.md), command log sections 44–45.
+- **Evidence:** [docs/archive/openclaw/03-operations.md](03-operations.md), command log sections 44–45.
 
 ### OCL-2026.6.8-SERVICE-SCOPE
 
@@ -284,7 +291,7 @@ and an outbound reply whenever the candidate changes OpenClaw or its Telegram im
   and repeat health, channel, and manual UI checks.
 - **Removal condition:** a candidate with the switch removed passes the fresh manual UI
   inbound-and-outbound gate after deployment; record the exact evidence before deleting the patch.
-- **Evidence:** [docs/03-operations.md](03-operations.md), command log section 49.
+- **Evidence:** [docs/archive/openclaw/03-operations.md](03-operations.md), command log section 49.
 
 ### OCL-2026.6.9-RESERVE-MODEL-ROUTE
 
@@ -303,7 +310,7 @@ and an outbound reply whenever the candidate changes OpenClaw or its Telegram im
   route changes unexpectedly.
 - **Removal condition:** the built-in route is considered only after it passes the same explicit
   reserve smoke on a candidate.
-- **Evidence:** [docs/01-server-state.md](01-server-state.md), command log section 44.
+- **Evidence:** [docs/archive/openclaw/01-server-state.md](01-server-state.md), command log section 44.
 
 ### OCL-2026.6.11-CANDIDATE-UI-GATE
 
@@ -326,8 +333,8 @@ and an outbound reply whenever the candidate changes OpenClaw or its Telegram im
   proven.
 - **Promotion condition:** the manual UI smoke passes on the candidate and the record is updated with
   its evidence; only then may the candidate become `production-verified`.
-- **Evidence:** [docs/01-server-state.md](01-server-state.md),
-  [docs/02-openclaw-installation.md](02-openclaw-installation.md), command log section 53.
+- **Evidence:** [docs/archive/openclaw/01-server-state.md](01-server-state.md),
+  [docs/archive/openclaw/02-openclaw-installation.md](02-openclaw-installation.md), command log section 53.
 
 ## Updating the ledger after a release
 
@@ -336,10 +343,10 @@ image/config/docs changes:
 
 - add a record for any new symptom, workaround, or unproven release gate;
 - update the current summary table and the record status;
-- add the detailed chronological evidence to [docs/06-command-log.md](06-command-log.md);
-- align current state in [docs/01-server-state.md](01-server-state.md) and the image timeline in
-  [docs/02-openclaw-installation.md](02-openclaw-installation.md);
-- update [docs/05-rollback-and-backup.md](05-rollback-and-backup.md) if the rollback mechanism
+- add the detailed chronological evidence to [docs/archive/openclaw/06-command-log.md](06-command-log.md);
+- align current state in [docs/archive/openclaw/01-server-state.md](01-server-state.md) and the image timeline in
+  [docs/archive/openclaw/02-openclaw-installation.md](02-openclaw-installation.md);
+- update [docs/archive/openclaw/05-rollback-and-backup.md](05-rollback-and-backup.md) if the rollback mechanism
   changes.
 
 This makes the next upgrade an evidence-driven comparison against known failure modes rather than a

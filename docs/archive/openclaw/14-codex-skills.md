@@ -1,5 +1,14 @@
 # Codex Skills Catalog
 
+> [!NOTE]
+> **Archived — OpenClaw era.** This document describes the predecessor runtime and is kept as a
+> historical engineering record. Production moved to Hermes Agent on **2026-09-06**; the commands
+> and state below do not deploy the current system.
+>
+> Current system: [architecture](../../architecture.md) ·
+> [operations](../../hermes/operations.md) ·
+> [cutover record](../../hermes/cutover-record-2026-09-06.md)
+
 This document tracks the project-specific Codex skills used with this repo.
 It is intentionally separate from OpenClaw runtime docs: these skills help the
 operator agent work on the system, not the production assistant answer end users.

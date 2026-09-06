@@ -1,5 +1,14 @@
 # Memory Architecture
 
+> [!NOTE]
+> **Archived — OpenClaw era.** This document describes the predecessor runtime and is kept as a
+> historical engineering record. Production moved to Hermes Agent on **2026-09-06**; the commands
+> and state below do not deploy the current system.
+>
+> Current system: [architecture](../../architecture.md) ·
+> [operations](../../hermes/operations.md) ·
+> [cutover record](../../hermes/cutover-record-2026-09-06.md)
+
 ## Overview
 
 This is the **technical source-of-truth doc** for the memory model.
@@ -11,11 +20,11 @@ Use it when the question is:
 - "What are the storage rules at architecture level?"
 
 Read order:
-- intuition first -> `docs/19-llm-wiki-memory-explained.md`
+- intuition first -> `docs/archive/openclaw/19-llm-wiki-memory-explained.md`
 - this file next -> technical memory model
-- runtime answer path after that -> `docs/15-llm-wiki-query-flow.md`
-- save / promotion behavior -> `docs/17-knowledge-management.md`
-- exact naming and machine rules -> `docs/16-llm-wiki-storage-model.md` and `artifacts/llm-wiki/SCHEMA.md`
+- runtime answer path after that -> `docs/archive/openclaw/15-llm-wiki-query-flow.md`
+- save / promotion behavior -> `docs/archive/openclaw/17-knowledge-management.md`
+- exact naming and machine rules -> `docs/archive/openclaw/16-llm-wiki-storage-model.md` and `artifacts/llm-wiki/SCHEMA.md`
 
 The OpenClaw bot (Бенька) uses a multi-layer external memory system. The LLM remembers nothing
 between sessions by itself — all persistence lives in files and a knowledge graph.
@@ -434,7 +443,7 @@ workspace/
 
 ## Knowledge capture flow (Telegram → wiki)
 
-Two Telegram topics drive the primary ingestion workflow. See [docs/17-knowledge-management.md](17-knowledge-management.md) for full details.
+Two Telegram topics drive the primary ingestion workflow. See [docs/archive/openclaw/17-knowledge-management.md](17-knowledge-management.md) for full details.
 
 | Topic | Behaviour | Memory class |
 |---|---|---|

@@ -1,10 +1,17 @@
 # clawden-ai
 
-> Исходный README OpenClaw, сохранённый как справка. Текущее состояние Hermes-кандидата и инструкции — в [README.md](README.md) и [протоколе миграции](docs/hermes/acceptance.md).
+> [!NOTE]
+> **Archived — OpenClaw era.** This document describes the predecessor runtime and is kept as a
+> historical engineering record. Production moved to Hermes Agent on **2026-09-06**; the commands
+> and state below do not deploy the current system.
+>
+> Current system: [architecture](../../architecture.md) ·
+> [operations](../../hermes/operations.md) ·
+> [cutover record](../../hermes/cutover-record-2026-09-06.md)
 
 > Personal AI ops platform — self-hosted, event-driven, always-on.
 
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](../../../LICENSE)
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://python.org)
 [![Docker](https://img.shields.io/badge/docker-compose-2496ED.svg)](https://docker.com)
 [![OpenClaw](https://img.shields.io/badge/runtime-OpenClaw-black)](https://github.com/coollabsio/openclaw)
@@ -168,9 +175,9 @@ raw sources -> curated wiki -> LightRAG index -> OpenClaw answers
 In other words: `wiki/` is the durable source of truth, `LightRAG` is the retrieval layer on top of it, and explicit saves are only considered complete once they create a visible wiki artifact.
 
 If you want the shortest human explanation of why this exists and how the memory cycle works, start
-with [docs/19-llm-wiki-memory-explained.md](docs/19-llm-wiki-memory-explained.md). If you are
+with [docs/archive/openclaw/19-llm-wiki-memory-explained.md](19-llm-wiki-memory-explained.md). If you are
 another LLM/agent trying to understand this repo fast, use
-[docs/20-llm-project-orientation.md](docs/20-llm-project-orientation.md).
+[docs/archive/openclaw/20-llm-project-orientation.md](20-llm-project-orientation.md).
 
 Recommended memory reading path:
 - human: `README -> docs/19 -> docs/10 -> docs/17 -> docs/15`
@@ -583,7 +590,7 @@ DERIVED — MEMORY.md, daily notes         quick recall, not canonical
 
 **Curated import** goes through the internal `wiki-import` bridge. `raw/articles/` and `raw/documents/` are stored in the vault but stay out of LightRAG until curated import materializes them into visible wiki pages, assigns themes, and rebuilds `TOPICS.md`. Explicit saves always create `wiki/research/**` first; only after that does LightRAG enqueue the touched wiki pages.
 
-See [`docs/10-memory-architecture.md`](docs/10-memory-architecture.md) for the full design.
+See [`docs/archive/openclaw/10-memory-architecture.md`](10-memory-architecture.md) for the full design.
 
 ---
 
@@ -697,7 +704,7 @@ ssh -i ~/.ssh/id_rsa "$OPENCLAW_HOST" \
 ssh -i ~/.ssh/id_rsa "$OPENCLAW_HOST" '/opt/lightrag/scripts/lightrag-ingest.sh'
 ```
 
-See [`docs/03-operations.md`](docs/03-operations.md) for the full runbook.
+See [`docs/archive/openclaw/03-operations.md`](03-operations.md) for the full runbook.
 
 ---
 
@@ -713,7 +720,7 @@ See [`docs/03-operations.md`](docs/03-operations.md) for the full runbook.
 4. Deploy workspace: `./scripts/deploy-workspace.sh`
 5. Deploy bridges as needed (each has its own deploy script)
 6. Provision LightRAG (first time): `./scripts/setup-lightrag.sh`
-7. Set up Obsidian sync: install Syncthing on Mac and follow [`docs/03-operations.md`](docs/03-operations.md)
+7. Set up Obsidian sync: install Syncthing on Mac and follow [`docs/archive/openclaw/03-operations.md`](03-operations.md)
 
 ---
 
@@ -724,7 +731,7 @@ See [`docs/03-operations.md`](docs/03-operations.md) for the full runbook.
 - **OpenClaw tools** — `profile=coding`, `exec=deny/ask-always`; no host shell from gateway
 - **No secrets in git** — all tracked files use `<placeholder>` syntax; real values in gitignored `secrets/` and `LOCAL_ACCESS.md`
 
-See [`docs/07-architecture-and-security.md`](docs/07-architecture-and-security.md) and [`docs/08-git-and-redaction-policy.md`](docs/08-git-and-redaction-policy.md).
+See [`docs/archive/openclaw/07-architecture-and-security.md`](07-architecture-and-security.md) and [`docs/archive/openclaw/08-git-and-redaction-policy.md`](08-git-and-redaction-policy.md).
 
 ---
 
@@ -732,26 +739,26 @@ See [`docs/07-architecture-and-security.md`](docs/07-architecture-and-security.m
 
 | # | File | What it covers |
 |---|------|---------------|
-| 01 | [server-state](docs/01-server-state.md) | Current snapshot: services, ports, images, env |
-| 02 | [openclaw-installation](docs/02-openclaw-installation.md) | Deployment decisions, auth setup, image derivation |
-| 03 | [operations](docs/03-operations.md) | Full ops runbook: SSH, health checks, troubleshooting |
-| 06 | [command-log](docs/06-command-log.md) | Full command history with decision context |
-| 07 | [architecture-and-security](docs/07-architecture-and-security.md) | Security model: mTLS, UFW, tool profile, signals architecture |
-| 08 | [git-and-redaction-policy](docs/08-git-and-redaction-policy.md) | Git safety, secret handling, redaction patterns |
-| 09 | [workspace-setup](docs/09-workspace-setup.md) | Bot personalisation guide |
-| 10 | [memory-architecture](docs/10-memory-architecture.md) | Three-layer memory: live / raw / derived |
-| 11 | [lightrag-setup](docs/11-lightrag-setup.md) | LightRAG deployment and ingestion guide |
-| 12 | [telegram-channel-architecture](docs/12-telegram-channel-architecture.md) | Telegram topology, permissions, RAG gates |
-| 13 | [ai-assistant-architecture](docs/13-ai-assistant-architecture.md) | Model routing, assistant behavior, approval boundaries |
-| 14 | [codex-skills](docs/14-codex-skills.md) | Project skill catalog for recurring Codex workflows |
-| 15 | [llm-wiki-query-flow](docs/15-llm-wiki-query-flow.md) | End-to-end LLM-Wiki flow: curated import, LightRAG retrieval, OpenClaw answer assembly |
-| 16 | [llm-wiki-storage-model](docs/16-llm-wiki-storage-model.md) | Reference-only storage rules: slugs, themes, topic maps, archive placement |
-| 17 | [knowledge-management](docs/17-knowledge-management.md) | Knowledgebase and Ideas workflow: save, capture, promotion |
-| 19 | [llm-wiki-memory-explained](docs/19-llm-wiki-memory-explained.md) | Human-first explanation of `raw -> wiki -> LightRAG -> OpenClaw` |
-| 20 | [llm-project-orientation](docs/20-llm-project-orientation.md) | LLM-facing project map: read order, trust hierarchy, doc routing |
-| 22 | [openclaw-version-compatibility-ledger](docs/22-openclaw-version-compatibility-ledger.md) | Versioned OpenClaw defects, local workarounds, release gates, and rollback evidence |
-| 23 | [shared-vps-incident-contract](docs/23-shared-vps-incident-contract.md) | Ownership, safe evidence and closure gate for shared Docker/edge incidents |
-| 24 | [llm-provider-map](docs/24-llm-provider-map.md) | LLM call inventory, credential names, routing, cost controls, and provider-migration checklist |
+| 01 | [server-state](01-server-state.md) | Current snapshot: services, ports, images, env |
+| 02 | [openclaw-installation](02-openclaw-installation.md) | Deployment decisions, auth setup, image derivation |
+| 03 | [operations](03-operations.md) | Full ops runbook: SSH, health checks, troubleshooting |
+| 06 | [command-log](06-command-log.md) | Full command history with decision context |
+| 07 | [architecture-and-security](07-architecture-and-security.md) | Security model: mTLS, UFW, tool profile, signals architecture |
+| 08 | [git-and-redaction-policy](08-git-and-redaction-policy.md) | Git safety, secret handling, redaction patterns |
+| 09 | [workspace-setup](09-workspace-setup.md) | Bot personalisation guide |
+| 10 | [memory-architecture](10-memory-architecture.md) | Three-layer memory: live / raw / derived |
+| 11 | [lightrag-setup](11-lightrag-setup.md) | LightRAG deployment and ingestion guide |
+| 12 | [telegram-channel-architecture](12-telegram-channel-architecture.md) | Telegram topology, permissions, RAG gates |
+| 13 | [ai-assistant-architecture](13-ai-assistant-architecture.md) | Model routing, assistant behavior, approval boundaries |
+| 14 | [codex-skills](14-codex-skills.md) | Project skill catalog for recurring Codex workflows |
+| 15 | [llm-wiki-query-flow](15-llm-wiki-query-flow.md) | End-to-end LLM-Wiki flow: curated import, LightRAG retrieval, OpenClaw answer assembly |
+| 16 | [llm-wiki-storage-model](16-llm-wiki-storage-model.md) | Reference-only storage rules: slugs, themes, topic maps, archive placement |
+| 17 | [knowledge-management](17-knowledge-management.md) | Knowledgebase and Ideas workflow: save, capture, promotion |
+| 19 | [llm-wiki-memory-explained](19-llm-wiki-memory-explained.md) | Human-first explanation of `raw -> wiki -> LightRAG -> OpenClaw` |
+| 20 | [llm-project-orientation](20-llm-project-orientation.md) | LLM-facing project map: read order, trust hierarchy, doc routing |
+| 22 | [openclaw-version-compatibility-ledger](22-openclaw-version-compatibility-ledger.md) | Versioned OpenClaw defects, local workarounds, release gates, and rollback evidence |
+| 23 | [shared-vps-incident-contract](23-shared-vps-incident-contract.md) | Ownership, safe evidence and closure gate for shared Docker/edge incidents |
+| 24 | [llm-provider-map](24-llm-provider-map.md) | LLM call inventory, credential names, routing, cost controls, and provider-migration checklist |
 
 ---
 

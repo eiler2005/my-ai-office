@@ -1,9 +1,18 @@
 # Knowledge Management: Ideas + Knowledgebase
 
+> [!NOTE]
+> **Archived — OpenClaw era.** This document describes the predecessor runtime and is kept as a
+> historical engineering record. Production moved to Hermes Agent on **2026-09-06**; the commands
+> and state below do not deploy the current system.
+>
+> Current system: [architecture](../../architecture.md) ·
+> [operations](../../hermes/operations.md) ·
+> [cutover record](../../hermes/cutover-record-2026-09-06.md)
+
 For the intuitive memory explanation behind this workflow, see
-`docs/19-llm-wiki-memory-explained.md`.
-For the technical memory model, see `docs/10-memory-architecture.md`.
-For the runtime query path, see `docs/15-llm-wiki-query-flow.md`.
+`docs/archive/openclaw/19-llm-wiki-memory-explained.md`.
+For the technical memory model, see `docs/archive/openclaw/10-memory-architecture.md`.
+For the runtime query path, see `docs/archive/openclaw/15-llm-wiki-query-flow.md`.
 
 This file is the **behavior contract** for `Ideas` and `Knowledgebase`.
 It is not the main architecture document for the full memory stack.
@@ -242,7 +251,7 @@ High-signal auto-promotion intentionally uses a narrow heuristic set:
 Everything else stays in `ideas/light` until Denis explicitly asks for promotion.
 
 Для исторических Telegram-каналов и повторяемых incremental updates см.
-[docs/18-telegram-historical-ingest.md](18-telegram-historical-ingest.md).
+[docs/archive/openclaw/18-telegram-historical-ingest.md](18-telegram-historical-ingest.md).
 
 ---
 
@@ -272,8 +281,8 @@ Everything else stays in `ideas/light` until Denis explicitly asks for promotion
 
 ## Связанные документы
 
-- [docs/10-memory-architecture.md](10-memory-architecture.md) — классы памяти (RAW/DERIVED/CURATED)
-- [docs/11-lightrag-setup.md](11-lightrag-setup.md) — LightRAG API и индексация
-- [docs/15-llm-wiki-query-flow.md](15-llm-wiki-query-flow.md) — как работает поиск внутри
-- [docs/18-telegram-historical-ingest.md](18-telegram-historical-ingest.md) — historical Telegram ingest и incremental updates
-- [docs/12-telegram-channel-architecture.md](12-telegram-channel-architecture.md) — все Telegram-поверхности
+- [docs/archive/openclaw/10-memory-architecture.md](10-memory-architecture.md) — классы памяти (RAW/DERIVED/CURATED)
+- [docs/archive/openclaw/11-lightrag-setup.md](11-lightrag-setup.md) — LightRAG API и индексация
+- [docs/archive/openclaw/15-llm-wiki-query-flow.md](15-llm-wiki-query-flow.md) — как работает поиск внутри
+- [docs/archive/openclaw/18-telegram-historical-ingest.md](18-telegram-historical-ingest.md) — historical Telegram ingest и incremental updates
+- [docs/archive/openclaw/12-telegram-channel-architecture.md](12-telegram-channel-architecture.md) — все Telegram-поверхности

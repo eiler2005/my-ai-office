@@ -1,5 +1,14 @@
 # LLM Project Orientation
 
+> [!NOTE]
+> **Archived — OpenClaw era.** This document describes the predecessor runtime and is kept as a
+> historical engineering record. Production moved to Hermes Agent on **2026-09-06**; the commands
+> and state below do not deploy the current system.
+>
+> Current system: [architecture](../../architecture.md) ·
+> [operations](../../hermes/operations.md) ·
+> [cutover record](../../hermes/cutover-record-2026-09-06.md)
+
 This page is for another LLM or coding agent that needs to understand this repo quickly.
 
 Use it as a project map, not as a runtime instruction file.
@@ -71,9 +80,9 @@ Use a three-pass approach instead of scanning everything at once.
 ### Pass 1 — build the memory model
 
 Read:
-1. [README.md](../README.md)
-2. [docs/19-llm-wiki-memory-explained.md](19-llm-wiki-memory-explained.md)
-3. [docs/10-memory-architecture.md](10-memory-architecture.md)
+1. [README.md](../../../README.md)
+2. [docs/archive/openclaw/19-llm-wiki-memory-explained.md](19-llm-wiki-memory-explained.md)
+3. [docs/archive/openclaw/10-memory-architecture.md](10-memory-architecture.md)
 
 Goal:
 - understand `raw -> wiki -> LightRAG -> OpenClaw`
@@ -83,10 +92,10 @@ Goal:
 ### Pass 2 — understand runtime behavior
 
 Read:
-1. [docs/15-llm-wiki-query-flow.md](15-llm-wiki-query-flow.md)
-2. [docs/17-knowledge-management.md](17-knowledge-management.md)
-3. [workspace/TOOLS.md](../workspace/TOOLS.md)
-4. [workspace/TELEGRAM_POLICY.md](../workspace/TELEGRAM_POLICY.md)
+1. [docs/archive/openclaw/15-llm-wiki-query-flow.md](15-llm-wiki-query-flow.md)
+2. [docs/archive/openclaw/17-knowledge-management.md](17-knowledge-management.md)
+3. [workspace/TOOLS.md](../../../workspace/TOOLS.md)
+4. [workspace/TELEGRAM_POLICY.md](../../../workspace/TELEGRAM_POLICY.md)
 
 Goal:
 - understand how saves, search, and retrieval actually happen
@@ -110,13 +119,13 @@ That is usually faster and more accurate than trying to read the whole repo fron
 
 If you know nothing about the repo, read in this order:
 
-1. [README.md](../README.md)
-2. [docs/19-llm-wiki-memory-explained.md](19-llm-wiki-memory-explained.md)
-3. [docs/10-memory-architecture.md](10-memory-architecture.md)
-4. [docs/15-llm-wiki-query-flow.md](15-llm-wiki-query-flow.md)
-5. [docs/17-knowledge-management.md](17-knowledge-management.md)
-6. [workspace/TOOLS.md](../workspace/TOOLS.md)
-7. [workspace/TELEGRAM_POLICY.md](../workspace/TELEGRAM_POLICY.md)
+1. [README.md](../../../README.md)
+2. [docs/archive/openclaw/19-llm-wiki-memory-explained.md](19-llm-wiki-memory-explained.md)
+3. [docs/archive/openclaw/10-memory-architecture.md](10-memory-architecture.md)
+4. [docs/archive/openclaw/15-llm-wiki-query-flow.md](15-llm-wiki-query-flow.md)
+5. [docs/archive/openclaw/17-knowledge-management.md](17-knowledge-management.md)
+6. [workspace/TOOLS.md](../../../workspace/TOOLS.md)
+7. [workspace/TELEGRAM_POLICY.md](../../../workspace/TELEGRAM_POLICY.md)
 
 This is the official LLM path:
 
@@ -141,12 +150,12 @@ If you are extremely context-constrained, stop after steps `1-4` and only contin
 ### If the task is about memory / LLM-Wiki
 
 Read:
-1. [docs/19-llm-wiki-memory-explained.md](19-llm-wiki-memory-explained.md)
-2. [docs/10-memory-architecture.md](10-memory-architecture.md)
-3. [docs/15-llm-wiki-query-flow.md](15-llm-wiki-query-flow.md)
-4. [docs/17-knowledge-management.md](17-knowledge-management.md)
-5. [artifacts/llm-wiki/SCHEMA.md](../artifacts/llm-wiki/SCHEMA.md)
-6. [docs/16-llm-wiki-storage-model.md](16-llm-wiki-storage-model.md) only if exact naming/storage rules are needed
+1. [docs/archive/openclaw/19-llm-wiki-memory-explained.md](19-llm-wiki-memory-explained.md)
+2. [docs/archive/openclaw/10-memory-architecture.md](10-memory-architecture.md)
+3. [docs/archive/openclaw/15-llm-wiki-query-flow.md](15-llm-wiki-query-flow.md)
+4. [docs/archive/openclaw/17-knowledge-management.md](17-knowledge-management.md)
+5. [artifacts/llm-wiki/SCHEMA.md](../../../artifacts/llm-wiki/SCHEMA.md)
+6. [docs/archive/openclaw/16-llm-wiki-storage-model.md](16-llm-wiki-storage-model.md) only if exact naming/storage rules are needed
 
 Key takeaway you should hold while reading:
 - `research/**` is a valid final state
@@ -157,9 +166,9 @@ Key takeaway you should hold while reading:
 ### If the task is about LightRAG
 
 Read:
-1. [docs/11-lightrag-setup.md](11-lightrag-setup.md)
-2. [docs/15-llm-wiki-query-flow.md](15-llm-wiki-query-flow.md)
-3. [docs/10-memory-architecture.md](10-memory-architecture.md)
+1. [docs/archive/openclaw/11-lightrag-setup.md](11-lightrag-setup.md)
+2. [docs/archive/openclaw/15-llm-wiki-query-flow.md](15-llm-wiki-query-flow.md)
+3. [docs/archive/openclaw/10-memory-architecture.md](10-memory-architecture.md)
 
 Key takeaway:
 - LightRAG is a retrieval accelerator over curated markdown knowledge, not a substitute for that knowledge
@@ -167,9 +176,9 @@ Key takeaway:
 ### If the task is about Telegram surfaces / routing
 
 Read:
-1. [docs/12-telegram-channel-architecture.md](12-telegram-channel-architecture.md)
-2. [workspace/TELEGRAM_POLICY.md](../workspace/TELEGRAM_POLICY.md)
-3. [docs/17-knowledge-management.md](17-knowledge-management.md)
+1. [docs/archive/openclaw/12-telegram-channel-architecture.md](12-telegram-channel-architecture.md)
+2. [workspace/TELEGRAM_POLICY.md](../../../workspace/TELEGRAM_POLICY.md)
+3. [docs/archive/openclaw/17-knowledge-management.md](17-knowledge-management.md)
 
 Key takeaway:
 - explicit user saves must materialize into wiki pages
@@ -178,20 +187,20 @@ Key takeaway:
 ### If the task is about server operations / deploy
 
 Read:
-1. [docs/01-server-state.md](01-server-state.md)
-2. [docs/03-operations.md](03-operations.md)
-3. [docs/07-architecture-and-security.md](07-architecture-and-security.md)
-4. [docs/11-lightrag-setup.md](11-lightrag-setup.md)
+1. [docs/archive/openclaw/01-server-state.md](01-server-state.md)
+2. [docs/archive/openclaw/03-operations.md](03-operations.md)
+3. [docs/archive/openclaw/07-architecture-and-security.md](07-architecture-and-security.md)
+4. [docs/archive/openclaw/11-lightrag-setup.md](11-lightrag-setup.md)
 
 ### If the task is about upgrading OpenClaw
 
 Read in this order:
 
-1. [docs/22-openclaw-version-compatibility-ledger.md](22-openclaw-version-compatibility-ledger.md)
-2. [docs/01-server-state.md](01-server-state.md)
-3. [docs/02-openclaw-installation.md](02-openclaw-installation.md)
-4. [docs/03-operations.md](03-operations.md)
-5. [docs/05-rollback-and-backup.md](05-rollback-and-backup.md)
+1. [docs/archive/openclaw/22-openclaw-version-compatibility-ledger.md](22-openclaw-version-compatibility-ledger.md)
+2. [docs/archive/openclaw/01-server-state.md](01-server-state.md)
+3. [docs/archive/openclaw/02-openclaw-installation.md](02-openclaw-installation.md)
+4. [docs/archive/openclaw/03-operations.md](03-operations.md)
+5. [docs/archive/openclaw/05-rollback-and-backup.md](05-rollback-and-backup.md)
 
 The ledger is the mandatory first read. It names historical defects and active local adaptations;
 never treat a newer upstream tag as safe until its candidate record closes every relevant gate.
@@ -199,10 +208,10 @@ never treat a newer upstream tag as safe until its candidate record closes every
 ### If the task is about runtime behavior of Бенька
 
 Read:
-1. [workspace/AGENTS.md](../workspace/AGENTS.md)
-2. [workspace/TOOLS.md](../workspace/TOOLS.md)
-3. [workspace/INDEX.md](../workspace/INDEX.md)
-4. [workspace/BOOT.md](../workspace/BOOT.md)
+1. [workspace/AGENTS.md](../../../workspace/AGENTS.md)
+2. [workspace/TOOLS.md](../../../workspace/TOOLS.md)
+3. [workspace/INDEX.md](../../../workspace/INDEX.md)
+4. [workspace/BOOT.md](../../../workspace/BOOT.md)
 
 ---
 
@@ -302,26 +311,26 @@ Do not assume any of the following:
 ### Task: "Understand memory quickly"
 
 Read:
-- [docs/19-llm-wiki-memory-explained.md](19-llm-wiki-memory-explained.md)
-- [docs/10-memory-architecture.md](10-memory-architecture.md)
+- [docs/archive/openclaw/19-llm-wiki-memory-explained.md](19-llm-wiki-memory-explained.md)
+- [docs/archive/openclaw/10-memory-architecture.md](10-memory-architecture.md)
 
 ### Task: "How does query answer generation work?"
 
 Read:
-- [docs/15-llm-wiki-query-flow.md](15-llm-wiki-query-flow.md)
+- [docs/archive/openclaw/15-llm-wiki-query-flow.md](15-llm-wiki-query-flow.md)
 
 ### Task: "How do Telegram saves/promotions work?"
 
 Read:
-- [docs/17-knowledge-management.md](17-knowledge-management.md)
-- [workspace/TELEGRAM_POLICY.md](../workspace/TELEGRAM_POLICY.md)
+- [docs/archive/openclaw/17-knowledge-management.md](17-knowledge-management.md)
+- [workspace/TELEGRAM_POLICY.md](../../../workspace/TELEGRAM_POLICY.md)
 
 ### Task: "How do I modify wiki-import?"
 
 Read:
-- [artifacts/llm-wiki/SCHEMA.md](../artifacts/llm-wiki/SCHEMA.md)
-- [workspace/TOOLS.md](../workspace/TOOLS.md)
-- [docs/15-llm-wiki-query-flow.md](15-llm-wiki-query-flow.md)
+- [artifacts/llm-wiki/SCHEMA.md](../../../artifacts/llm-wiki/SCHEMA.md)
+- [workspace/TOOLS.md](../../../workspace/TOOLS.md)
+- [docs/archive/openclaw/15-llm-wiki-query-flow.md](15-llm-wiki-query-flow.md)
 - then inspect `artifacts/wiki-import/`
 
 When reading code in `artifacts/wiki-import/`, expect these responsibilities:
@@ -332,9 +341,9 @@ When reading code in `artifacts/wiki-import/`, expect these responsibilities:
 ### Task: "What should I check before server changes?"
 
 Read:
-- [docs/01-server-state.md](01-server-state.md)
-- [docs/03-operations.md](03-operations.md)
-- [docs/07-architecture-and-security.md](07-architecture-and-security.md)
+- [docs/archive/openclaw/01-server-state.md](01-server-state.md)
+- [docs/archive/openclaw/03-operations.md](03-operations.md)
+- [docs/archive/openclaw/07-architecture-and-security.md](07-architecture-and-security.md)
 
 ---
 
@@ -370,16 +379,16 @@ Read:
 
 If context is tight, the minimum safe set is:
 
-1. [README.md](../README.md)
-2. [docs/19-llm-wiki-memory-explained.md](19-llm-wiki-memory-explained.md)
-3. [docs/15-llm-wiki-query-flow.md](15-llm-wiki-query-flow.md)
-4. [workspace/TOOLS.md](../workspace/TOOLS.md)
+1. [README.md](../../../README.md)
+2. [docs/archive/openclaw/19-llm-wiki-memory-explained.md](19-llm-wiki-memory-explained.md)
+3. [docs/archive/openclaw/15-llm-wiki-query-flow.md](15-llm-wiki-query-flow.md)
+4. [workspace/TOOLS.md](../../../workspace/TOOLS.md)
 
 That is usually enough to avoid the worst architectural mistakes.
 
 See also:
-- [workspace/AGENTS.md](../workspace/AGENTS.md)
-- [workspace/INDEX.md](../workspace/INDEX.md)
+- [workspace/AGENTS.md](../../../workspace/AGENTS.md)
+- [workspace/INDEX.md](../../../workspace/INDEX.md)
 
 ---
 

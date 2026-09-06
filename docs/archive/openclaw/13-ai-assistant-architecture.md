@@ -1,12 +1,21 @@
 # AI Assistant Architecture
 
+> [!NOTE]
+> **Archived — OpenClaw era.** This document describes the predecessor runtime and is kept as a
+> historical engineering record. Production moved to Hermes Agent on **2026-09-06**; the commands
+> and state below do not deploy the current system.
+>
+> Current system: [architecture](../../architecture.md) ·
+> [operations](../../hermes/operations.md) ·
+> [cutover record](../../hermes/cutover-record-2026-09-06.md)
+
 This document describes the design principles, model routing, channel interaction model,
 and memory strategy for the Бенька / Benka AI assistant running on OpenClaw.
 
 Use this file for assistant behavior and routing policy.
-For the core memory architecture, use `docs/10-memory-architecture.md`.
-For the human explanation of `raw -> wiki -> LightRAG -> OpenClaw`, use `docs/19-llm-wiki-memory-explained.md`.
-For `Ideas` / `Knowledgebase` behavior, use `docs/17-knowledge-management.md`.
+For the core memory architecture, use `docs/archive/openclaw/10-memory-architecture.md`.
+For the human explanation of `raw -> wiki -> LightRAG -> OpenClaw`, use `docs/archive/openclaw/19-llm-wiki-memory-explained.md`.
+For `Ideas` / `Knowledgebase` behavior, use `docs/archive/openclaw/17-knowledge-management.md`.
 
 ---
 
@@ -175,7 +184,7 @@ The goal is simple:
 
 - Repo source of truth: `skills/`
 - User-installed runtime copy: `~/.codex/skills/`
-- Human-facing catalog and expansion plan: `docs/14-codex-skills.md`
+- Human-facing catalog and expansion plan: `docs/archive/openclaw/14-codex-skills.md`
 
 ### Current custom skill
 

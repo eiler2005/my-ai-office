@@ -1,5 +1,14 @@
 # Knowledgebase Query Quality
 
+> [!NOTE]
+> **Archived — OpenClaw era.** This document describes the predecessor runtime and is kept as a
+> historical engineering record. Production moved to Hermes Agent on **2026-09-06**; the commands
+> and state below do not deploy the current system.
+>
+> Current system: [architecture](../../architecture.md) ·
+> [operations](../../hermes/operations.md) ·
+> [cutover record](../../hermes/cutover-record-2026-09-06.md)
+
 This file defines the **answer-quality contract** for `📚 Knowledgebase` search.
 It does not change the storage architecture:
 
@@ -8,16 +17,16 @@ It does not change the storage architecture:
 - search quality is improved at the `retrieval -> source review -> synthesis` step
 
 See also:
-- [docs/15-llm-wiki-query-flow.md](15-llm-wiki-query-flow.md)
-- [docs/17-knowledge-management.md](17-knowledge-management.md)
-- [scripts/smoke-check-knowledge.sh](../scripts/smoke-check-knowledge.sh)
+- [docs/archive/openclaw/15-llm-wiki-query-flow.md](15-llm-wiki-query-flow.md)
+- [docs/archive/openclaw/17-knowledge-management.md](17-knowledge-management.md)
+- [scripts/smoke-check-knowledge.sh](../../../scripts/smoke-check-knowledge.sh)
 
 Runtime rollout note:
 
 - on `2026-04-21`, this contract was deployed to the live OpenClaw server by updating
   `/opt/openclaw/workspace`, `/opt/openclaw/config/telegram-surfaces.policy.json`, and the pinned
   `Knowledgebase` topic instructions
-- see [docs/06-command-log.md](06-command-log.md) for the rollout record
+- see [docs/archive/openclaw/06-command-log.md](06-command-log.md) for the rollout record
 
 ## Target Behavior
 

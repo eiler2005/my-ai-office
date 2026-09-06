@@ -155,7 +155,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   `Image: Analyze ...` request through the Qwen route; the user instead needs a
   working vision primary or a text clarification.
 
-- **LLM provider map:** added docs/24-llm-provider-map.md as the canonical
+- **LLM provider map:** added docs/archive/openclaw/24-llm-provider-map.md as the canonical
   inventory of model routes, sanitized credential names, cost controls, and
   a reversible migration procedure for every LLM workload.
 
@@ -284,8 +284,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **wiki-import local embeddings endpoint**: added authenticated `/v1/embeddings` compatibility with
   deterministic 3072-dimensional vectors so LightRAG can keep indexing when Gemini/OpenRouter
   embeddings are blocked by external quota or credits.
-- **Human-first memory explainer**: added `docs/19-llm-wiki-memory-explained.md` with Mermaid diagrams for vault structure, compile flow, explicit save flow, query path, and the role split between `wiki`, `LightRAG`, and OpenClaw.
-- **LLM-facing project orientation**: added `docs/20-llm-project-orientation.md` so another model can understand what this repo is, which docs are canonical by topic, and how to navigate the current architecture without scanning the whole tree blindly.
+- **Human-first memory explainer**: added `docs/archive/openclaw/19-llm-wiki-memory-explained.md` with Mermaid diagrams for vault structure, compile flow, explicit save flow, query path, and the role split between `wiki`, `LightRAG`, and OpenClaw.
+- **LLM-facing project orientation**: added `docs/archive/openclaw/20-llm-project-orientation.md` so another model can understand what this repo is, which docs are canonical by topic, and how to navigate the current architecture without scanning the whole tree blindly.
 - **wiki-import cron sync helper**: added `artifacts/wiki-import/sync-openclaw-cron-jobs.sh` to patch the OpenClaw cron store with lifecycle maintenance jobs safely and idempotently.
 - **`wiki-import` capture modes**: `POST /trigger` now supports `capture_mode` (`knowledgebase` / `ideas` / `promotion`) plus promotion reuse via stable fingerprint, returns `wiki_page_paths`, `canonical_pages_updated`, `rag_enqueued_paths`, `rag_status`, and `status`, and performs immediate non-blocking RAG enqueue only for touched `wiki/**/*.md` pages.
 - **Knowledge-capture tests**: added unit coverage for ideas light-curation saves, promotion reuse of existing research pages, wiki-first response payloads, partial success when LightRAG enqueue fails, and explicit rejection of raw-to-LightRAG uploads in interactive save flows.
@@ -367,7 +367,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Telegram retry UX for Knowledgebase saves**: documented that transient `read/edit/write` failures should not leak into Telegram as the main user-visible outcome when a retry succeeds. The agent should prefer full `write` over `edit` for large rewrites, remember the latest tool failure for the next turn, and explain it plainly if Denis asks what went wrong.
 
 ### Added
-- **Auto-structured ingestion**: removed manual structured post format from Knowledgebase. Bot now auto-extracts title/domain/source/date/summary/sensitivity from any content (forwarded post, URL, plain text). User never fills fields manually. Updated `telegram-surfaces` configs, `workspace/TOOLS.md`, `workspace/TELEGRAM_POLICY.md`, pinned message in Knowledgebase, `docs/17-knowledge-management.md`.
+- **Auto-structured ingestion**: removed manual structured post format from Knowledgebase. Bot now auto-extracts title/domain/source/date/summary/sensitivity from any content (forwarded post, URL, plain text). User never fills fields manually. Updated `telegram-surfaces` configs, `workspace/TOOLS.md`, `workspace/TELEGRAM_POLICY.md`, pinned message in Knowledgebase, `docs/archive/openclaw/17-knowledge-management.md`.
 
 - **💡 Ideas topic created**: new forum topic in Ben'ka_Clawbot_SuperGroup (topic_id=639) for frictionless capture of Telegram posts, links, and thoughts. Bot classifies, tags, and queues items; promotion to Knowledgebase requires explicit approval. Registered in server `telegram-topic-map.json` and `telegram-surfaces.policy.json`; local `telegram-surfaces.redacted.json` updated to `supergroup_topic` type.
 
@@ -390,7 +390,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **wiki-import repair path**: `wiki_lint(repair=true)` can now merge duplicate canonical entities,
   rename colliding concept/research pages, remove low-signal auto decisions, normalize aliases and
   themes, and rebuild `INDEX.md`, `OVERVIEW.md`, and `TOPICS.md`.
-- **LLM-Wiki storage model doc**: added `docs/16-llm-wiki-storage-model.md` to explain canonical
+- **LLM-Wiki storage model doc**: added `docs/archive/openclaw/16-llm-wiki-storage-model.md` to explain canonical
   identity, thematic metadata, topic maps, and the repair policy.
 - **LLM-Wiki scaffold v2**: added bot-maintained `OVERVIEW.md` and `IMPORT-QUEUE.md` to
   `artifacts/llm-wiki/`, extending the schema from static templates to a real cold-start and
@@ -402,7 +402,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   internal token on first deploy, builds the service, and validates `GET /health`.
 - **`scripts/bootstrap-llm-wiki.sh`**: bootstrap helper that submits the first curated imports from
   repo docs plus the external LLM-Wiki and Graphify references once `wiki-import` is online.
-- **`docs/15-llm-wiki-query-flow.md`**: new end-to-end explainer for the LLM-Wiki stack covering
+- **`docs/archive/openclaw/15-llm-wiki-query-flow.md`**: new end-to-end explainer for the LLM-Wiki stack covering
   canonical storage, narrowed ingest, curated import, LightRAG retrieval, and how OpenClaw uses
   retrieved context to assemble answers.
 - **Last30Days raw signal export**: `signals-bridge` now writes
@@ -422,8 +422,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Reddit adapter tests**: added focused coverage for the patcher and hybrid enrichment path in
   `artifacts/signals-bridge/tests/test_last30days_patches.py`.
 - **README redesign**: full rewrite with Mermaid architecture diagram (main graph LR + signals flow TD + Last30Days flow TD), services table, source coverage status table (including YouTube frozen status), model routing table, updated repository structure. Replaces ASCII art with GitHub-renderable diagrams.
-- **docs/07-architecture-and-security.md**: added "Signals Bridge & Last30Days Architecture" section — HN companion pass, provider config table, source priority, per-source caps, YouTube frozen status.
-- **docs/01-server-state.md**: added Signals Bridge state entry — ports, volumes, env vars, Last30Days metrics.
+- **docs/archive/openclaw/07-architecture-and-security.md**: added "Signals Bridge & Last30Days Architecture" section — HN companion pass, provider config table, source priority, per-source caps, YouTube frozen status.
+- **docs/archive/openclaw/01-server-state.md**: added Signals Bridge state entry — ports, volumes, env vars, Last30Days metrics.
 - **Last30Days HN companion pass**: `_run_hn_companion_themes()` runs 7 short Algolia-friendly queries
   (`OpenAI`, `Anthropic`, `AI regulation`, `startup funding`, `open source`, `robotics`, `cybersecurity`)
   in parallel against HN only, then merges results into the main theme pool before ranking. HN now
@@ -456,7 +456,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **`skills/`**: repo-managed project skill catalog added, starting with
   `skills/openclaw-cron-maintenance/SKILL.md` as the canonical playbook for OpenClaw cron-store
   maintenance and hanging-CLI recovery.
-- **`docs/14-codex-skills.md`**: new catalog for custom Codex skills, their scope boundaries,
+- **`docs/archive/openclaw/14-codex-skills.md`**: new catalog for custom Codex skills, their scope boundaries,
   install/sync pattern, and the planned next skill set for this deployment.
 - **`README.md` Telegram surfaces overview**: added a Mermaid high-level diagram plus a concise
   `what/why/how it works` section for DM, ops topics, inbox-email, work-email, telegram-digest,
@@ -479,8 +479,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   workspace markdown, `/opt/obsidian-vault/wiki/**/*.md`, and `/opt/obsidian-vault/raw/signals/**/*.md`.
 - **Boot context**: cold start now reads `wiki/OVERVIEW.md` instead of the full `wiki/INDEX.md`,
   keeping startup context compact while preserving `INDEX.md` for maintenance/import logic.
-- **Memory and architecture docs**: `README.md`, `docs/07-architecture-and-security.md`,
-  `docs/10-memory-architecture.md`, `docs/11-lightrag-setup.md`, `workspace/AGENTS.md`,
+- **Memory and architecture docs**: `README.md`, `docs/archive/openclaw/07-architecture-and-security.md`,
+  `docs/archive/openclaw/10-memory-architecture.md`, `docs/archive/openclaw/11-lightrag-setup.md`, `workspace/AGENTS.md`,
   `workspace/MEMORY.md`, and `workspace/TOOLS.md` now describe the LLM-Wiki + wiki-import flow.
 - **Last30Days naming model**: `world-radar` is now treated as the legacy name for
   `personal-feed`; docs and config examples now describe the split between `personal-feed`
@@ -493,7 +493,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   `artificial`, `MachineLearning`, `OutOfTheLoop`.
 - **Reddit error visibility**: `poster.py` no longer blanket-suppresses Reddit source failures, so
   real source-level issues now surface in digest diagnostics instead of being hidden.
-- **README.md / docs/07-architecture-and-security.md / config.example.json**: expanded with the
+- **README.md / docs/archive/openclaw/07-architecture-and-security.md / config.example.json**: expanded with the
   new Reddit hybrid retrieval order, curated subreddit configuration, diagnostics guidance, and
   updated repository structure/test counts.
 - **Signals architecture**: `signals-bridge` now uses its own internal **5-minute** scheduler
@@ -509,7 +509,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Signals config layout**: public docs/templates no longer embed Denis-specific signal rules;
   the runtime now supports loading real local rule-sets from separate JSON files via `rule_files`
   (for example `secrets/signals-bridge/rules/*.json`).
-- **`README.md` / `docs/03-operations.md` / `docs/13-ai-assistant-architecture.md`**: now document
+- **`README.md` / `docs/archive/openclaw/03-operations.md` / `docs/archive/openclaw/13-ai-assistant-architecture.md`**: now document
   the standalone signals service, new Redis streams `ingest:jobs:signals` / `ingest:events:signals`,
   and the low-cost model policy for trading-style signals.
 - **`artifacts/agentmail-email/cron_bridge.py`**: scheduled digests no longer disappear when the
@@ -555,7 +555,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   Python venv/toolchain.
 - **OmniRoute**: upgraded from `3.5.9` to `3.6.3`, pinned in `/opt/openclaw/omniroute-src`
   on local branch `deploy/v3.6.3`, rebuilt in place with the existing `omniroute-data` volume.
-- **`README.md` / `docs/03-operations.md` / `docs/13-ai-assistant-architecture.md`**: now show
+- **`README.md` / `docs/archive/openclaw/03-operations.md` / `docs/archive/openclaw/13-ai-assistant-architecture.md`**: now show
   `agentmail-email-bridge` as its own Docker service in the main architecture, document the
   recovery/backfill path via `lookback_minutes`, and describe the Python-first AgentMail flow.
 - **`artifacts/agentmail-email/`**: removed embedded OpenClaw runtime path and removed AgentMail MCP
@@ -575,13 +575,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   and it still removes stale AgentMail-specific env/config coupling from the shared OpenClaw deployment.
 - **Server cleanup**: stale email Redis lock/pending entry removed after embedded-runtime rollback;
   unused Docker build cache cleared and the bridge image size dropped from ~2.78 GB to ~229 MB.
-- **`README.md` / `docs/01-server-state.md` / `docs/02-openclaw-installation.md` / `docs/03-operations.md` / `artifacts/openclaw/env.redacted.example`**:
+- **`README.md` / `docs/archive/openclaw/01-server-state.md` / `docs/archive/openclaw/02-openclaw-installation.md` / `docs/archive/openclaw/03-operations.md` / `artifacts/openclaw/env.redacted.example`**:
   updated to reflect that voice transcription is disabled in production for now and may return later
   through a lighter CPU-oriented stack or an external API.
-- **`docs/01-server-state.md` / `docs/03-operations.md` / `docs/13-ai-assistant-architecture.md`**:
+- **`docs/archive/openclaw/01-server-state.md` / `docs/archive/openclaw/03-operations.md` / `docs/archive/openclaw/13-ai-assistant-architecture.md`**:
   updated to reflect current OpenClaw `2026.4.11` and OmniRoute `3.6.3` runtime state.
-- **`docs/03-operations.md`**: added AgentMail inbox-email deploy/runbook section.
-- **`docs/12-telegram-channel-architecture.md`** and **`docs/13-ai-assistant-architecture.md`**:
+- **`docs/archive/openclaw/03-operations.md`**: added AgentMail inbox-email deploy/runbook section.
+- **`docs/archive/openclaw/12-telegram-channel-architecture.md`** and **`docs/archive/openclaw/13-ai-assistant-architecture.md`**:
   added `Inbox Email` surface, bus streams `ingest:jobs:email` / `ingest:events:email`, and
   near-real-time poll + scheduled digest architecture.
 
@@ -655,9 +655,9 @@ Digest triggered → `persistence.py` pushed `interval-*.md` to `ingest:rag:queu
 - **`docker-compose.yml`** (telethon-digest): added `REDIS_URL` env to `cron-bridge` service.
 
 ### Docs
-- `docs/13-ai-assistant-architecture.md`: updated Telegram Digest architecture diagram to show
+- `docs/archive/openclaw/13-ai-assistant-architecture.md`: updated Telegram Digest architecture diagram to show
   async bus; replaced backlog section with implemented status + v2 backlog.
-- `docs/03-operations.md`: added Integration Bus operations section (deploy, ping, stream
+- `docs/archive/openclaw/03-operations.md`: added Integration Bus operations section (deploy, ping, stream
   inspection, DLQ, manual enqueue, trim commands).
 
 ## [2026-04-10] — telethon-digest: Telegram channel digest service
@@ -678,7 +678,7 @@ Digest triggered → `persistence.py` pushed `interval-*.md` to `ingest:rag:queu
 - Telegram folders synced into server `config.json`: 18 folders, 499 dialogs, 426 broadcast channels.
 - Read scope locked down with explicit allowlist and `read_broadcast_channels_only=true`.
 - Local gitignored catalog copy created at `secrets/telethon-digest/config.local.json`.
-- `docs/13-ai-assistant-architecture.md` updated with Telegram Channel Digest section.
+- `docs/archive/openclaw/13-ai-assistant-architecture.md` updated with Telegram Channel Digest section.
 - `docs/14-telethon-digest-handoff.md` added as the continuation/runbook source for future LLMs.
 
 ### Fixed
@@ -702,7 +702,7 @@ Digest triggered → `persistence.py` pushed `interval-*.md` to `ingest:rag:queu
   All three tiers verified working.
 
 ### Added
-- `docs/13-ai-assistant-architecture.md`: comprehensive description of AI assistant design principles,
+- `docs/archive/openclaw/13-ai-assistant-architecture.md`: comprehensive description of AI assistant design principles,
   model routing (primary + OmniRoute fallback tiers), Telegram surface interaction model, memory
   classes, LightRAG integration rules, approval gates, and anti-patterns.
 - AGENTS.md updated on server: model-selection and fallback sections updated; response footer instruction
@@ -762,8 +762,8 @@ Digest triggered → `persistence.py` pushed `interval-*.md` to `ingest:rag:queu
 - `artifacts/omniroute/` — redacted compose override and env example added to repo
 
 ### Changed
-- `docs/01-server-state.md`: OmniRoute service entry, ports 20128/20129, actual providers and tiers
-- `docs/03-operations.md`: OmniRoute operations section (start/stop/logs/tunnel/upgrade/bootstrap)
+- `docs/archive/openclaw/01-server-state.md`: OmniRoute service entry, ports 20128/20129, actual providers and tiers
+- `docs/archive/openclaw/03-operations.md`: OmniRoute operations section (start/stop/logs/tunnel/upgrade/bootstrap)
 - `README.md`: architecture diagram updated with OmniRoute layer; new "Model Routing" section; tech stack and features updated
 
 ---
@@ -782,8 +782,8 @@ Digest triggered → `persistence.py` pushed `interval-*.md` to `ingest:rag:queu
 
 ### Changed
 - `CLAUDE.md`: added "Commit Permission Rule" — no commit/push without explicit user approval
-- `docs/03-operations.md`: Syncthing setup guide added, legacy rsync marked deprecated
-- `docs/01-server-state.md`: Obsidian sync method updated to reflect Syncthing
+- `docs/archive/openclaw/03-operations.md`: Syncthing setup guide added, legacy rsync marked deprecated
+- `docs/archive/openclaw/01-server-state.md`: Obsidian sync method updated to reflect Syncthing
 - `README.md`: architecture diagram, tech stack, quick ops updated for Syncthing
 
 ---

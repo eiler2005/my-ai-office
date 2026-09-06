@@ -1,5 +1,14 @@
 # LLM-Wiki Storage Model
 
+> [!NOTE]
+> **Archived — OpenClaw era.** This document describes the predecessor runtime and is kept as a
+> historical engineering record. Production moved to Hermes Agent on **2026-09-06**; the commands
+> and state below do not deploy the current system.
+>
+> Current system: [architecture](../../architecture.md) ·
+> [operations](../../hermes/operations.md) ·
+> [cutover record](../../hermes/cutover-record-2026-09-06.md)
+
 This document is a **reference-only storage rules file**.
 
 It is no longer part of the primary learning path for the memory stack.
@@ -18,9 +27,9 @@ Use it when the question is:
 - "Why do we keep typed folders and `TOPICS.md` at the same time?"
 
 Read first before this file:
-- human explanation -> `docs/19-llm-wiki-memory-explained.md`
-- technical memory model -> `docs/10-memory-architecture.md`
-- runtime query path -> `docs/15-llm-wiki-query-flow.md`
+- human explanation -> `docs/archive/openclaw/19-llm-wiki-memory-explained.md`
+- technical memory model -> `docs/archive/openclaw/10-memory-architecture.md`
+- runtime query path -> `docs/archive/openclaw/15-llm-wiki-query-flow.md`
 - exact machine rules -> `artifacts/llm-wiki/SCHEMA.md`
 
 ---

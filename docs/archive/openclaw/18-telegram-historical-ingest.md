@@ -1,11 +1,20 @@
 # Telegram Historical Ingest
 
+> [!NOTE]
+> **Archived — OpenClaw era.** This document describes the predecessor runtime and is kept as a
+> historical engineering record. Production moved to Hermes Agent on **2026-09-06**; the commands
+> and state below do not deploy the current system.
+>
+> Current system: [architecture](../../architecture.md) ·
+> [operations](../../hermes/operations.md) ·
+> [cutover record](../../hermes/cutover-record-2026-09-06.md)
+
 This page documents the repo-approved way to import historical Telegram posts into LLM-Wiki and how the current Denis batch was laid down.
 
 Recommended background reading:
-- memory model -> `docs/19-llm-wiki-memory-explained.md`
-- behavior contract -> `docs/17-knowledge-management.md`
-- storage model -> `docs/16-llm-wiki-storage-model.md`
+- memory model -> `docs/archive/openclaw/19-llm-wiki-memory-explained.md`
+- behavior contract -> `docs/archive/openclaw/17-knowledge-management.md`
+- storage model -> `docs/archive/openclaw/16-llm-wiki-storage-model.md`
 
 ---
 
@@ -29,7 +38,7 @@ Telegram history -> wiki-import -> wiki/research/** -> optional canonical enrich
 
 ## How To Load Historical Posts
 
-Use [scripts/backfill-denis-sources-to-wiki.sh](../scripts/backfill-denis-sources-to-wiki.sh).
+Use [scripts/backfill-denis-sources-to-wiki.sh](../../../scripts/backfill-denis-sources-to-wiki.sh).
 
 ### 1. Dry-run first
 

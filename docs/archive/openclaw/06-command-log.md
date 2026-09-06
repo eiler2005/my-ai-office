@@ -1,6 +1,13 @@
 # Command Log
 
-> Историческая справка исходного OpenClaw. Для Hermes используйте [реестр](hermes/inventory.md), [эксплуатацию](hermes/operations.md) и [переключение/откат](hermes/cutover-rollback.md). Production остаётся на OpenClaw; эти старые команды не развёртывают Hermes.
+> [!NOTE]
+> **Archived — OpenClaw era.** This document describes the predecessor runtime and is kept as a
+> historical engineering record. Production moved to Hermes Agent on **2026-09-06**; the commands
+> and state below do not deploy the current system.
+>
+> Current system: [architecture](../../architecture.md) ·
+> [operations](../../hermes/operations.md) ·
+> [cutover record](../../hermes/cutover-record-2026-09-06.md)
 
 High-signal, sanitized setup log.
 
@@ -437,8 +444,8 @@ Connected to the bot via web UI, ran `/new` to start a fresh session:
 
 ### Documentation added
 
-- `docs/09-workspace-setup.md` — full onboarding guide (both Method A and B)
-- `docs/03-operations.md` — expanded with detailed web UI connection steps and workspace management commands
+- `docs/archive/openclaw/09-workspace-setup.md` — full onboarding guide (both Method A and B)
+- `docs/archive/openclaw/03-operations.md` — expanded with detailed web UI connection steps and workspace management commands
 
 ## 16. Web search enabled
 
@@ -634,7 +641,7 @@ curl -skI --cert-type P12 \
 Result:
 
 - gateway remained healthy after config reload
-- all security settings applied as documented in `docs/07-architecture-and-security.md`
+- all security settings applied as documented in `docs/archive/openclaw/07-architecture-and-security.md`
 - redacted artifacts updated in repo (`artifacts/openclaw/`)
 
 ## 19. Builtin OpenClaw memorySearch enabled over curated wiki only
@@ -764,7 +771,7 @@ Changes:
 - `artifacts/openclaw/telegram-surfaces.redacted.json` — added Knowledgebase surface: type `supergroup_topic`, chat_id `<ops-supergroup-chat-id>`, topic_id=232; `search_mode` with backends `lightrag_hybrid` + `memory_search`, max 5 results, snippet+citations format; `auto_structure: true`, `required_fields_filled_by: agent` (bot extracts title/domain/source/date/summary automatically)
 - `workspace/TELEGRAM_POLICY.md` — Knowledgebase row: question → search, any content → bot auto-extracts + wiki_ingest
 - `workspace/TOOLS.md` — `knowledge_channel` section: intent routing + response format template; bot extracts all metadata, Denis never fills structured fields manually
-- `docs/12-telegram-channel-architecture.md`, `docs/15-llm-wiki-query-flow.md`, `docs/03-operations.md` — updated to reflect dual-mode
+- `docs/archive/openclaw/12-telegram-channel-architecture.md`, `docs/archive/openclaw/15-llm-wiki-query-flow.md`, `docs/archive/openclaw/03-operations.md` — updated to reflect dual-mode
 
 **Note:** `openclaw.json` groups section was NOT changed — the existing supergroup entry already covers all topics including Knowledgebase.
 
@@ -789,7 +796,7 @@ Fix:
 
 - `workspace/TOOLS.md` — explicit rule added: `Knowledgebase` search must stay on `lightrag_query + memory search` by default
 - `workspace/TELEGRAM_POLICY.md` — internet search is now opt-in only for this topic
-- `docs/15-llm-wiki-query-flow.md`, `docs/17-knowledge-management.md`, `docs/12-telegram-channel-architecture.md`, `docs/01-server-state.md` — aligned wording
+- `docs/archive/openclaw/15-llm-wiki-query-flow.md`, `docs/archive/openclaw/17-knowledge-management.md`, `docs/archive/openclaw/12-telegram-channel-architecture.md`, `docs/archive/openclaw/01-server-state.md` — aligned wording
 
 Practical rule:
 
@@ -817,8 +824,8 @@ Contract changes:
   changed from snippet-style replies to `grounded_expanded_with_source_links`
 - `artifacts/openclaw/telegram-pins/knowledgebase.txt` — pinned instructions updated to explain
   broader answers and provenance-aware source links
-- `docs/15-llm-wiki-query-flow.md`, `docs/17-knowledge-management.md`,
-  `docs/21-knowledgebase-query-quality.md` — aligned with the new retrieval-to-synthesis contract
+- `docs/archive/openclaw/15-llm-wiki-query-flow.md`, `docs/archive/openclaw/17-knowledge-management.md`,
+  `docs/archive/openclaw/21-knowledgebase-query-quality.md` — aligned with the new retrieval-to-synthesis contract
 - `scripts/smoke-check-knowledge.sh` — extended from health-only smoke checks to answer-quality
   regression checks (`has_refs`, `expected_ref_hit`, `degraded_answer`, `has_source_links`)
 
@@ -2030,7 +2037,7 @@ Decision:
 
 - Treat the derived Gateway image and its local adaptations as versioned compatibility knowledge,
   not as isolated one-off fixes.
-- Establish `docs/22-openclaw-version-compatibility-ledger.md` as the canonical pre-upgrade record;
+- Establish `docs/archive/openclaw/22-openclaw-version-compatibility-ledger.md` as the canonical pre-upgrade record;
   image history remains in the installation document and detailed chronology remains in this log.
 
 Recorded active findings:

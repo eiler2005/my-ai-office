@@ -1,6 +1,13 @@
 # Architecture And Security
 
-> Историческая справка исходного OpenClaw. Для Hermes используйте [реестр](hermes/inventory.md), [эксплуатацию](hermes/operations.md) и [переключение/откат](hermes/cutover-rollback.md). Production остаётся на OpenClaw; эти старые команды не развёртывают Hermes.
+> [!NOTE]
+> **Archived — OpenClaw era.** This document describes the predecessor runtime and is kept as a
+> historical engineering record. Production moved to Hermes Agent on **2026-09-06**; the commands
+> and state below do not deploy the current system.
+>
+> Current system: [architecture](../../architecture.md) ·
+> [operations](../../hermes/operations.md) ·
+> [cutover record](../../hermes/cutover-record-2026-09-06.md)
 
 ## Architecture overview
 
@@ -280,7 +287,7 @@ Telegram is configured with layered access control:
 | `channels.telegram.groups.<sandbox-chat-id>.requireMention` | `false` | Sandbox can be relaxed because production memory writes are disabled there |
 
 Real chat IDs and topic IDs are kept in `LOCAL_ACCESS.md` (not committed). The full Telegram
-surface policy lives in `docs/12-telegram-channel-architecture.md`; the redacted implementation
+surface policy lives in `docs/archive/openclaw/12-telegram-channel-architecture.md`; the redacted implementation
 draft lives in `artifacts/openclaw/telegram-surfaces.redacted.json`.
 
 Bot prerequisites: admin role in groups that need posting/topic access. If the ops supergroup must

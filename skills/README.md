@@ -10,4 +10,4 @@ Current skills:
 
 - `openclaw-cron-maintenance` — safe OpenClaw cron-store maintenance workflow
 
-See `docs/14-codex-skills.md` for the catalog, conventions, and planned next skills.
+See `docs/archive/openclaw/14-codex-skills.md` for the catalog, conventions, and planned next skills.

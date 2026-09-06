@@ -1,6 +1,12 @@
 # My AI Office
 
-> **Historical concept document.** This is the original project overview, retained as a design record. Its migration statuses and repository layout describe that earlier stage. For the current public project, see the [README](README.md), [architecture](docs/architecture.md), and [acceptance record](docs/hermes/acceptance.md).
+> [!NOTE]
+> **Archived — original concept.** This was the first public statement of the project, written
+> before the Hermes implementation existed. Its migration statuses, repository layout, and
+> "intended stack" describe that earlier stage and are no longer accurate.
+>
+> Current system: [README](../../README.md) · [architecture](../architecture.md) ·
+> [acceptance record](../hermes/acceptance.md)
 
 > **One person. Many agents.**
 
@@ -8,7 +14,7 @@
 
 It is an engineering case study in practical agentic automation: a small set of AI agents monitor information sources, prepare concise briefings, maintain a searchable knowledge base, and keep decisions and sensitive actions with the human.
 
-[Architecture](docs/architecture.md) · [Migration status](#migration-status) · [Former OpenClaw edition](https://github.com/eiler2005/clawden-ai)
+[Architecture](../architecture.md) · [Migration status](#migration-status) · [Former OpenClaw edition](https://github.com/eiler2005/clawden-ai)
 
 ---
 
@@ -89,4 +95,4 @@ This is an early public release. The repository deliberately starts with the sys
 
 ## License
 
-[MIT](LICENSE)
+[MIT](../../LICENSE)
