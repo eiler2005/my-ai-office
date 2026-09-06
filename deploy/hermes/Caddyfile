@@ -11,5 +11,5 @@ https://{$BENKA_PANEL_HOST}:8443 {
         }
     }
     header Strict-Transport-Security "max-age=31536000"
-    reverse_proxy dashboard:9119
+    reverse_proxy gateway:9119
 }

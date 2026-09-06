@@ -24,6 +24,12 @@ def main():
     production.add_argument("--snapshot-sha256", required=True)
     cron = sub.add_parser("cron-prepare")
     cron.add_argument("hermes_home", type=Path)
+    cron_sync = sub.add_parser("cron-sync-production")
+    cron_sync.add_argument("hermes_home", type=Path)
+    cron_sync.add_argument("manifest", type=Path)
+    refresh = sub.add_parser("production-schedules-refresh")
+    refresh.add_argument("source", type=Path, help="Verified source snapshot root")
+    refresh.add_argument("destination", type=Path, help="Active private production state root")
     export = sub.add_parser("snapshot")
     export.add_argument("source", type=Path)
     export.add_argument("output", type=Path)
@@ -66,6 +72,12 @@ def main():
     elif args.command == "cron-prepare":
         from .schedules import sync
         result = sync(load_manifest(), args.hermes_home)
+    elif args.command == "cron-sync-production":
+        from .schedules import sync
+        result = sync(load_manifest(args.manifest), args.hermes_home, activate=True)
+    elif args.command == "production-schedules-refresh":
+        from .production import refresh_schedules
+        result = refresh_schedules(args.source, args.destination)
     elif args.command == "snapshot":
         result = migration.snapshot(args.source, args.output, cold_receipt=args.cold_receipt)
     elif args.command == "restore":

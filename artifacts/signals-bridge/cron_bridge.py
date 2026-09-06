@@ -345,6 +345,15 @@ def _parse_lookback_minutes(data: dict[str, str]) -> int | None:
     return min(value, 7 * 24 * 60)
 
 
+def _parse_target_message_id(data: dict[str, str]) -> int | None:
+    raw = str(data.get("target_message_id", "")).strip()
+    if not raw:
+        return None
+    if not raw.isdecimal() or int(raw) <= 0:
+        raise RuntimeError("invalid_target_message_id")
+    return int(raw)
+
+
 def _poll_interval_seconds(config: dict, ruleset: dict) -> int:
     return int(ruleset.get("poll_interval_seconds") or config.get("default_poll_interval_seconds", 300) or 300)
 
@@ -728,6 +737,9 @@ def _process_signals_job(r, data: dict[str, str]) -> dict:
     ruleset = get_ruleset(config, str(data.get("ruleset_id", "")).strip())
     lookback_minutes = _parse_lookback_minutes(data)
     source_filter = str(data.get("source_id", "")).strip()
+    target_message_id = _parse_target_message_id(data)
+    if target_message_id is not None and not source_filter:
+        raise RuntimeError("target_message_requires_source")
     run_id = str(data.get("run_id", "")).strip() or str(uuid.uuid4())
     topic_name = str(config.get("delivery", {}).get("topic_name", "signals"))
     now = _utc_now()
@@ -785,6 +797,7 @@ def _process_signals_job(r, data: dict[str, str]) -> dict:
                             rules=source_rules,
                             lookback_minutes=lookback_minutes,
                             now=now,
+                            target_message_id=target_message_id,
                         )
                     elif source_type == "web":
                         if source.get("enabled"):
@@ -961,7 +974,8 @@ def _run_email_source(*, r, source: dict, ruleset: dict, rules: list[dict], look
     return candidates, tail
 
 
-def _run_telegram_source(*, r, source: dict, ruleset: dict, rules: list[dict], lookback_minutes: int | None, now: datetime) -> tuple[list, list[str]]:
+def _run_telegram_source(*, r, source: dict, ruleset: dict, rules: list[dict], lookback_minutes: int | None,
+                          now: datetime, target_message_id: int | None = None) -> tuple[list, list[str]]:
     cursor = state_store.get_int(r, state_store.source_cursor_key(source["id"]), 0)
     last_success = state_store.get_dt(r, state_store.source_last_success_key(source["id"]))
 
@@ -981,6 +995,7 @@ def _run_telegram_source(*, r, source: dict, ruleset: dict, rules: list[dict], l
                 last_success=last_success,
                 lookback_minutes=lookback_minutes,
                 now=now,
+                target_message_id=target_message_id,
             )
         finally:
             await client.disconnect()

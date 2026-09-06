@@ -8,12 +8,17 @@ from pathlib import Path
 import re
 from zoneinfo import ZoneInfo
 
-from .config import load_manifest
+from .config import load_manifest, require_active
 
 
-def sync(config, home: Path, *, api=None):
-    if config["mode"] != "standby":
-        raise PermissionError("Prepare schedules only while the candidate is in standby")
+def sync(config, home: Path, *, api=None, activate=False):
+    if config["mode"] == "standby":
+        if activate:
+            raise PermissionError("A standby candidate cannot activate schedules")
+    elif config["mode"] == "production" and activate:
+        require_active(config, "enqueue")
+    else:
+        raise PermissionError("Prepare schedules in standby or sync an active production manifest")
     if api is None:
         from cron import jobs as api
         from hermes_cli.config import load_config_readonly
@@ -48,8 +53,11 @@ def sync(config, home: Path, *, api=None):
             job = api.update_job(by_name[key]["id"], values)
         else:
             job = api.create_job(name=key, **values)
-        api.pause_job(job["id"], reason="Prepared candidate; separate owner activation required")
-        prepared.append({"name": key, "id": job["id"], "enabled": False})
+        if activate:
+            api.resume_job(job["id"])
+        else:
+            api.pause_job(job["id"], reason="Prepared candidate; separate owner activation required")
+        prepared.append({"name": key, "id": job["id"], "enabled": bool(activate)})
     stale = []
     for name, job in by_name.items():
         if name not in desired:

@@ -112,14 +112,33 @@ services:
       retries: 3
 
   dashboard:
-    <<: *runtime
+    # Do not inherit *runtime: it has the private bridge network, which
+    # conflicts with the Gateway network namespace required below.
+    image: ${BENKA_RUNTIME_IMAGE:?Set in private compose.env}
+    user: "1000:1000"
+    init: true
+    restart: unless-stopped
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 256
+    mem_limit: 2g
+    cpus: 2
+    tmpfs: ["/tmp:size=256m,mode=1777"]
+    stop_grace_period: 90s
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
     command: [dashboard]
+    # Hermes checks the Gateway process directly. A separately started
+    # dashboard therefore must share both namespaces with it.
+    network_mode: "service:gateway"
+    pid: "service:gateway"
     volumes:
       - "${BENKA_STATE_ROOT:?}/private/manifests/dashboard.json:/run/benka/manifest.json:ro"
       - "${BENKA_STATE_ROOT:?}/private/activation:/run/benka/activation:ro"
       - "${BENKA_STATE_ROOT:?}/runtime/gateway:/state"
       - "${BENKA_STATE_ROOT:?}/data/vault:/vault:ro"
-    expose: ["9119"]
     depends_on: [gateway]
 
   caddy:

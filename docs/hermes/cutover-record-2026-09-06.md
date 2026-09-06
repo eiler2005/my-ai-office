@@ -13,7 +13,7 @@ planning documents. The owner explicitly started the cutover; it was not trigger
   dashboard and six workers (two mailboxes, Telegram Digest, Signals, Last30Days and maintenance).
 - Caddy remains on the established Reddit Compass panel host at its separate port. It requires mTLS and
   Hermes dashboard authentication; adjacent DNS, Caddy and application containers were not modified.
-- Twenty-three native Hermes cron jobs are enabled. They enqueue into Redis; cron itself does not deliver
+- Twenty-six native Hermes cron jobs are enabled. They enqueue into Redis; cron itself does not deliver
   messages.
 - A new ChatGPT Codex OAuth session is held only in the private Hermes auth store. The model ladder is
   `gpt-5.6-luna` for auxiliary work, `gpt-5.6-terra` for ordinary dialogue and one bounded
@@ -31,6 +31,10 @@ planning documents. The owner explicitly started the cutover; it was not trigger
 - A native cron smoke job executed inside the running Gateway and completed after enqueueing a safe wiki
   maintenance task. Worker processes remained stable.
 - Direct OAuth-backed requests to all three GPT-5.6 model tiers and a bounded Sol delegation succeeded.
+- A post-cutover operational recovery rebuilt and isolated-tested the worker runtime, restored omitted Signals
+  schedules from reviewed external rule fragments, and created required worker media/log directories. Controlled
+  mailbox catch-ups and one source-scoped Signals recovery completed with confirmed Hermes receipts; the Gateway
+  remained healthy and no neighboring service was restarted.
 
 ## Observation and rollback
 

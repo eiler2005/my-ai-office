@@ -41,6 +41,26 @@ message identifier и была правильно сохранена как `unc
 Первоначальные `uncertain` receipt и запись reconciliation сохранены в закрытом операционном журнале и не
 должны воспроизводиться.
 
+## Операционное восстановление почты и Signals
+
+Во время наблюдения обнаружились пропущенные mail digests и Signals при работающих источниках и Redis workers.
+Причины были разделены: устаревший runtime image вызывал `hermes send` через несуществующий host-style `PATH`,
+а подготовка production schedules читала только inline Signals rules и пропускала reviewed `rule_files`.
+Дополнительно у send-capable workers отсутствовали private bind-mount каталоги `uploads` и `worker-logs`, поэтому
+восстановление исходного Telegram-контекста с медиа не могло завершиться.
+
+Исправление использует Hermes CLI рядом с Python worker, раскрывает reviewed Signals rule fragments перед
+созданием registry и создаёт writable worker directories при preparation. После подтверждённой проверки источников
+были выполнены контролируемые догоняющие выпуски обоих ящиков. Для одного подтверждённого пропуска Signals применён
+source-scoped job с `source_id` и `target_message_id`: он читает только заданный пост и проходит обычные matching,
+Redis dedupe, Hermes receipt и source-context delivery, без replay накопившейся ленты. Job завершился без записи в
+reconciliation; новые delivery receipts подтверждены. Исходные `uncertain` receipts сохранены для ручной сверки и
+не переотправляются автоматически.
+
+На VPS обновлён только `worker-signals`; Gateway и соседние сервисы не пересоздавались. Новый runtime/test image
+прошёл **209** изолированных проверок. После восстановления Gateway остался `healthy`, а все активные Signals
+sources находятся в состоянии healthy без stale/error.
+
 ## Проверено на VPS Hermes
 
 Серверный прогон выполнен в контейнерах с read-only root, без production secrets, с ограничением 2 CPU / 2 GiB RAM.

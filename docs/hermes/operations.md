@@ -54,7 +54,9 @@ docker compose -f deploy/hermes/compose.yaml ps
 ```
 
 Каталоги `/state`, profile homes и vault должны принадлежать UID/GID 1000. Для готовых bind mounts выставить
-права до запуска. Private manifest и секреты монтировать read-only вне доступных агенту путей.
+права до запуска. Каждый send-capable worker также получает приватные `/state/uploads` и `/state/worker-logs`:
+они создаются при production preparation, поскольку read-only image не может создать их после bind mount.
+Private manifest и секреты монтировать read-only вне доступных агенту путей.
 
 ## Manifest и режимы
 
@@ -158,6 +160,8 @@ state, sessions, vault mounts, URL wiki/RAG и Redis. Точные имена с
 затем использует `PATH` как резерв. Перед обновлением send-capable worker проверять наличие
 `/opt/benka/.venv/bin/hermes` внутри контейнера. Receipt `uncertain` не означает подтверждённую доставку:
 сначала сверить целевую Telegram-тему, затем принять одно зафиксированное операторское решение о восстановлении.
+Нельзя заменять это требование успешным exit code: только ответ Hermes с `success`, `message_id` и без `skipped`
+создаёт подтверждённый receipt.
 
 ## Расписания и очереди
 
@@ -171,6 +175,11 @@ state, sessions, vault mounts, URL wiki/RAG и Redis. Точные имена с
 - `maintenance`: список `enabled`, `domain`, `action` (wiki-daily/wiki-weekly/rag-scan), `schedule`.
 - `signals_cleanup`: `enabled`, `schedule`; сохраняет очистку старых событий Signals (исходный интервал — один час).
 
+`signals.rule_files` — часть production-конфигурации, а не только удобство исходного OpenClaw runtime. При
+создании registry финализатор раскрывает эти reviewed fragments относительно `integrations/signals/`; считать
+только inline `rule_sets` нельзя, иначе Hermes не создаст Signals и Last30Days jobs при полностью сохранённых
+rules/state.
+
 ```bash
 .venv/bin/benka jobs-prepare deploy/hermes/private/reviewed-schedules.json > .migration/job-registry.json
 BENKA_MANIFEST=/private/standby-manifest.json HERMES_HOME=/private/hermes-home .venv/bin/benka cron-prepare /private/hermes-home
@@ -181,6 +190,17 @@ Cron script читает `cron_connection_file` с `redis_url`, потому ч�
 Задания создаются paused, повторная подготовка обновляет их по стабильному имени, удалённые задания остаются paused.
 Не запускайте CLI `cron-prepare` с HERMES_HOME, отличающимся от переданного home.
 
+Если после уже выполненного cutover обнаружен пропуск только в registry, оператор использует проверенный source
+snapshot и активное state directory, а не повторяет весь import/finalize. `production-schedules-refresh` меняет
+только schedule manifest и его hash-bound receipt; затем `cron-sync-production` идемпотентно добавляет/обновляет
+reviewed jobs, включает нужные и ставит obsolete Benka jobs на паузу. Команда проверяет production receipt и не
+подходит для candidate или rehearsal:
+
+```bash
+benka production-schedules-refresh /private/verified-source /private/production-state
+benka cron-sync-production /state/hermes /state/hermes/benka/schedules.json
+```
+
 `benka worker` обрабатывает один выбранный `worker.pipeline` и stream/group из manifest.
 Slot dedupe атомарен в Redis. Восстановленные pending и ошибки уходят в `benka:reconcile` с исходным payload.
 Запись completed подтверждается до XACK, чтобы падение между ними не повторяло работу.
@@ -188,6 +208,11 @@ Slot dedupe атомарен в Redis. Восстановленные pending и
 Неопределённые `sending/uncertain` receipts и `benka:reconcile` разбирать вручную: проверить Telegram, сохранённые артефакты,
 курсоры и pending; записать решение в приватный операционный журнал. Слепой перезапуск нового run_id может создать дубль.
 Проверять возраст/размер очередей, а не только живой процесс worker. Очередь сверки не имеет автоматической очистки.
+
+Для подтверждённого единичного пропуска Signals оператор может поместить в private Redis job `source_id` и
+`target_message_id`. Worker загрузит только этот Telegram message ID, пропустит обычное широкое окно и применит
+те же правило, дедупликацию, Hermes receipt и source-context delivery. Такой job нельзя использовать без
+`source_id`; идентификаторы сообщений и run ID остаются в private operation record.
 
 ## Wiki / LightRAG
 
@@ -202,6 +227,8 @@ Upload receipt означает принятие документа; успеш�
 Caddy на 8451 требует server cert/key и доверенную client CA в private/tls. TLS/mTLS дополняются аутентификацией Hermes:
 `HERMES_DASHBOARD_BASIC_AUTH_USERNAME`, `HERMES_DASHBOARD_BASIC_AUTH_PASSWORD_HASH`, `HERMES_DASHBOARD_BASIC_AUTH_SECRET`.
 Конкретную схему проверить на pinned версии. Стабильный auth secret хранится вне Git.
+Dashboard разделяет PID и network namespace с Gateway: это нужно Hermes для корректного live-статуса и действий
+оператора. Поэтому Caddy проксирует `gateway:9119`; отдельный изолированный Dashboard-контейнер использовать нельзя.
 Проверить обычный HTTP, WebSocket upgrade, сессии, повторный вход и отрицательные запросы без пароля/клиентского сертификата.
 Домены/сертификаты/SNI согласуются с существующим владельцем инфраструктуры; 80/443 остаются за соседями.
 

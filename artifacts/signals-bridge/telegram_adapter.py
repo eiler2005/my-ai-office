@@ -31,6 +31,7 @@ async def collect_telegram_candidates(
     last_success: datetime | None,
     lookback_minutes: int | None,
     now: datetime,
+    target_message_id: int | None = None,
 ) -> tuple[list[SignalCandidate], list[str], int]:
     since_dt = resolve_telegram_window(
         source=source,
@@ -39,8 +40,12 @@ async def collect_telegram_candidates(
         lookback_minutes=lookback_minutes,
         now=now,
     )
-    limit = int(source.get("message_limit", 80) or 80)
-    history = await client.get_messages(int(source["chat_id"]), limit=limit)
+    if target_message_id is None:
+        limit = int(source.get("message_limit", 80) or 80)
+        history = await client.get_messages(int(source["chat_id"]), limit=limit)
+    else:
+        message = await client.get_messages(int(source["chat_id"]), ids=target_message_id)
+        history = [message] if message is not None else []
     candidates: list[SignalCandidate] = []
     max_seen_id = cursor
     scanned = 0
@@ -56,7 +61,7 @@ async def collect_telegram_candidates(
         # necessarily older than recent messages, so using it as an additional
         # condition here would re-publish every retained message after a
         # recovery run instead of only the requested window.
-        if msg_dt < since_dt:
+        if target_message_id is None and msg_dt < since_dt:
             continue
         prepared = {
             "chat_id": int(source["chat_id"]),

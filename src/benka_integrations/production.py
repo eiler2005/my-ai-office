@@ -165,11 +165,36 @@ def _worker_manifest(*, domain: str, pipeline: str, stream: str, group: str,
     }
 
 
+def _signals_config(source: Path) -> dict[str, Any]:
+    """Load Signals config together with its reviewed external rule fragments."""
+    config = _read_json(source / "config/signals/config.json")
+    rules_root = (source / "integrations/signals").resolve(strict=True)
+    merged = list(config.get("rule_sets") or [])
+    for raw_pattern in config.get("rule_files") or []:
+        pattern = Path(str(raw_pattern))
+        if pattern.is_absolute() or ".." in pattern.parts:
+            raise ValueError("Signals rule file pattern escapes its reviewed root")
+        for path in sorted(rules_root.glob(str(pattern))):
+            if not path.is_file() or not path.is_relative_to(rules_root):
+                continue
+            payload = json.loads(path.read_text())
+            if isinstance(payload, dict) and "rule_sets" in payload:
+                merged.extend(payload.get("rule_sets") or [])
+            elif isinstance(payload, list):
+                merged.extend(payload)
+            elif isinstance(payload, dict):
+                merged.append(payload)
+            else:
+                raise ValueError(f"Invalid Signals rule fragment: {path.name}")
+    config["rule_sets"] = merged
+    return config
+
+
 def _schedule_manifest(source: Path, receipt: str) -> dict[str, Any]:
     personal = _read_json(source / "config/agentmail/personal.json")
     work = _read_json(source / "config/agentmail/work.json")
     telegram = _read_json(source / "config/telethon/config.json")
-    signals = _read_json(source / "config/signals/config.json")
+    signals = _signals_config(source)
 
     def email(name: str, config: dict[str, Any], stream: str, group: str) -> dict[str, Any]:
         slots = []
@@ -223,6 +248,50 @@ def _schedule_manifest(source: Path, receipt: str) -> dict[str, Any]:
             "redis_file": "/run/benka/redis-url"}
 
 
+def refresh_schedules(source: Path, destination: Path) -> dict[str, int]:
+    """Refresh only the active schedule manifest from a verified source snapshot.
+
+    This leaves credentials, worker manifests, Redis and the imported Hermes
+    profile untouched.  It is for an omitted ruleset discovered after cutover.
+    """
+    source = source.resolve(strict=True)
+    destination = destination.resolve(strict=True)
+    private = destination / "private"
+    manifest_root = private / "manifests"
+    receipt_root = private / "activation"
+    previous_receipt = _read_json(receipt_root / "schedules.json")
+    snapshot_sha256 = previous_receipt.get("snapshot_sha256")
+    if (previous_receipt.get("command") != "ACTIVATE_HERMES_BY_DENIS"
+            or not isinstance(snapshot_sha256, str) or len(snapshot_sha256) != 64):
+        raise ValueError("Existing production schedule receipt is not valid")
+
+    schedules = _schedule_manifest(source, "/state/hermes/benka/activation/schedules.json")
+    schedules.update({
+        "mode": "production",
+        "enabled_operations": ["enqueue"],
+        "cron_connection_file": "/state/hermes/benka/cron.json",
+        "redis_file": "/state/hermes/benka/redis-url",
+    })
+    manifest_path = manifest_root / "schedules.json"
+    _private_file(manifest_path, json.dumps(schedules, indent=2))
+    _private_file(receipt_root / "schedules.json", json.dumps({
+        "command": "ACTIVATE_HERMES_BY_DENIS",
+        "manifest_sha256": digest(manifest_path),
+        "snapshot_sha256": snapshot_sha256,
+        "old_writers_stopped": True,
+    }, indent=2))
+
+    cron_runtime = destination / "runtime/gateway/hermes/benka"
+    cron_receipt_root = cron_runtime / "activation"
+    if not cron_runtime.is_dir() or not cron_receipt_root.is_dir():
+        raise ValueError("Active Hermes cron runtime is missing")
+    _private_file(cron_runtime / "schedules.json", manifest_path.read_text())
+    _private_file(cron_receipt_root / "schedules.json", (receipt_root / "schedules.json").read_text())
+    return {"schedule_count": len(schedules["jobs"]),
+            "signals_jobs": sum(name.startswith("signals-") for name in schedules["jobs"]),
+            "last30days_jobs": sum(name.startswith("last30days-") for name in schedules["jobs"])}
+
+
 def prepare(source: Path, destination: Path, *, snapshot_sha256: str) -> dict[str, Any]:
     source = source.resolve(strict=True)
     if not len(snapshot_sha256) == 64 or any(char not in "0123456789abcdef" for char in snapshot_sha256):
@@ -271,6 +340,11 @@ def prepare(source: Path, destination: Path, *, snapshot_sha256: str) -> dict[st
     _copy_tree(source / "integrations/wiki/state", data / "wiki/state")
     _copy_tree(source / "integrations/signals/rules", data / "signals/rules")
     _copy_tree(source / "lightrag/inputs", data / "lightrag/inputs")
+    # Send-capable workers use a private bind-mounted /state.  The immutable
+    # image cannot create these paths after that mount hides its image layer.
+    for worker in ("email-personal", "email-work", "telegram", "signals", "last30days", "maintenance"):
+        private_directory(data / "worker" / worker / "uploads")
+        private_directory(data / "worker" / worker / "worker-logs")
 
     private = destination / "private"
     private_directory(private)

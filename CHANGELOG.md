@@ -7,6 +7,30 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Fixed — worker delivery and Signals schedule discovery (2026-09-06)
+
+- Production workers now use the Hermes CLI packaged beside their own virtualenv Python instead of assuming a
+  host-style `PATH`. A stale runtime image had retained the earlier command and converted email and source
+  deliveries into durable `uncertain` receipts before Telegram could return a message identifier.
+- Production preparation now creates each send-capable worker's private `uploads` and `worker-logs` bind-mount
+  directories. The immutable image creates no writable paths after Compose mounts `/state`, so missing directories
+  previously prevented source-media recovery despite a confirmed text delivery.
+- Production schedule generation now merges the reviewed Signals `rule_files` fragments as well as inline
+  `rule_sets`. The former omitted active Signals and Last30Days jobs even though their source rules and state
+  were present in the imported production snapshot.
+- Signals now supports an operator-only, source-scoped `target_message_id` recovery. It processes one confirmed
+  Telegram post through the ordinary matching, Redis deduplication, Hermes receipt and source-context delivery
+  path, avoiding a broad replay of backlog accumulated while a schedule was absent.
+- Added an operator-gated refresh of the schedule manifest and idempotent production cron sync. It validates
+  the existing activation receipt, refreshes only schedules and their receipt, activates reviewed jobs, and
+  pauses stale Benka jobs; it does not touch credentials, worker manifests, Redis, vault or Hermes profiles.
+
+### Fixed — Hermes Dashboard Gateway visibility (2026-09-06)
+
+- Dashboard now shares the Gateway PID and network namespace, as required by Hermes for live Gateway status and
+  operator actions. Caddy proxies the dashboard listener through `gateway:9119`; only the panel edge and dashboard
+  container need recreation for this change.
+
 ### Fixed — Telegram Digest delivery (2026-09-06)
 
 - Telegram Digest workers no longer depend on a host-style `PATH` for `hermes send`: delivery resolves the
