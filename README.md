@@ -47,7 +47,7 @@ The engineering work lives around the conversation: deciding what deserves atten
 ## How it fits together
 
 ```mermaid
-flowchart LR
+flowchart TB
     Sources["Email · Telegram channels · Research"] --> Workers["Python integration workers"]
     Cron["Hermes cron"] --> Queue["Redis Streams"]
     Queue --> Workers
