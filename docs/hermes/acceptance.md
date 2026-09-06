@@ -4,21 +4,23 @@
 По указанию Дениса дальнейшие сборки и тесты выполняются на VPS; GitHub Actions не используется.
 Производственные токены/бот/почта/Syncthing в репетиционных тестах не используются.
 
-## Уже проверено
+## Проверено на VPS Hermes
 
-До уточнения места тестирования выполнен локальный изолированный прогон:
+Серверный прогон выполнен в контейнерах с read-only root, без production secrets, с ограничением 2 CPU / 2 GiB RAM.
+Регрессии и native contracts работают с `network=none`; Redis проверялся в отдельной `internal` Docker-сети без опубликованных портов.
+Test dataset — только синтетические fixtures. GitHub Actions отсутствует.
 
 | Набор | Результат |
 |---|---|
-| Hermes safety/migration/archive/cron/profiles/maintenance + native model fixtures | 42 passed |
+| Hermes safety/migration/archive/cron/profiles/maintenance + native model fixtures | 45 passed |
 | AgentMail | 19 passed |
 | Telegram Digest | 21 passed |
 | Signals / Last30Days | 98 passed |
 | Wiki-import | 26 passed |
-| Итого | **206 passed** |
+| Итого | **209 passed** |
 | Native Hermes plugin / cron / AIAgent contract | 7 tools зарегистрированы; paused cron idempotent; API-параметры совместимы |
 | Compose configuration | `config --quiet` проходит |
-| История и working tree на секреты | Начальный скан: 1119 объектов, 30 reviewed совпадений, 0 неразобранных; повторяется перед публикацией |
+| История и working tree на секреты | Перед merge commit: 1226 объектов, 34 reviewed совпадения, 0 неразобранных; self-test сканера проходит |
 | VPS inventory | Read-only проверены оба VPS; подробности в закрытых JSON-отчётах |
 
 Native model tests используют настоящий закреплённый `AIAgent` и локальный HTTP/SSE fixture:
@@ -36,12 +38,31 @@ confirmed message IDs и запрет повторения uncertain sends. Эт
 
 | Проверка | Статус до серверной репетиции | Что закрывает |
 |---|---|---|
-| Сборка закреплённого Docker image, включая dashboard и Last30Days | PENDING | Воспроизводимость Linux runtime |
-| Регрессии в контейнере на VPS | PENDING | Повторение изолированных suites в целевой архитектуре |
-| Standby с отключённой сетью | PENDING | Нет polling, cron/delivery и production secrets |
-| Native plugin/cron/model contracts на VPS | PENDING | Совместимость pinned Hermes в целевой среде |
-| Реальный Redis и рестарт контейнера | PENDING | Durable slot/receipt/PEL восстановление |
-| TLS/mTLS, authentication, WebSocket dashboard | PENDING | Реальная панель за Caddy |
+| Сборка закреплённого Docker image, включая dashboard и Last30Days | PASS | Linux runtime и отдельный test target собраны |
+| Регрессии в контейнере на VPS | PASS, 209 тестов | Все пять suites проходят |
+| Standby с отключённой сетью | PASS, CLI и работающий контейнер | standby/sandbox/automatic_cutover=false; healthy до и после restart, network none |
+| Native plugin/cron/model contracts на VPS | PASS | 7 tools, paused cron, native model fixtures |
+| Реальный Redis и рестарт контейнера | PASS | AOF сохраняет slot, delivery receipt и pending; pending уходит на сверку, повторного send нет |
+| TLS/mTLS, authentication, WebSocket dashboard | PASS, 9 checks | Без client certificate отказ; missing session/wrong password отказ; login, Secure/HttpOnly cookies, HTML/config/sessions API; WS upgrade и запрет replay |
+| Native OpenClaw importer | PASS, synthetic data | dry-run, import, повтор, неизменность source, исключение private config и pre-import backup |
+| Соседние проекты VPS Hermes | PASS | У всех 9 исходных контейнеров сохранены image ID, status и health |
+
+Повторный проверенный Git tree: `e3350692a5fcb801b57414a4a2121dd88dc8f1c4` (staged candidate export 07).
+Runtime image ID: `sha256:ba86d71c6b9fc882ca8d664ed3170a5827a6a8002f95bfb0774e15accd3ce40b`.
+Первый полный прогон: tree `f96facd124bc812143fe09152ec6e4ee70dea0ed` (код `c2ab557`).
+Закрытые логи: `/opt/benka-hermes/reports/<TREE>/`; итоговый exit code — 0.
+Нативный Hermes обнаружил SQLite 3.46.1 и выбрал DELETE journal; WAL не включался.
+Первый прогон выявил и помог исправить CRLF при экспорте Git, путь к dashboard build output и отсутствие
+reference-скрипта в тестовом образе. Повторный прогон прошёл полностью. До указания о VPS локально ранее проходили 206 тестов.
+
+Затем проверены изменения Compose панели и operator scripts непосредственно на VPS: отдельная ingress сеть Caddy,
+bounded trusted proxy в Hermes, Secure cookies, повторный запуск dashboard и native importer rehearsal.
+Они не требуют изменения runtime image. HTTPS работает на домене Reddit Compass с отдельным портом 8451;
+source Caddy/DNS/SNI маршруты не менялись. Подробности и закрытые access files описаны в [инструкции панели](panel.md).
+Полноценный чат с реальными моделями ещё не проверен. TLS certificate refresh пока выполняется оператором.
+
+На source 14 остальных ранее зарегистрированных контейнеров не изменились; отдельный сторонний кандидат OpenClaw
+из D003 исчез за время работы. Производственный Gateway сохранён. Перед cutover повторно сверить этот параллельный rollout.
 
 ## До `READY_NOT_ACTIVE`
 
@@ -57,7 +78,7 @@ confirmed message IDs и запрет повторения uncertain sends. Эт
 - Проверить откат до и после новых записей, включая deliveries, cursor merge и pending; одного vault-delta отчёта недостаточно.
 - Оставить production connections выключенными и все производственные cron paused. Только после этого зафиксировать READY.
 
-Для внешних проверок ещё нужны место хранения конфигурации отдельного тестового Telegram-бота, домен панели/сертификаты,
+Для внешних проверок ещё нужны место хранения конфигурации отдельного тестового Telegram-бота,
 проверенная резервная копия и окончательные закрытые привязки контуров. Секреты в чат или Git не помещать.
 
 ## После отдельной команды переключения

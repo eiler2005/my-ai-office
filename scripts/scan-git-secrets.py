@@ -15,6 +15,7 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
 REVIEWED_VALUES = {
+    "scripts/prepare-hermes-panel.py": {"scrypt$16384$8$1$"},  # Algorithm/parameter prefix, no salt or derived key.
     "artifacts/signals-bridge/tests/test_model_fallbacks.py": {"test-key", "reserve-key"},
     "artifacts/telethon-digest/tests/test_llm_fallbacks.py": {"test-key", "reserve-key", "test"},
     "tests/hermes/test_model_native.py": {"synthetic-local-fixture"},

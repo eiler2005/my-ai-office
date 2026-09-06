@@ -31,6 +31,9 @@ limits=(--rm --network none --read-only --tmpfs /tmp:size=256m,mode=1777
 docker run "${limits[@]}" "$test_image" > "$report_dir/regressions.log" 2>&1
 docker run "${limits[@]}" --entrypoint python "$test_image" \
   /opt/benka/scripts/verify-hermes-contract.py > "$report_dir/native-contract.log" 2>&1
+docker run "${limits[@]}" --entrypoint python \
+  --mount "type=bind,src=$candidate_dir/scripts/verify-hermes-claw-vps.py,dst=/run/benka/verify-claw.py,readonly" \
+  "$runtime_image" /run/benka/verify-claw.py > "$report_dir/native-claw.log" 2>&1
 docker run "${limits[@]}" \
   --mount "type=bind,src=$candidate_dir/deploy/hermes/manifest.standby.example.json,dst=/run/benka/manifest.json,readonly" \
   --entrypoint benka "$runtime_image" status > "$report_dir/standby.json"

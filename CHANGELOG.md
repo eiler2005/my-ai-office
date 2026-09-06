@@ -9,6 +9,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added — Hermes migration candidate (2026-09-06)
 
+- Isolated VPS dashboard on the existing Reddit Compass hostname, separate port 8451. Its Caddy uses a private certificate copy, mandatory client certificate and native Hermes password authentication; neighboring DNS/proxy/services are unchanged. Login, API and single-use WebSocket ticket checks pass.
+- Native `hermes claw migrate` rehearsal verifies dry-run, reviewed import, repetition, source preservation and the pre-import backup on synthetic data. Documented the upstream default-SOUL conflict that can return exit code 0 without importing.
+- VPS verification: runtime/dashboard/Last30Days images built, all 209 regression tests and native Hermes contracts passed; real Redis AOF survives restart with dedupe, delivery receipt and pending reconciliation intact. Production remains disabled.
+
 - New private target repository `eiler2005/my-ai-office`, with the inherited OpenClaw Git history and a separate migration checkout.
 - `benka-integrations`: native Hermes plugin/CLI, isolated Python API model calls, cron-to-Redis jobs, delivery receipts and reconciliation of uncertain/pending work.
 - Cold snapshot verification, safe staged restore, compact OpenClaw import layout, searchable private transcript/diary archive and three-way vault rollback report.
@@ -17,6 +21,9 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Read-only host inventory and local regression/native-contract checks. Status remains `MIGRATION_IN_PROGRESS`; no production activation or source shutdown was performed.
 
 ### Changed — Hermes candidate only
+
+- Use the prebuilt dashboard with `--skip-build`, quote the Compose tmpfs option correctly, and retain only the Caddy binary's required NET_BIND_SERVICE capability. Dashboard trusts forwarded headers only from its dedicated internal network.
+- Preserved the target repository's initial four commits, project overview, architecture and ignore rules when merging the independent Git histories. The original overview is available as `README.office.md`.
 
 - Background LLM calls use Hermes Python API instead of Docker/OpenClaw execution. Existing parsing, scoring, validation and deterministic fallbacks are retained.
 - Legacy HTTP/scheduler entrypoints are disabled in adapted bridges; new workers call their business functions directly. Telegram delivery goes through Hermes receipts.

@@ -17,7 +17,7 @@ def main():
         while True:
             time.sleep(30)
     commands = {"gateway": ["hermes", "gateway", "run"],
-                "dashboard": ["hermes", "dashboard", "--no-open", "--host", "0.0.0.0", "--port", "9119"],
+                "dashboard": ["hermes", "dashboard", "--no-open", "--skip-build", "--host", "0.0.0.0", "--port", "9119"],
                 "worker": ["benka", "worker"],
                 "wiki": [sys.executable, "/opt/benka/artifacts/wiki-import/service.py"]}
     if action not in commands:

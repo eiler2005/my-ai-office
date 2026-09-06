@@ -56,6 +56,11 @@ HERMES_HOME=/private/new-hermes-home .venv/bin/hermes claw migrate --source /pri
 ```
 
 Изучить вывод pinned importer, затем выполнить ту же команду без `--dry-run` с проверенным workspace target.
+Hermes 0.21.0 создаёт стандартный `SOUL.md` при первом запуске CLI, включая dry-run. Конфликт с ним
+может остановить весь импорт при exit code 0. Проверять фактические файлы и отчёт, а не только код процесса.
+Только в новом изолированном destination, после проверки списка конфликтов, повторить dry-run с `--overwrite`,
+затем применить с этим флагом и сохранить штатный pre-migration backup. Не использовать `--overwrite`
+для непроверенного каталога с существующими пользовательскими данными. Сверить SOUL и `memories/{USER,MEMORY}.md`.
 Проверенные навыки переносить отдельно, установить `plugins/benka` и `skills/benka-*`, применить domain profiles и paused cron.
 Штатный импорт не превращает OpenClaw bridges/plugins/cron/Telegram bindings в Hermes-интеграции автоматически.
 
