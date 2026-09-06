@@ -7,6 +7,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Changed — Public project presentation (2026-09-06)
+
+- Rebuilt the README around the office's implemented workflows, Denis Ermilov's engineering contribution,
+  architecture, source links, and dated verification evidence; added a repository-owned SVG banner.
+- Added an English engineering case study covering orchestration boundaries, delivery uncertainty,
+  bounded model execution, knowledge provenance, and runtime migration with rollback.
+- Updated the architecture overview for Hermes and public repository visibility, distinguished interactive
+  model settings from background provider chains, and labeled the original office concept as historical.
+- Kept production observation and acceptance gaps visible alongside the recorded VPS rehearsal results.
+
 ### Changed — Hermes production cutover (2026-09-06)
 
 - Activated the Hermes production stack after an owner-directed fresh cold import on VPS Hermes. The

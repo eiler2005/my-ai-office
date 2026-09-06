@@ -1,75 +1,139 @@
-# My AI Office — Бенька на Hermes
+<p align="center">
+  <img src="docs/assets/my-ai-office.svg" alt="My AI Office by Denis Ermilov — AI automation, from information to action" width="100%">
+</p>
 
-Код интеграций и комплект переноса личного помощника Беньки с OpenClaw на Hermes Agent.
-Целевой репозиторий: [eiler2005/my-ai-office](https://github.com/eiler2005/my-ai-office), приватный.
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-dbe7ef?style=flat-square" alt="MIT license"></a>
+  <a href="https://github.com/NousResearch/hermes-agent"><img src="https://img.shields.io/badge/Runtime-Hermes_Agent-64dac7?style=flat-square" alt="Hermes Agent runtime"></a>
+  <a href="src/benka_integrations"><img src="https://img.shields.io/badge/Integrations-Python_3.12-8cbaf3?style=flat-square" alt="Python 3.12 integrations"></a>
+  <a href="deploy/hermes"><img src="https://img.shields.io/badge/Deployment-Docker_Compose-8cbaf3?style=flat-square" alt="Docker Compose deployment"></a>
+  <a href="docs/architecture.md"><img src="https://img.shields.io/badge/Knowledge-Wiki_%2B_Graph_RAG-e8be7b?style=flat-square" alt="Wiki and graph retrieval"></a>
+</p>
 
-**Текущий статус: `ACTIVE_ON_HERMES`.** По отдельной команде Дениса выполнен свежий cold import на
-VPS Hermes, после чего все Docker-сервисы бывшего OpenClaw VPS остановлены. Работает единственный
-production Gateway Hermes, workers, Redis, LightRAG, OmniRoute, wiki, native cron и защищённая панель.
-Полный санитарный протокол, проверки и условия наблюдения приведены в [записи cutover](docs/hermes/cutover-record-2026-09-06.md).
+# My AI Office
 
-Старый runtime и проверенный snapshot сохранены для контролируемого отката. Автоматического возврата
-на OpenClaw нет; в течение следующих 48 часов нужно получить реальные запуски ежедневных сценариев.
+**A personal AI office that turns email, Telegram, research, and saved ideas into useful context and daily briefings.**
 
-## Документация
+Designed and built by **[Denis Ermilov](https://github.com/eiler2005)**. My AI Office brings together agent orchestration, asynchronous workflows, knowledge engineering, and self-hosted operations in one working system. Its assistant, **Benka**, runs on [Hermes Agent](https://github.com/NousResearch/hermes-agent); Telegram is the everyday interface, with CLI and an authenticated web dashboard for direct access.
 
-| Документ | Содержание |
-|---|---|
-| [План миграции](docs/25-hermes-migration-plan.md) | Согласованные этапы A–F, ожидание, приёмка и ограничения |
-| [Реестр переноса](docs/hermes/inventory.md) | Компоненты, функции, состояния, версии, сведения о VPS из reddit-compass |
-| [Установка и эксплуатация](docs/hermes/operations.md) | Пакет, профили, секреты, расписания, контейнеры, диагностика |
-| [Тестовая веб-панель](docs/hermes/panel.md) | Тот же домен, что у Reddit Compass, порт 8451, TLS/mTLS, вход и сертификаты |
-| [Переключение и откат](docs/hermes/cutover-rollback.md) | Холодная копия, повторный импорт, свежие данные, возврат после новых записей |
-| [Фактический cutover](docs/hermes/cutover-record-2026-09-06.md) | Активный Hermes runtime, серверные проверки, наблюдение и откат |
-| [Протокол проверок](docs/hermes/acceptance.md) | Что проверено, что ещё требуется до READY и production |
-| [Журнал расхождений](docs/hermes/drift-log.md) | Изменения OpenClaw до переключения и их перенос в Hermes |
-| [Исходная документация OpenClaw](README.openclaw.md) | Исторический контекст; прежние команды развёртывания не являются установкой Hermes |
-| [Концепция My AI Office](README.office.md) и [общая архитектура](docs/architecture.md) | Сохранённые документы первоначального target-репозитория |
+The engineering work lives around the conversation: deciding what deserves attention, preserving where information came from, recovering interrupted jobs, and keeping delivery and persistent state under control.
 
-## Состав
+<p align="center">
+  <a href="#what-the-office-does">Capabilities</a> ·
+  <a href="docs/architecture.md">Architecture</a> ·
+  <a href="docs/engineering-case-study.md">Engineering case study</a> ·
+  <a href="docs/hermes/operations.md">Operations</a>
+</p>
 
-- `src/benka_integrations/`: Python API Hermes, Redis jobs, доставка с подтверждениями, wiki-инструменты, архив, миграторы и CLI.
-- `plugins/benka/`: нативная регистрация семи инструментов Hermes.
-- `skills/benka-*`: wiki-first, Ideas и правила запуска сценариев.
-- `artifacts/{agentmail-email,telethon-digest,signals-bridge,wiki-import}`: сохранённые алгоритмы с заменёнными runtime-вызовами и доставкой.
-- `deploy/hermes/`: закреплённая сборка, Compose и примеры выключенных конфигураций.
-- `vendor/hermes-agent`: Git submodule, версия 0.21.0, commit `01ae7a5668ce0fa2efca524a4567cacdd0786c95`.
-- `scripts/test-hermes.py`, `scripts/verify-hermes-contract.py`: воспроизводимые проверки на VPS; GitHub Actions не используется.
+## What the office does
 
-Telegram Gateway, CLI и веб-панель используют Hermes. Cron ставит задания в Redis, обработчики выполняют прежние сценарии.
-Общий отправитель вызывает `hermes send --json`; неизвестный результат отправки попадает на сверку.
-Обсидиановская wiki остаётся основным хранилищем знаний, LightRAG — поисковым слоем.
-Старые диалоги и дневники индексируются в приватный SQLite FTS-архив, отдельно от компактной памяти Hermes.
+| Workflow | Useful result | Implementation |
+| --- | --- | --- |
+| **Inbox triage** | Personal and work mail become separate briefings, with actionable items distinguished from information and forwarded messages attributed to their original sender. | [Email integration](artifacts/agentmail-email) |
+| **Telegram intelligence** | Selected channels become a digest with category balance, preserved source links, and cursors that track what has already been processed. | [Digest pipeline](artifacts/telethon-digest) |
+| **Signals & research** | Rules, source presets, and deduplication turn incoming material into alerts and Last30Days research runs. | [Signals / Last30Days](artifacts/signals-bridge) |
+| **Knowledge & ideas** | Explicit captures create wiki pages; idea promotion follows the existing chain instead of creating a second copy. | [Wiki tools](src/benka_integrations/wiki.py) |
+| **Grounded recall** | The assistant consults curated knowledge, uses LightRAG for retrieval, and searches a private archive of earlier conversations with source references. | [Hermes tools](src/benka_integrations/plugin.py) |
+| **Recurring work** | A single scheduler hands jobs to Redis workers; deliveries carry receipts, and uncertain outcomes go to reconciliation. | [Queue](src/benka_integrations/queue.py) · [Delivery](src/benka_integrations/delivery.py) |
 
-## Подготовка на VPS
+### Three everyday examples
+
+**An email arrives.** The inbox workflow identifies the original sender, applies filters and triage, and includes the result in the appropriate briefing. Full mailboxes are not indexed into the knowledge base by default.
+
+**A useful idea appears in Telegram.** An explicit capture preserves the source and creates a wiki artifact. Later promotion updates the idea's chain. The `обсуди:` (“discuss”) convention keeps a conversation from becoming an automatic save.
+
+**A digest is due.** Hermes cron enqueues a job for its time slot. A worker collects and scores material, validates model output, and prepares a linked digest. If a send has an unknown outcome, the system records it for review rather than sending the same publication again automatically.
+
+## How it fits together
+
+```mermaid
+flowchart LR
+    Sources["Email · Telegram channels · Research"] --> Workers["Python integration workers"]
+    Cron["Hermes cron"] --> Queue["Redis Streams"]
+    Queue --> Workers
+    Person["You · Telegram / CLI / Web"] <--> Hermes["Hermes Agent + Benka plugin"]
+    Hermes --> Queue
+    Hermes <--> Knowledge["Wiki · LightRAG · Private archive"]
+    Workers --> Knowledge
+    Workers --> Models["Bounded model calls + validation"]
+    Models --> Delivery["Delivery receipts / reconciliation"]
+    Delivery --> Telegram["Telegram briefings"]
+```
+
+**Hermes handles the agent runtime.** The project adds native tools, workflow adapters, source processing, persistence, delivery controls, and migration tooling. Existing processing algorithms were carried forward from the [OpenClaw predecessor](https://github.com/eiler2005/clawden-ai).
+
+| Engineering decision | Why it matters | Inspect the work |
+| --- | --- | --- |
+| **Separate orchestration from processing** | Source-specific parsing and scoring remain ordinary Python code; changing the agent runtime does not require rewriting each workflow. | [Integration package](src/benka_integrations) |
+| **Make model work bounded** | Background calls use a fresh Hermes context, restricted tools, deadlines, output validation, and deterministic fallbacks. | [Model runner](src/benka_integrations/model_child.py) · [Adapter](src/benka_integrations/models.py) |
+| **Treat uncertainty as a state** | Slot deduplication, confirmed delivery IDs, and reconciliation give interrupted jobs an explicit recovery path. | [Queue](src/benka_integrations/queue.py) · [Delivery](src/benka_integrations/delivery.py) |
+| **Keep knowledge portable** | Markdown wiki pages remain the durable knowledge store; graph retrieval and conversation search serve distinct purposes. | [Knowledge architecture](docs/architecture.md#knowledge-and-context) |
+| **Design the migration and the rollback** | Verified cold snapshots, safe restore, import reports, and state reconciliation support a controlled runtime replacement. | [Migration tooling](src/benka_integrations/migration.py) · [Cutover runbook](docs/hermes/cutover-rollback.md) |
+
+For the problem, tradeoffs, and verification evidence behind these choices, read the **[engineering case study](docs/engineering-case-study.md)**.
+
+## Stack
+
+| Layer | Technologies |
+| --- | --- |
+| Agent & interfaces | Hermes Agent, native Benka plugin, Telegram, CLI, Hermes web dashboard |
+| Integration runtime | Python 3.12, source-specific pipelines, isolated model subprocesses |
+| Scheduling & recovery | Hermes cron, Redis Streams, worker state, delivery receipts |
+| Knowledge | Obsidian-compatible Markdown wiki, `wiki-import`, LightRAG, SQLite FTS archive |
+| Model access | OpenAI for the main assistant; configurable routes and fallback chains, including Qwen and DeepSeek; OmniRoute for routed workloads |
+| Deployment | Docker Compose, pinned Hermes source and dependencies, Caddy, TLS/mTLS, persistent volumes |
+
+Model selection is configured per workload. Interactive and auxiliary tasks have separate settings; background integrations use their own provider chains. See [model execution](docs/architecture.md#model-execution) for the boundaries.
+
+## Deployment status & evidence
+
+**Recorded status, 6 September 2026: `ACTIVE_ON_HERMES`.** The production switch used a fresh cold snapshot on the Hermes VPS. The former OpenClaw server's Docker services were stopped, and its state was retained for rollback. The [cutover record](docs/hermes/cutover-record-2026-09-06.md) documents the operation.
+
+The [VPS rehearsal record](docs/hermes/acceptance.md) reports **209 passing regression checks**, native Hermes contract checks, Redis persistence/recovery checks, and authenticated dashboard checks. Results are tied to the candidate and scope documented there. The required 48-hour observation and full production acceptance remain open in that record.
+
+Builds and runtime verification run on the VPS. This project does not use GitHub Actions for deployment or application testing.
+
+## Explore the project
+
+```text
+src/benka_integrations/   Native tools, workers, models, queues, delivery, migration
+artifacts/               Email, digest, Signals, Last30Days, and wiki processing
+deploy/hermes/           Container definitions and sanitized deployment templates
+scripts/                 Packaging, inventory, import, verification, and operations
+docs/hermes/             Acceptance evidence, cutover, rollback, and runbooks
+vendor/hermes-agent/     Pinned upstream Hermes Agent submodule
+```
+
+To obtain the source and pinned runtime on your VPS:
 
 ```bash
 git clone --recurse-submodules https://github.com/eiler2005/my-ai-office.git
 cd my-ai-office
-docker buildx create --name benka-migration --driver docker-container --driver-opt memory=4g,cpu-period=100000,cpu-quota=200000
-docker buildx build --builder benka-migration --load --target test -f deploy/hermes/Dockerfile -t benka-hermes:test .
-docker run --rm --network none --read-only --tmpfs /tmp:size=256m --memory 2g --cpus 2 benka-hermes:test
-docker run --rm --network none --read-only --tmpfs /tmp:size=256m --memory 2g --cpus 2 --entrypoint python benka-hermes:test /opt/benka/scripts/verify-hermes-contract.py
-docker compose -f deploy/hermes/compose.yaml config --quiet
 ```
 
-Hermes устанавливается внутри образа как editable-пакет из закреплённого submodule: upstream не поддерживает обычную wheel-установку.
-Запуск тестов изолирует состояние и не использует производственные `.env`. Сборщик создаётся один раз; уже существующий
-`benka-migration` повторно создавать не нужно. Полный серверный прогон с проверкой durable Redis — `scripts/run-hermes-vps-tests.sh`
-для пакета, созданного `scripts/package-hermes-candidate.py` из явно staged Git-файлов.
+Continue with the [operations runbook](docs/hermes/operations.md) for isolated container builds and configuration.
 
-```bash
-docker buildx build --builder benka-migration --load --target runtime -f deploy/hermes/Dockerfile -t benka-hermes:candidate .
-docker compose -f deploy/hermes/compose.yaml up -d --no-build candidate
-```
+| Start here | Then explore |
+| --- | --- |
+| **Understand the design** | [Architecture](docs/architecture.md) · [Engineering case study](docs/engineering-case-study.md) |
+| **Inspect the implementation** | [Python package](src/benka_integrations) · [Hermes plugin](src/benka_integrations/plugin.py) · [Deployment](deploy/hermes) |
+| **Reproduce on an isolated VPS** | [Operations and build instructions](docs/hermes/operations.md) · [Verification record](docs/hermes/acceptance.md) |
+| **Follow the runtime migration** | [Plan](docs/25-hermes-migration-plan.md) · [Inventory](docs/hermes/inventory.md) · [Drift log](docs/hermes/drift-log.md) · [Cutover & rollback](docs/hermes/cutover-rollback.md) |
+| **Operate the dashboard** | [Panel runbook](docs/hermes/panel.md) |
+| **Trace the project's evolution** | [Changelog](CHANGELOG.md) · [Historical OpenClaw overview](README.openclaw.md) · [Original office concept](README.office.md) |
 
-Эти команды предназначены для изолированной серверной репетиции.
-Сервис `candidate` работает с `network_mode: none`; Gateway, workers, Redis и панель входят в отдельный профиль `rehearsal`.
-Настройка рабочих подключений описана в [эксплуатационной инструкции](docs/hermes/operations.md).
+This is a reference implementation with deployment tooling. Running your own instance requires private source bindings, credentials, and a deployment manifest; production activation is an explicit operator step.
 
-## Git и данные
+## Public code, private office
 
-История исходного проекта сохранена в отдельном checkout. Исходный remote и незакоммиченные изменения OpenClaw не меняются.
-Публикация требует проверки истории и текущих файлов на секреты. Ветки резервных копий до очистки истории требуют отдельного разбора.
-В Git не входят vault, архивы, `.env`, OAuth, Hermes auth/state, Telethon sessions, Redis, LightRAG и сертификаты.
-Приватная видимость репозитория дополняет эти ограничения.
+The repository contains integration code, sanitized templates, architecture, and operational records. Credentials, OAuth state, Telegram sessions, personal notes, mail, conversation archives, live databases, and certificates stay outside Git. Self-hosted state does not imply offline operation: configured model providers and source APIs receive requests from their respective workflows.
+
+## Author & credits
+
+**[Denis Ermilov](https://github.com/eiler2005)** — system design, workflow integration, knowledge architecture, and deployment engineering.
+
+This project shows my approach to AI automation: connect useful workflows end to end, keep their state understandable, and make failure and recovery part of the implementation.
+
+Built on [Hermes Agent](https://github.com/NousResearch/hermes-agent), [LightRAG](https://github.com/HKUDS/LightRAG), [Redis](https://github.com/redis/redis), and [Telethon](https://github.com/LonamiWebs/Telethon), with the broader stack documented above. The integration layer and operating design are the focus of this repository; upstream components retain their own authorship and licenses.
+
+[MIT license](LICENSE).

@@ -1,6 +1,6 @@
 # My AI Office
 
-> Сохранённый обзор концепции. Репозиторий сейчас приватный по плану миграции; фактическая готовность и серверные проверки — в [основном README](README.md) и [протоколе](docs/hermes/acceptance.md).
+> **Historical concept document.** This is the original project overview, retained as a design record. Its migration statuses and repository layout describe that earlier stage. For the current public project, see the [README](README.md), [architecture](docs/architecture.md), and [acceptance record](docs/hermes/acceptance.md).
 
 > **One person. Many agents.**
 

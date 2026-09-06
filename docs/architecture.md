@@ -1,96 +1,97 @@
 # Architecture
 
-> Design overview retained from the initial target repository. Current migration status, VPS-only testing and the separate activation gate are documented in [the acceptance record](hermes/acceptance.md). The repository is currently private; production still runs OpenClaw.
+[Project overview](../README.md) · [Engineering case study](engineering-case-study.md) · [Operations](hermes/operations.md)
 
-## Purpose
+My AI Office connects a conversational assistant to durable background workflows. Hermes Agent supplies the runtime and interfaces; the `benka-integrations` package supplies the office-specific tools, adapters, queue handling, delivery controls, and migration logic.
 
-My AI Office is a personal operating system for information-heavy work. It collects selected inputs, creates structured context, and presents it through a single daily interface.
+The recorded production switch to Hermes took place on **6 September 2026**. The [cutover record](hermes/cutover-record-2026-09-06.md) and [acceptance record](hermes/acceptance.md) distinguish completed checks from open production acceptance. Earlier numbered OpenClaw documents describe the source deployment.
 
-The purpose is not to automate judgment away. It is to reduce fragmented attention so that decisions can be made with better context and less repetitive work.
-
-## System boundary
-
-The git-safe repository documents patterns that can be reproduced safely. Private visibility does not permit committing production data or secrets.
-
-| Public | Private |
-| --- | --- |
-| Architecture, redacted configuration, integration patterns, generic agent prompts, and deployable code | Credentials, message histories, personal source lists, Telegram chat identifiers, documents, notes, and production endpoints |
-
-## Target topology
+## Runtime boundaries
 
 ```mermaid
-flowchart TD
-    S["Email, Telegram, web, and documents"] --> B["Source bridges"]
-    B --> H["Hermes Agent workspace"]
-    H --> T["Telegram operating interface"]
-    H <--> K["Curated knowledge and retrieval"]
-    T --> U["Human review and action"]
+flowchart TB
+    User["User"] <--> Interfaces["Telegram · CLI · Authenticated dashboard"]
+    Interfaces <--> Gateway["Hermes Gateway / agent"]
+    Gateway --> Plugin["Benka native tools"]
+    Plugin --> Knowledge["Wiki / LightRAG / private archive"]
+    Plugin --> Queue["Redis Streams"]
+    Cron["Hermes cron scripts"] --> Queue
+    Queue --> Workers["Integration workers"]
+    Sources["Approved source APIs"] --> Workers
+    Workers --> Models["Fresh AIAgent subprocess"]
+    Models --> Validation["Result validation / deterministic fallback"]
+    Validation --> Send["Hermes send + receipt tracking"]
+    Send --> Topics["Telegram topics"]
+    Workers --> Reconcile["Reconciliation records"]
+    Send --> Reconcile
 ```
 
-### Components
-
-| Component | Responsibility |
-| --- | --- |
-| **Source bridges** | Collect from approved inputs on a schedule or event, normalize data, and apply low-cost filtering before an agent is involved. |
-| **Hermes Agent workspace** | Runs specialist agents, gives them tools and context, and applies workflow rules. |
-| **Knowledge and retrieval** | Stores selected material with provenance, supports grounded recall, and keeps durable context separate from raw feeds. |
-| **Telegram operating interface** | Delivers digests, alerts, approvals, questions, and work results where daily work already happens. |
-| **Human review** | Owns decisions, external communication, irreversible actions, and the quality bar. |
-
-## Agent roles
-
-The system uses distinct roles so that each workflow has a clear input, output, and approval boundary.
-
-| Agent | Input | Output | Human boundary |
-| --- | --- | --- | --- |
-| **Inbox Agent** | Selected mailboxes | Threaded summary and action list | The human sends, replies, or delegates |
-| **Signal Agent** | Selected channels, feeds, and rules | Alert only when a meaningful signal is found | The human decides whether to act |
-| **Digest Agent** | Channel and research feeds | Thematic briefing with source links | The human chooses what to read or use |
-| **Knowledge Agent** | Saved messages, links, and notes | Curated artifact for retrieval | The human confirms what becomes durable knowledge |
-| **Work Assistant** | Direct Telegram requests and retrieved context | Drafts, analysis, and prepared tasks | The human validates all consequential output |
-
-## Daily information flow
-
-1. A source bridge receives or polls an approved source.
-2. It normalizes the content and applies deterministic filters such as source, topic, date, or priority.
-3. A specialist agent classifies, summarizes, or enriches only the material that passes the filter.
-4. The system stores selected material with a source reference when it is useful for later recall.
-5. A concise result appears in the relevant Telegram topic: inbox, signals, digest, knowledge, or task.
-6. A person reviews the result and decides whether anything should happen next.
-
-This keeps inexpensive rules where rules are enough and reserves model calls for work that needs language understanding or synthesis.
-
-## Hermes migration
-
-The original private system used OpenClaw as its primary runtime. The migration moves the agent execution and workspace layer to [Hermes Agent](https://github.com/NousResearch/hermes-agent).
-
-| Concern | Previous direction | Target direction |
+| Boundary | Responsibility | Source |
 | --- | --- | --- |
-| Agent runtime | OpenClaw | Hermes Agent |
-| Product identity | clawden-ai | My AI Office |
-| Integrations | Purpose-built bridges | Preserve and adapt bridges as independent services |
-| Model access | Routed across providers | Keep provider choice separate from agent workflows |
-| Context and knowledge | Curated notes plus retrieval | Preserve provenance and retrieval patterns |
-| Interface | Telegram topics | Telegram remains the daily operating surface |
+| Hermes runtime | Agent execution, channel ingress, CLI, dashboard, native cron | [Pinned upstream](../vendor/hermes-agent) |
+| Benka plugin | Seven office tools, wiki-first instructions, domain configuration | [plugin.py](../src/benka_integrations/plugin.py) |
+| Integration workers | Source collection and deterministic processing around bounded model calls | [Package](../src/benka_integrations) · [Pipelines](../artifacts) |
+| Redis | Job streams, slot deduplication, execution state, reconciliation, delivery receipts | [queue.py](../src/benka_integrations/queue.py) · [delivery.py](../src/benka_integrations/delivery.py) |
+| Deployment | Separate services, networks, persistent mounts, resource limits, proxy configuration | [Compose and Docker files](../deploy/hermes) |
 
-The migration is intentionally incremental: establish the Hermes workspace first, then port each bridge with a redacted configuration and a reproducible test or example.
+The agent runtime is containerized without the host Docker socket. Private deployment manifests bind source accounts, destinations, credentials, and domain paths. The public repository contains templates and code, not those bindings.
 
-## Operating rules
+## Scheduling, execution, and delivery
 
-- Do not commit tokens, certificates, cookies, personal data, message histories, or production connection details.
-- Do not give agents unattended authority to send messages, publish content, trade, delete data, or change infrastructure.
-- Record enough context to explain what an automation did and why it produced its result.
-- Keep bridge services independently runnable so failures do not take down the whole system.
-- Prefer source-backed summaries over unsupported assertions.
+Hermes cron owns application schedules after activation. Script jobs enqueue work into Redis and disable cron's automatic delivery; workers own processing and the shared delivery module owns publication.
 
-## Release approach
+1. The enqueue operation derives a stable run ID from the job and time slot. A Redis Lua operation checks the deduplication key and adds the job atomically.
+2. A consumer group assigns work. Completed runs are acknowledged without repeating their work.
+3. A worker processes the source data, validates any model-generated fields, and records the result.
+4. Delivery reserves a fingerprint before calling `hermes send --json`, then saves confirmed message identifiers.
+5. Recovered pending jobs and uncertain sends enter reconciliation. An operator must establish what happened before replaying consequential work.
 
-Each public component should include:
+This addresses duplicate scheduling and ambiguous delivery without claiming exactly-once effects across Redis and Telegram. The deduplication window is finite; explicit recovery still matters.
 
-1. a short problem statement;
-2. the input and output contract;
-3. a redacted configuration example;
-4. reproducible container test instructions for the VPS (no GitHub Actions); and
-5. an explanation of its privacy and approval boundaries.
+## Model execution
 
-That makes this repository a useful reference for building personal agent workflows, rather than a dump of private operational configuration.
+**Interactive assistant configuration and background integration routing are separate.** The main assistant uses the configured OpenAI route. Its dialogue, auxiliary, and delegation settings can select different models; this is configuration, not a universal automatic complexity classifier.
+
+Background workflows use [models.py](../src/benka_integrations/models.py) and [model_child.py](../src/benka_integrations/model_child.py):
+
+- Each call starts a fresh subprocess and temporary Hermes home, with tools disabled and personal memory, context files, and session persistence skipped.
+- Explicit provider routes bound the fallback chain. Integration routes can differ from the main assistant and can use Qwen or DeepSeek first where configured.
+- Iteration, token, and wall-clock limits constrain execution.
+- Parsed output passes workflow-specific validation. When the model chain fails, the pipeline can return a deterministic fallback.
+
+OmniRoute remains available for workloads assigned to it; it is not assumed to proxy every call. Model names and credentials are deployment configuration. Provider behavior and availability require live verification separately from fixture-based contract checks.
+
+## Knowledge and context
+
+| Store | Purpose | Boundary |
+| --- | --- | --- |
+| Markdown wiki | Durable, editable knowledge and idea chains, compatible with Obsidian | The primary knowledge store; records retain source metadata |
+| LightRAG | Graph-assisted retrieval over selected knowledge | A search layer with its own indexing state and embedding requirements |
+| Private SQLite FTS archive | Search over imported conversations and diaries | Historical material stays outside normal session context and outside Git |
+| Hermes memory | Compact, persistent user facts and preferences | Selected durable context, not a copy of the full archive |
+
+Wiki operations preserve fields such as `source_type`, `source`, `capture_mode`, and `promote_fingerprint`, and return artifact paths and RAG status. Captures and promotions retain provenance. The `обсуди:` convention requests discussion without automatic persistence, and whole mailboxes are not indexed by default.
+
+Personal, work, family, and sandbox profiles receive separate configured domain bindings. Tool paths come from the deployment manifest rather than model-supplied paths. These controls need the routing and access checks in the acceptance matrix; profile names alone do not establish isolation. See the [plugin](../src/benka_integrations/plugin.py) and [wiki adapter](../src/benka_integrations/wiki.py).
+
+## Interfaces and access
+
+Telegram is the everyday conversational and briefing surface. CLI exposes operator and integration commands. A separate Hermes dashboard process sits behind Caddy with TLS/mTLS and application authentication.
+
+The panel deployment uses a separate listener alongside existing VPS services. Its [runbook](hermes/panel.md) covers access, WebSocket behavior, and certificate operations; public documentation does not expose the production domain or credentials.
+
+Source APIs and model providers are external dependencies. Persisting state on a private VPS does not make those requests local or eliminate provider-specific limits.
+
+## Migration and recovery
+
+The OpenClaw-to-Hermes migration preserves processing behavior and state contracts while replacing the runtime adapters. The tooling covers cold snapshot creation and verification, staged restore, a compatible OpenClaw import layout, archive indexing, and a three-way wiki comparison for rollback.
+
+Deployment preparation and production activation are separate operations. Activation requires an explicit operator decision, a fresh consistent snapshot, and stopping the former writers. Rollback after new writes requires reconciling new artifacts, cursors, confirmed deliveries, and pending work before restarting old processors.
+
+The [migration implementation](../src/benka_integrations/migration.py), [migration plan](25-hermes-migration-plan.md), and [cutover/rollback runbook](hermes/cutover-rollback.md) document the mechanics. The recorded switch retained the old state and stopped the former server's Docker services; observation and final acceptance are tracked separately.
+
+## Verification boundary
+
+Application builds and tests run on the VPS, using isolated containers and synthetic fixtures for rehearsal. The [acceptance record](hermes/acceptance.md) identifies the tested tree, container constraints, 209 regression results, native Hermes contracts, Redis recovery, and dashboard checks.
+
+Those results establish specific behavior for the recorded candidate. They do not substitute for current provider authentication, a real Telegram conversation, full workflow acceptance, the observation period, or recovery verification after production writes.

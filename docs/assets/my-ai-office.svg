@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1320" height="460" viewBox="0 0 1320 460" role="img" aria-labelledby="title description">
+  <title id="title">My AI Office — Denis Ermilov</title>
+  <desc id="description">From information to action. A personal AI office connecting Hermes orchestration, durable workflows, and searchable knowledge.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#0c1923"/>
+      <stop offset="1" stop-color="#122c37"/>
+    </linearGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0H0V40" fill="none" stroke="#a2cfdb" stroke-opacity=".045"/>
+    </pattern>
+  </defs>
+  <rect width="1320" height="460" rx="22" fill="url(#background)"/>
+  <rect width="1320" height="460" rx="22" fill="url(#grid)"/>
+  <path d="M0 398H1320" stroke="#36505c" stroke-opacity=".7"/>
+  <g font-family="Arial, Helvetica, sans-serif">
+    <rect x="48" y="42" width="10" height="10" rx="2" fill="#64dac7"/>
+    <text x="72" y="53" fill="#a8c6cd" font-size="14" letter-spacing="2.5">AI AUTOMATION / SYSTEM DESIGN</text>
+    <text x="1268" y="53" text-anchor="end" fill="#a8c6cd" font-size="14" letter-spacing="1.8">DENIS ERMILOV</text>
+    <text x="48" y="166" fill="#f1f5ef" font-size="76" font-weight="700" letter-spacing="-3">My AI Office</text>
+    <text x="50" y="221" fill="#64dac7" font-size="29">From information to action.</text>
+    <text x="50" y="282" fill="#adc2cb" font-size="20">Email. Telegram. Research. Knowledge.</text>
+    <text x="50" y="315" fill="#adc2cb" font-size="20">One connected workspace, built to run.</text>
+    <g fill="none" stroke="#507582" stroke-width="2">
+      <path d="M1002 178V212H868V238"/>
+      <path d="M1002 212H1136V238"/>
+      <path d="M868 312V345H1136V312" stroke-dasharray="5 6"/>
+    </g>
+    <circle cx="1002" cy="212" r="4" fill="#64dac7"/>
+    <rect x="792" y="102" width="420" height="76" rx="12" fill="#15353e" stroke="#5cb9ad"/>
+    <rect x="814" y="127" width="26" height="26" rx="7" fill="#64dac7"/>
+    <path d="M821 135V145M832 135V145M821 140H832" stroke="#122c37" stroke-width="2"/>
+    <text x="858" y="132" fill="#80dbcd" font-size="12" letter-spacing="2">AGENT ORCHESTRATION</text>
+    <text x="858" y="157" fill="#f1f5ef" font-size="23" font-weight="700">Hermes + Benka</text>
+    <rect x="750" y="238" width="236" height="74" rx="10" fill="#152b38" stroke="#4d7186"/>
+    <text x="770" y="265" fill="#91bceb" font-size="12" letter-spacing="1.5">DURABLE WORKFLOWS</text>
+    <text x="770" y="290" fill="#e7edf1" font-size="20">Jobs + delivery</text>
+    <rect x="1018" y="238" width="236" height="74" rx="10" fill="#232f36" stroke="#8e8060"/>
+    <text x="1038" y="265" fill="#e8be7b" font-size="12" letter-spacing="1.5">SEARCHABLE CONTEXT</text>
+    <text x="1038" y="290" fill="#f0ede5" font-size="20">Wiki + graph RAG</text>
+    <circle cx="1002" cy="345" r="4" fill="#a8c6cd"/>
+    <text x="50" y="435" fill="#c0cfd6" font-size="14" letter-spacing="1.5">INTEGRATE</text>
+    <circle cx="163" cy="430" r="2" fill="#64dac7"/>
+    <text x="184" y="435" fill="#c0cfd6" font-size="14" letter-spacing="1.5">ORCHESTRATE</text>
+    <circle cx="332" cy="430" r="2" fill="#64dac7"/>
+    <text x="353" y="435" fill="#c0cfd6" font-size="14" letter-spacing="1.5">REMEMBER</text>
+    <circle cx="477" cy="430" r="2" fill="#64dac7"/>
+    <text x="498" y="435" fill="#c0cfd6" font-size="14" letter-spacing="1.5">RECOVER</text>
+    <text x="1268" y="435" text-anchor="end" fill="#7f9faa" font-size="13" letter-spacing="1.2">SELF-HOSTED / SOURCE-LINKED / RECOVERABLE</text>
+  </g>
+</svg>
