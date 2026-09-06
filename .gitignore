@@ -1,0 +1,44 @@
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+secrets/
+credentials/
+
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+
+# Node and build output
+node_modules/
+dist/
+build/
+
+# Runtime state and user data
+data/
+state/
+runtime/
+sessions/
+exports/
+private/
+logs/
+*.log
+
+# Local development
+.DS_Store
+.idea/
+.vscode/
+*.swp
