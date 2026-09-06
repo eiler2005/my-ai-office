@@ -7,6 +7,23 @@
 По указанию Дениса дальнейшие сборки и тесты выполняются на VPS; GitHub Actions не используется.
 Производственные токены/бот/почта/Syncthing в репетиционных тестах не используются.
 
+## Корректирующее развёртывание Telegram и profile manifests
+
+После production cutover выполнено корректирующее развёртывание на VPS Hermes. Изолированный candidate-прогон
+подтвердил сборку runtime и test images, **209** регрессионных проверок, native Hermes contracts, synthetic
+`claw migrate` и Redis recovery. Полный `finalize` дополнительно был выполнен на отдельной локальной копии
+production-state на VPS с `network=none` до изменения живого состояния.
+
+В production финализатор назначил home channel личному DM единственного trusted owner, отключил
+`onboarding.profile_build`, выпустил четыре profile manifests и четыре activation receipts. Gateway был
+пересоздан на проверенном образе и вернулся в состояние `healthy`; загрузка personal manifest внутри запущенного
+контейнера подтверждена. Compose также пересоздал сервис wiki как зависимость Gateway; его persistent volume
+не изменялся, а остальные Benka workers продолжили работу без перезапуска.
+
+Проверка не отправляла искусственное сообщение в реальный Telegram-чат и не повторяла delivery. Внешний
+Telegram smoke остаётся частью наблюдения: владелец проверяет обычное сообщение в личном DM Беньки после
+развёртывания.
+
 ## Проверено на VPS Hermes
 
 Серверный прогон выполнен в контейнерах с read-only root, без production secrets, с ограничением 2 CPU / 2 GiB RAM.

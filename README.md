@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/my-ai-office.svg" alt="My AI Office by Denis Ermilov — AI automation, from information to action" width="100%">
+  <img src="docs/assets/my-ai-office.svg" alt="My AI Office by Denis Ermilov — Benka, a miniature schnauzer AI assistant, turns information into action" width="100%">
 </p>
 
 <p align="center">
@@ -7,70 +7,116 @@
   <a href="https://github.com/NousResearch/hermes-agent"><img src="https://img.shields.io/badge/Runtime-Hermes_Agent-64dac7?style=flat-square" alt="Hermes Agent runtime"></a>
   <a href="src/benka_integrations"><img src="https://img.shields.io/badge/Integrations-Python_3.12-8cbaf3?style=flat-square" alt="Python 3.12 integrations"></a>
   <a href="deploy/hermes"><img src="https://img.shields.io/badge/Deployment-Docker_Compose-8cbaf3?style=flat-square" alt="Docker Compose deployment"></a>
-  <a href="docs/architecture.md"><img src="https://img.shields.io/badge/Knowledge-Wiki_%2B_Graph_RAG-e8be7b?style=flat-square" alt="Wiki and graph retrieval"></a>
+  <a href="#memory-that-improves-with-work"><img src="https://img.shields.io/badge/Knowledge-Wiki_%2B_Graph_RAG-e8be7b?style=flat-square" alt="Wiki and graph retrieval"></a>
 </p>
 
 # My AI Office
 
-**A personal AI office that turns email, Telegram, research, and saved ideas into useful context and daily briefings.**
+**A self-hosted AI operating layer for a busy professional: it turns scattered messages, mail, research, and ideas into a clear view of what matters and what to do next.**
 
-Designed and built by **[Denis Ermilov](https://github.com/eiler2005)**. My AI Office brings together agent orchestration, asynchronous workflows, knowledge engineering, and self-hosted operations in one working system. Its assistant, **Benka**, runs on [Hermes Agent](https://github.com/NousResearch/hermes-agent); Telegram is the everyday interface, with CLI and an authenticated web dashboard for direct access.
+Designed and built by **[Denis Ermilov](https://github.com/eiler2005)**. My AI Office connects agent orchestration, asynchronous workflows, knowledge engineering, and production operations in one working system. Its everyday surface is Telegram, with CLI and an authenticated web dashboard for direct work.
 
-The engineering work lives around the conversation: deciding what deserves attention, preserving where information came from, recovering interrupted jobs, and keeping delivery and persistent state under control.
+## Meet Benka 🐾
+
+**Benka is a miniature schnauzer — Denis's dog-shaped AI assistant and business co-pilot.** He is concise, sharp, warm when it helps, and deliberately unsentimental about weak ideas. His job is not to produce more chat. His job is to give Denis the right context, surface a decision, preserve the useful result, and help move the work forward.
+
+Benka runs on [Hermes Agent](https://github.com/NousResearch/hermes-agent). The surrounding office is designed by Denis: the workflows, integrations, knowledge model, recovery logic, and deployment boundaries are implemented here.
 
 <p align="center">
-  <a href="#what-the-office-does">Capabilities</a> ·
-  <a href="docs/architecture.md">Architecture</a> ·
-  <a href="docs/engineering-case-study.md">Engineering case study</a> ·
-  <a href="docs/hermes/operations.md">Operations</a>
+  <a href="#overview">Overview</a> ·
+  <a href="#business-capabilities">Capabilities</a> ·
+  <a href="#how-it-works">How it works</a> ·
+  <a href="#memory-that-improves-with-work">Memory</a> ·
+  <a href="#repository-structure">Repository</a> ·
+  <a href="docs/engineering-case-study.md">Engineering case study</a>
 </p>
 
-## What the office does
+## Overview
 
-| Workflow | Useful result | Implementation |
+Most AI tools wait in a chat window for a prompt. My AI Office works continuously around the workday. It watches the sources Denis has chosen, filters routine noise with deterministic rules, uses models where language judgment helps, and delivers compact, source-linked outputs into the right Telegram conversation.
+
+The result is a practical personal operating system for business and life:
+
+- **Less monitoring work.** Important email, channel activity, market signals, and research do not depend on remembering to open every source.
+- **Faster, better prepared decisions.** The office separates actionable items from reference information, retains original sources, and creates briefings that can be checked quickly.
+- **Compounding knowledge.** Useful ideas, links, decisions, and research become editable memory instead of disappearing into chat history.
+- **Control remains human.** Benka prepares, routes, summarizes, and reminds. Denis keeps approval for consequential actions and external communication.
+
+The first version ran on OpenClaw. The current implementation moved the assistant runtime to Hermes while preserving the processing pipelines, state contracts, and migration/rollback discipline from the [predecessor](https://github.com/eiler2005/clawden-ai).
+
+## Business capabilities
+
+| Capability | What it does for the workday | How it is implemented |
 | --- | --- | --- |
-| **Inbox triage** | Personal and work mail become separate briefings, with actionable items distinguished from information and forwarded messages attributed to their original sender. | [Email integration](artifacts/agentmail-email) |
-| **Telegram intelligence** | Selected channels become a digest with category balance, preserved source links, and cursors that track what has already been processed. | [Digest pipeline](artifacts/telethon-digest) |
-| **Signals & research** | Rules, source presets, and deduplication turn incoming material into alerts and Last30Days research runs. | [Signals / Last30Days](artifacts/signals-bridge) |
-| **Knowledge & ideas** | Explicit captures create wiki pages; idea promotion follows the existing chain instead of creating a second copy. | [Wiki tools](src/benka_integrations/wiki.py) |
-| **Grounded recall** | The assistant consults curated knowledge, uses LightRAG for retrieval, and searches a private archive of earlier conversations with source references. | [Hermes tools](src/benka_integrations/plugin.py) |
-| **Recurring work** | A single scheduler hands jobs to Redis workers; deliveries carry receipts, and uncertain outcomes go to reconciliation. | [Queue](src/benka_integrations/queue.py) · [Delivery](src/benka_integrations/delivery.py) |
+| **Inbox clarity** | Turns personal and work mail into briefings, separates actionable items from information, and preserves the original sender of a forwarded message. | [Email integration](artifacts/agentmail-email) |
+| **Executive information radar** | Watches selected Telegram channels and research sources, balances categories, deduplicates repeats, and delivers concise digests with links to primary material. | [Telegram digest](artifacts/telethon-digest) |
+| **Signals and opportunity watch** | Applies rules and source presets to surface relevant market, product, technology, or business signals without turning every input into an alert. | [Signals / Last30Days](artifacts/signals-bridge) |
+| **Research that stays usable** | Captures a useful post, link, or thought into a source-backed wiki page; later promotion deepens the same chain instead of creating duplicates. | [Wiki tools](src/benka_integrations/wiki.py) |
+| **Answers with context** | Uses curated knowledge, graph retrieval, and a private conversation archive to prepare grounded answers with traceable sources. | [Benka plugin](src/benka_integrations/plugin.py) |
+| **Reliable recurring work** | Runs scheduled workflows once per slot, records confirmed deliveries, and sends uncertain outcomes to review instead of blindly retrying. | [Queue](src/benka_integrations/queue.py) · [Delivery](src/benka_integrations/delivery.py) |
 
-### Three everyday examples
+### A day with the office
 
-**An email arrives.** The inbox workflow identifies the original sender, applies filters and triage, and includes the result in the appropriate briefing. Full mailboxes are not indexed into the knowledge base by default.
+**Before work:** the office prepares mail and Telegram briefings, so Denis starts from the changes that require attention rather than from unread counts.
 
-**A useful idea appears in Telegram.** An explicit capture preserves the source and creates a wiki artifact. Later promotion updates the idea's chain. The `обсуди:` (“discuss”) convention keeps a conversation from becoming an automatic save.
+**During work:** Benka can answer a question from the curated knowledge base, turn a promising link into a durable research artifact, or help structure the next action. The `обсуди:` (“discuss”) prefix keeps a conversation from becoming an automatic save.
 
-**A digest is due.** Hermes cron enqueues a job for its time slot. A worker collects and scores material, validates model output, and prepares a linked digest. If a send has an unknown outcome, the system records it for review rather than sending the same publication again automatically.
+**Between meetings:** Signals and Last30Days workflows keep a watch on selected themes and sources. A failed source is isolated; it should not suppress the rest of the release.
 
-## How it fits together
+**After work:** the useful conclusions survive as editable wiki pages and a compact profile, ready for the next conversation rather than trapped in an old chat.
+
+## How it works
 
 ```mermaid
 flowchart TB
-    Sources["Email · Telegram channels · Research"] --> Workers["Python integration workers"]
-    Cron["Hermes cron"] --> Queue["Redis Streams"]
-    Queue --> Workers
-    Person["You · Telegram / CLI / Web"] <--> Hermes["Hermes Agent + Benka plugin"]
-    Hermes --> Queue
-    Hermes <--> Knowledge["Wiki · LightRAG · Private archive"]
-    Workers --> Knowledge
+    Sources["Mail · Telegram channels · Research sources"] --> Filter["Rules, source policies, and cursors"]
+    Filter --> Queue["Redis Streams"]
+    Cron["Hermes cron"] --> Queue
+    Queue --> Workers["Python integration workers"]
     Workers --> Models["Bounded model calls + validation"]
     Models --> Delivery["Delivery receipts / reconciliation"]
-    Delivery --> Telegram["Telegram briefings"]
+    Delivery --> Telegram["Briefings, alerts, and follow-ups"]
+    Person["Denis — Telegram / CLI / Web"] <--> Hermes["Hermes Agent + Benka"]
+    Hermes <--> Knowledge["Wiki · LightRAG · private archive"]
+    Workers --> Knowledge
 ```
 
-**Hermes handles the agent runtime.** The project adds native tools, workflow adapters, source processing, persistence, delivery controls, and migration tooling. Existing processing algorithms were carried forward from the [OpenClaw predecessor](https://github.com/eiler2005/clawden-ai).
+The flow has two complementary modes.
 
-| Engineering decision | Why it matters | Inspect the work |
+1. **Conversation:** Denis asks Benka in Telegram, CLI, or the dashboard. Hermes selects the configured interactive model route, Benka retrieves only relevant context, and the response returns to the same conversation.
+2. **Background work:** Hermes cron puts a scheduled job into Redis. A dedicated worker collects material, applies deterministic processing, makes a restricted model call where needed, validates the output, and records the delivery result.
+
+This separation keeps source-specific logic ordinary Python code and prevents the agent runtime from becoming a monolith. Model calls run with restricted context, limited tools, deadlines, validated output, and deterministic fallbacks. A delivery with an unknown result is not silently replayed.
+
+## Memory that improves with work
+
+Benka does not treat every message as permanent memory. The office uses separate layers, each for a different question.
+
+| Layer | Purpose | Why it matters |
 | --- | --- | --- |
-| **Separate orchestration from processing** | Source-specific parsing and scoring remain ordinary Python code; changing the agent runtime does not require rewriting each workflow. | [Integration package](src/benka_integrations) |
-| **Make model work bounded** | Background calls use a fresh Hermes context, restricted tools, deadlines, output validation, and deterministic fallbacks. | [Model runner](src/benka_integrations/model_child.py) · [Adapter](src/benka_integrations/models.py) |
-| **Treat uncertainty as a state** | Slot deduplication, confirmed delivery IDs, and reconciliation give interrupted jobs an explicit recovery path. | [Queue](src/benka_integrations/queue.py) · [Delivery](src/benka_integrations/delivery.py) |
-| **Keep knowledge portable** | Markdown wiki pages remain the durable knowledge store; graph retrieval and conversation search serve distinct purposes. | [Knowledge architecture](docs/architecture.md#knowledge-and-context) |
-| **Design the migration and the rollback** | Verified cold snapshots, safe restore, import reports, and state reconciliation support a controlled runtime replacement. | [Migration tooling](src/benka_integrations/migration.py) · [Cutover runbook](docs/hermes/cutover-rollback.md) |
+| **Live state** | Running services, current jobs, and fresh source data | Current-state questions are checked against live systems rather than guessed from memory. |
+| **Raw evidence** | Imported material, original sources, and searchable private transcripts | Preserves provenance and supports later verification without filling the assistant context. |
+| **Curated wiki** | Decisions, research, entities, and idea chains in editable Markdown | This is the durable source of truth, compatible with Obsidian. |
+| **LightRAG** | Graph-assisted retrieval over selected knowledge | Finds relevant context across the curated layer; it is a retrieval layer, not the only store. |
+| **Hermes memory** | Compact stable facts and preferences | Helps conversations start with useful context without importing a lifetime of history. |
 
-For the problem, tradeoffs, and verification evidence behind these choices, read the **[engineering case study](docs/engineering-case-study.md)**.
+```text
+source material → explicit capture → curated wiki → retrieval index → grounded answer
+```
+
+Whole mailboxes and ordinary Telegram conversation are not automatically indexed. Captures retain source metadata; the wiki artifact is created first, then indexing follows. This keeps personal, work, family, and sandbox contexts separately configured and makes the knowledge base explainable to its owner.
+
+Read the [memory architecture](docs/architecture.md#knowledge-and-context) and [engineering case study](docs/engineering-case-study.md#4-separate-knowledge-from-accumulated-data) for the operational tradeoffs.
+
+## Engineering choices
+
+| Decision | Practical benefit | Inspect the work |
+| --- | --- | --- |
+| **Keep orchestration separate from domain logic** | Source parsers, scorers, and renderers can evolve without replacing the agent runtime. | [Integration package](src/benka_integrations) |
+| **Treat uncertainty as a state** | Slot deduplication, delivery receipts, and reconciliation create a recovery path for interrupted work. | [Queue](src/benka_integrations/queue.py) · [Delivery](src/benka_integrations/delivery.py) |
+| **Bound model work** | Background tasks use fresh Hermes homes, restricted tools, provider chains, output validation, and deterministic fallbacks. | [Model runner](src/benka_integrations/model_child.py) |
+| **Make privacy structural** | Public code is separate from credentials, source bindings, mail, personal notes, sessions, and live databases. | [Deployment templates](deploy/hermes) · [Architecture](docs/architecture.md) |
+| **Design migration and rollback together** | Cold snapshots, staged restore, import reports, and state reconciliation make runtime replacement reviewable. | [Migration tooling](src/benka_integrations/migration.py) · [Runbook](docs/hermes/cutover-rollback.md) |
 
 ## Stack
 
@@ -80,10 +126,35 @@ For the problem, tradeoffs, and verification evidence behind these choices, read
 | Integration runtime | Python 3.12, source-specific pipelines, isolated model subprocesses |
 | Scheduling & recovery | Hermes cron, Redis Streams, worker state, delivery receipts |
 | Knowledge | Obsidian-compatible Markdown wiki, `wiki-import`, LightRAG, SQLite FTS archive |
-| Model access | OpenAI for the main assistant; configurable routes and fallback chains, including Qwen and DeepSeek; OmniRoute for routed workloads |
+| Model access | OpenAI for the main assistant; configurable fallback chains including Qwen and DeepSeek; OmniRoute for assigned workloads |
 | Deployment | Docker Compose, pinned Hermes source and dependencies, Caddy, TLS/mTLS, persistent volumes |
 
-Model selection is configured per workload. Interactive and auxiliary tasks have separate settings; background integrations use their own provider chains. See [model execution](docs/architecture.md#model-execution) for the boundaries.
+Model selection is configured per workload. Interactive and auxiliary tasks have separate settings, while background integrations use their own provider chains. [Model execution details](docs/architecture.md#model-execution) describe the boundary.
+
+## Repository structure
+
+```text
+.
+├── src/benka_integrations/   Benka plugin, workers, models, queue, delivery, migration
+├── artifacts/                Email, digest, Signals, Last30Days, and wiki processing
+├── deploy/hermes/            Container definitions and sanitized deployment templates
+├── plugins/benka/            Hermes plugin manifest
+├── skills/                   Benka workflow skills
+├── workspace/                Persona, Telegram policy, memory index, and tool contracts
+├── scripts/                  Packaging, inventory, import, verification, and operations
+├── docs/hermes/              Acceptance evidence, cutover, rollback, and runbooks
+├── docs/architecture.md      System boundaries and data flow
+└── vendor/hermes-agent/      Pinned upstream Hermes Agent submodule
+```
+
+To obtain the source and pinned runtime on an isolated VPS:
+
+```bash
+git clone --recurse-submodules https://github.com/eiler2005/my-ai-office.git
+cd my-ai-office
+```
+
+Continue with the [operations runbook](docs/hermes/operations.md) for container builds and private deployment configuration.
 
 ## Deployment status & evidence
 
@@ -93,37 +164,6 @@ The [VPS rehearsal record](docs/hermes/acceptance.md) reports **209 passing regr
 
 Builds and runtime verification run on the VPS. This project does not use GitHub Actions for deployment or application testing.
 
-## Explore the project
-
-```text
-src/benka_integrations/   Native tools, workers, models, queues, delivery, migration
-artifacts/               Email, digest, Signals, Last30Days, and wiki processing
-deploy/hermes/           Container definitions and sanitized deployment templates
-scripts/                 Packaging, inventory, import, verification, and operations
-docs/hermes/             Acceptance evidence, cutover, rollback, and runbooks
-vendor/hermes-agent/     Pinned upstream Hermes Agent submodule
-```
-
-To obtain the source and pinned runtime on your VPS:
-
-```bash
-git clone --recurse-submodules https://github.com/eiler2005/my-ai-office.git
-cd my-ai-office
-```
-
-Continue with the [operations runbook](docs/hermes/operations.md) for isolated container builds and configuration.
-
-| Start here | Then explore |
-| --- | --- |
-| **Understand the design** | [Architecture](docs/architecture.md) · [Engineering case study](docs/engineering-case-study.md) |
-| **Inspect the implementation** | [Python package](src/benka_integrations) · [Hermes plugin](src/benka_integrations/plugin.py) · [Deployment](deploy/hermes) |
-| **Reproduce on an isolated VPS** | [Operations and build instructions](docs/hermes/operations.md) · [Verification record](docs/hermes/acceptance.md) |
-| **Follow the runtime migration** | [Plan](docs/25-hermes-migration-plan.md) · [Inventory](docs/hermes/inventory.md) · [Drift log](docs/hermes/drift-log.md) · [Cutover & rollback](docs/hermes/cutover-rollback.md) |
-| **Operate the dashboard** | [Panel runbook](docs/hermes/panel.md) |
-| **Trace the project's evolution** | [Changelog](CHANGELOG.md) · [Historical OpenClaw overview](README.openclaw.md) · [Original office concept](README.office.md) |
-
-This is a reference implementation with deployment tooling. Running your own instance requires private source bindings, credentials, and a deployment manifest; production activation is an explicit operator step.
-
 ## Public code, private office
 
 The repository contains integration code, sanitized templates, architecture, and operational records. Credentials, OAuth state, Telegram sessions, personal notes, mail, conversation archives, live databases, and certificates stay outside Git. Self-hosted state does not imply offline operation: configured model providers and source APIs receive requests from their respective workflows.
@@ -132,8 +172,6 @@ The repository contains integration code, sanitized templates, architecture, and
 
 **[Denis Ermilov](https://github.com/eiler2005)** — system design, workflow integration, knowledge architecture, and deployment engineering.
 
-This project shows my approach to AI automation: connect useful workflows end to end, keep their state understandable, and make failure and recovery part of the implementation.
-
-Built on [Hermes Agent](https://github.com/NousResearch/hermes-agent), [LightRAG](https://github.com/HKUDS/LightRAG), [Redis](https://github.com/redis/redis), and [Telethon](https://github.com/LonamiWebs/Telethon), with the broader stack documented above. The integration layer and operating design are the focus of this repository; upstream components retain their own authorship and licenses.
+Built on [Hermes Agent](https://github.com/NousResearch/hermes-agent), [LightRAG](https://github.com/HKUDS/LightRAG), [Redis](https://github.com/redis/redis), and [Telethon](https://github.com/LonamiWebs/Telethon). The integration layer and operating design are the focus of this repository; upstream components retain their own authorship and licenses.
 
 [MIT license](LICENSE).

@@ -12,6 +12,20 @@
 
 Внутри образа использовать Python 3.12, `uv sync --frozen --extra hermes` и Git submodules. Для тестов добавить `--extra test`.
 На хост VPS Python-зависимости агента не устанавливаются: тестовый Docker target `test` включает необходимое окружение.
+
+### Изолированный builder для VPS-проверок
+
+Сценарий `scripts/run-hermes-vps-tests.sh` использует отдельный Docker Buildx builder `benka-migration`. Перед
+первым прогоном на VPS создать и загрузить его один раз:
+
+```bash
+docker buildx inspect benka-migration >/dev/null 2>&1 || \
+  docker buildx create --name benka-migration --driver docker-container --bootstrap
+```
+
+Builder используется только для candidate images. Production Compose не переключает его и не получает доступ к
+Docker socket из контейнеров агента.
+
 Hermes закреплён на `01ae7a5668ce0fa2efca524a4567cacdd0786c95`; Last30Days — на
 `01812ec1851e5c3d92a9049a41b7da4adbfbcb5d` с прежними Reddit/GitHub адаптациями.
 Обновление любого pin требует повторения native-contract и регрессий.
@@ -58,6 +72,28 @@ Receipt — операционная блокировка, не криптогр
 после отдельной команды Дениса. Генератора автоматической активации и таймера в проекте нет.
 
 ## Профили и Telegram
+
+### Личный канал Беньки и первый диалог
+
+Финализатор production-конфигурации назначает домашним Telegram-каналом только личный DM единственного
+доверенного пользователя из контура `personal`. Форум, рабочая группа и семейный маршрут не могут стать
+домашним каналом по умолчанию: результаты cron и межплатформенные уведомления не должны попадать в общий чат.
+Если в `personal` нет ровно одного пользователя, финализатор оставляет домашний канал незаданным и требует
+осознанной настройки оператором.
+
+Для импортированного Беньки `onboarding.profile_build` всегда установлен в `off`. Стандартный Hermes-опросник
+первого контакта предназначен для чистой установки; здесь профиль, память и правила уже подготовлены. Не
+выполнять `/sethome` в форумной теме: это изменит маршрут уведомлений для всего Gateway.
+
+Каждый multiplex-профиль получает собственный manifest в закрытом `private/benka-manifests/`; Gateway монтирует
+этот каталог read-only как `/run/benka/profiles/`. Поле `manifest_path` в profile config обязано указывать на
+`/run/benka/profiles/<domain>.json`. Не подменять его общим Gateway manifest: доменные ограничения инструментов
+и данных должны сохраняться при каждом вызове плагина.
+
+Финализатор переводит profile manifests в `production` и создаёт отдельный activation receipt на каждый контур.
+Для `personal` он создаёт отдельные read-only файлы Redis, wiki и LightRAG в `private/profile-secrets/personal/`.
+Контуры `work`, `family` и `sandbox` остаются read/archive-only, пока оператор не подготовит их собственные
+проверенные credential files и не расширит разрешённые операции отдельным изменением политики.
 
 В закрытом `bindings.json` задать все четыре контура:
 

@@ -116,6 +116,25 @@ def _source_bindings(config: dict[str, Any], bridge_envs: dict[str, dict[str, st
     }
 
 
+def _owner_home_channel(bindings: dict[str, Any]) -> dict[str, str] | None:
+    """Return the owner DM as Telegram's default notification destination.
+
+    A Telegram private chat uses the owner's numeric user ID as its chat ID.
+    Choose it only when the personal domain has exactly one trusted person: a
+    group or family route must never become the default delivery destination.
+    """
+    users = {str(user) for user in bindings["domains"]["personal"]["users"]}
+    if len(users) != 1:
+        return None
+    owner = users.pop()
+    return {
+        "platform": "telegram",
+        "chat_id": owner,
+        "name": "Benka owner DM",
+        "user_id": owner,
+    }
+
+
 def _copy_tree(source: Path, destination: Path) -> None:
     if not source.is_dir() or source.is_symlink():
         raise ValueError(f"Expected regular source directory: {source}")
@@ -329,11 +348,17 @@ def finalize(destination: Path, *, snapshot_sha256: str) -> dict[str, Any]:
         if existing.exists():
             shutil.rmtree(existing)
         shutil.move(str(staging / "profiles" / domain), str(profiles_root / domain))
+    profile_manifests = private / "benka-manifests"
+    if profile_manifests.exists():
+        shutil.rmtree(profile_manifests)
+    shutil.move(str(staging / "benka-manifests"), str(profile_manifests))
+    for manifest in profile_manifests.glob("*.json"):
+        os.chmod(manifest, 0o600)
     shutil.rmtree(staging)
 
     root = yaml.safe_load((runtime / "config.yaml").read_text()) or {}
     baseline = yaml.safe_load((Path("/opt/benka/deploy/hermes/hermes.example.yaml")).read_text())
-    for key in ("timezone", "toolsets", "platform_toolsets", "agent", "database", "memory"):
+    for key in ("timezone", "toolsets", "platform_toolsets", "agent", "database", "memory", "onboarding"):
         root[key] = copy.deepcopy(baseline[key])
     root["agent"].update({
         "reasoning_effort": "medium",
@@ -361,6 +386,13 @@ def finalize(destination: Path, *, snapshot_sha256: str) -> dict[str, Any]:
         "user_allowed_commands": ["help", "new", "status"],
         "group_user_allowed_commands": ["help", "new", "status"],
     }
+    if home_channel := _owner_home_channel(bindings):
+        root["telegram"]["home_channel"] = home_channel
+    # This is an established assistant with an imported profile. Hermes's
+    # first-touch profile-building prompt is useful for a fresh installation,
+    # but not for Benka: it interrupts the first real Telegram request and
+    # can offer account discovery that this deployment does not expose.
+    root["onboarding"] = {"profile_build": "off"}
     root["plugins"] = {"enabled": ["benka"], "entries": {"benka": {"settings": {"manifest_path": "/run/benka/manifest.json"}}}}
     model_routes = json.loads((private / "model-providers.json").read_text())
     if not isinstance(model_routes, list) or not model_routes:
@@ -417,7 +449,16 @@ def finalize(destination: Path, *, snapshot_sha256: str) -> dict[str, Any]:
         root_env[key] = route["api_key"]
     _write_env(runtime / ".env", root_env) if not (runtime / ".env").exists() else (runtime / ".env").write_text("".join(f"{k}={v}\n" for k, v in sorted(root_env.items())))
     os.chmod(runtime / ".env", 0o600)
-    soul = (runtime / "SOUL.md").read_text() if (runtime / "SOUL.md").exists() else "Ты Бенька.\n"
+    soul_path = runtime / "SOUL.md"
+    soul = soul_path.read_text() if soul_path.exists() else ""
+    identity = (
+        "Ты Бенька — цвергшнауцер, пёс-помощник Дениса и его деловой со-пилот. "
+        "Пиши по существу, с живым сухим юмором, но без сюсюканья и без выдумок."
+    )
+    if "цвергшнауцер" not in soul.casefold():
+        soul = f"{identity}\n\n{soul.lstrip()}"
+        soul_path.write_text(soul)
+        os.chmod(soul_path, 0o600)
     model_policy = (
         "\n\nМодельная политика: обычные ответы выполняй сам. Для сложной многошаговой "
         "задачи с исследованием, проектированием или проверкой используй ровно одного "
@@ -449,6 +490,36 @@ def finalize(destination: Path, *, snapshot_sha256: str) -> dict[str, Any]:
     wiki_token = wiki_values.get("WIKI_IMPORT_TOKEN")
     if not wiki_token:
         raise ValueError("Wiki authentication is required for Hermes maintenance")
+    profile_secrets = private / "profile-secrets"
+    private_directory(profile_secrets)
+    profile_manifests = private / "benka-manifests"
+    for domain in DOMAINS:
+        manifest_path = profile_manifests / f"{domain}.json"
+        manifest = _read_json(manifest_path)
+        if manifest.get("domain") != domain:
+            raise ValueError(f"Profile manifest domain mismatch: {domain}")
+        manifest.update({
+            "mode": "production",
+            "data_class": "production",
+            "production_connections": True,
+            "activation_receipt": f"/run/benka/activation/profile-{domain}.json",
+            "enabled_operations": ["wiki_read", "archive_read"],
+        })
+        if domain == "personal":
+            secret_dir = profile_secrets / domain
+            private_directory(secret_dir)
+            _private_file(secret_dir / "redis-url", (private / "redis-url").read_text())
+            _private_file(secret_dir / "wiki-token", wiki_token + "\n")
+            _private_file(secret_dir / "rag-token", wiki_token + "\n")
+            manifest.update({
+                "enabled_operations": ["wiki", "wiki_read", "wiki_write", "archive_read", "enqueue"],
+                "wiki_url": "http://wiki:8095",
+                "rag_url": "http://lightrag:9621",
+            })
+        else:
+            for key in ("redis_file", "wiki_token_file", "rag_token_file"):
+                manifest.pop(key, None)
+        _private_file(manifest_path, json.dumps(manifest, indent=2))
     maintenance_env = private / "bridges/maintenance.env"
     if maintenance_env.exists():
         maintenance_env.unlink()
@@ -497,6 +568,11 @@ def finalize(destination: Path, *, snapshot_sha256: str) -> dict[str, Any]:
     schedules["redis_file"] = "/state/hermes/benka/redis-url"
     manifests["schedules"] = schedules
     receipts = private / "activation"
+    for domain in DOMAINS:
+        path = profile_manifests / f"{domain}.json"
+        receipt = {"command": "ACTIVATE_HERMES_BY_DENIS", "manifest_sha256": digest(path),
+                   "snapshot_sha256": snapshot_sha256, "old_writers_stopped": True}
+        _private_file(receipts / f"profile-{domain}.json", json.dumps(receipt, indent=2))
     for name, manifest in manifests.items():
         path = manifest_root / f"{name}.json"
         _private_file(path, json.dumps(manifest, indent=2))
@@ -517,5 +593,5 @@ def finalize(destination: Path, *, snapshot_sha256: str) -> dict[str, Any]:
     for path in (cron_runtime / "schedules.json", cron_runtime / "cron.json", cron_runtime / "redis-url",
                  cron_receipts / "schedules.json"):
         os.chmod(path, 0o600)
-    return {"manifest_count": len(manifests), "delivery_target_count": len(delivery),
+    return {"manifest_count": len(manifests) + len(DOMAINS), "delivery_target_count": len(delivery),
             "route_count": len(routes), "snapshot_sha256": snapshot_sha256}

@@ -96,6 +96,8 @@ services:
     command: [gateway]
     volumes:
       - "${BENKA_STATE_ROOT:?}/private/manifests/gateway.json:/run/benka/manifest.json:ro"
+      - "${BENKA_STATE_ROOT:?}/private/benka-manifests:/run/benka/profiles:ro"
+      - "${BENKA_STATE_ROOT:?}/private/profile-secrets:/run/benka/profile-secrets:ro"
       - "${BENKA_STATE_ROOT:?}/private/manifests/schedules.json:/run/benka/schedules.json:ro"
       - "${BENKA_STATE_ROOT:?}/private/activation:/run/benka/activation:ro"
       - "${BENKA_STATE_ROOT:?}/private/cron.json:/run/benka/cron.json:ro"

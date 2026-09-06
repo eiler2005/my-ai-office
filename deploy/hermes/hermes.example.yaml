@@ -11,6 +11,8 @@ database:
 memory:
   memory_enabled: false
   user_profile_enabled: false
+onboarding:
+  profile_build: "off"
 gateway:
   multiplex_profiles: false
 plugins:

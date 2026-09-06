@@ -7,6 +7,26 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Fixed — Benka Telegram first contact (2026-09-06)
+
+- Production finalization now derives Telegram's home channel only from a single trusted personal owner;
+  it never chooses a work, family, or forum route as the default delivery destination.
+- Disabled Hermes's profile-building onboarding for the imported Benka profile, so a real first request is
+  not interrupted by setup prompts or unrelated account-discovery advice.
+- Finalization now retains each profile's domain manifest and production Gateway mounts the directory read-only;
+  profile plugin calls no longer point at a discarded staging path.
+- Profile manifests are promoted with their own activation receipts. The personal profile receives scoped Redis,
+  wiki, and LightRAG credential files; other domains remain read/archive-only until independently provisioned.
+- Deployed the corrected finalizer to the active Hermes Gateway after 209 VPS checks and a network-isolated
+  rehearsal against a local production-state copy; Gateway health and live manifest loading were confirmed.
+- Made Benka's miniature-schnauzer identity explicit in the source persona, plugin metadata, and generated
+  Hermes soul prompt.
+
+### Changed — Business-facing project narrative (2026-09-06)
+
+- Expanded the public README with the office's business outcomes, operating flow, memory model, engineering
+  choices, repository map, and a clear description of Benka as Denis Ermilov's miniature-schnauzer AI co-pilot.
+
 ### Changed — Public project presentation (2026-09-06)
 
 - Rebuilt the README around the office's implemented workflows, Denis Ermilov's engineering contribution,

@@ -44,6 +44,8 @@ def prepare(bindings, destination: Path, *, repo: Path, runtime_home="/state/her
     if destination.exists():
         raise FileExistsError("Render profiles into a new private staging directory")
     private_directory(destination)
+    manifest_root = destination / "benka-manifests"
+    private_directory(manifest_root)
     base = yaml.safe_load((repo / "deploy/hermes/hermes.example.yaml").read_text())
     routes, users, chats = [], set(), set()
     for domain, spec in bindings["domains"].items():
@@ -64,7 +66,7 @@ def prepare(bindings, destination: Path, *, repo: Path, runtime_home="/state/her
                               "user_allowed_commands": ["help", "new", "status"],
                               "group_user_allowed_commands": ["help", "new", "status"]}
         config["plugins"]["entries"]["benka"]["settings"]["manifest_path"] = (
-            f"{runtime_home}/profiles/{domain}/benka-manifest.json"
+            f"{runtime_home}/profiles/{domain}.json"
         )
         (path / "config.yaml").write_text(yaml.safe_dump(config, allow_unicode=True))
         shutil.copytree(repo / "plugins/benka", path / "plugins/benka")
@@ -77,7 +79,7 @@ def prepare(bindings, destination: Path, *, repo: Path, runtime_home="/state/her
                     "redis_file": f"/run/benka/profile-secrets/{domain}/redis-url",
                     "wiki_token_file": f"/run/benka/profile-secrets/{domain}/wiki-token",
                     "rag_token_file": f"/run/benka/profile-secrets/{domain}/rag-token"}
-        (path / "benka-manifest.json").write_text(json.dumps(manifest, indent=2))
+        (manifest_root / f"{domain}.json").write_text(json.dumps(manifest, indent=2))
     default = copy.deepcopy(base)
     default["toolsets"] = []
     default["platform_toolsets"] = {"telegram": [], "cli": []}

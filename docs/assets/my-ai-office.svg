@@ -30,7 +30,7 @@
     <rect x="792" y="102" width="420" height="76" rx="12" fill="#15353e" stroke="#5cb9ad"/>
     <rect x="814" y="127" width="26" height="26" rx="7" fill="#64dac7"/>
     <path d="M821 135V145M832 135V145M821 140H832" stroke="#122c37" stroke-width="2"/>
-    <text x="858" y="132" fill="#80dbcd" font-size="12" letter-spacing="2">AGENT ORCHESTRATION</text>
+    <text x="858" y="132" fill="#80dbcd" font-size="12" letter-spacing="1.45">BENKA / MINIATURE SCHNAUZER</text>
     <text x="858" y="157" fill="#f1f5ef" font-size="23" font-weight="700">Hermes + Benka</text>
     <rect x="750" y="238" width="236" height="74" rx="10" fill="#152b38" stroke="#4d7186"/>
     <text x="770" y="265" fill="#91bceb" font-size="12" letter-spacing="1.5">DURABLE WORKFLOWS</text>
