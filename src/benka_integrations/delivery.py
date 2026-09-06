@@ -4,6 +4,8 @@ from __future__ import annotations
 import hashlib
 import json
 import subprocess
+import sys
+from pathlib import Path
 
 from .config import require_active
 
@@ -27,7 +29,9 @@ def send(client, config, *, delivery_id: str, target: str, text: str, runner=sub
             return previous
         raise UncertainDelivery("Delivery already attempted; inspect journal before retrying")
     try:
-        result = runner(["hermes", "send", "--to", target, "--file", "-", "--json"],
+        hermes_cli = Path(sys.executable).with_name("hermes")
+        command = str(hermes_cli) if hermes_cli.is_file() else "hermes"
+        result = runner([command, "send", "--to", target, "--file", "-", "--json"],
                         input=text, text=True, capture_output=True, timeout=90, check=False)
         payload = json.loads(result.stdout)
         message_id = payload.get("message_id")

@@ -7,6 +7,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Fixed — Telegram Digest delivery (2026-09-06)
+
+- Telegram Digest workers no longer depend on a host-style `PATH` for `hermes send`: delivery resolves the
+  CLI next to the active worker Python interpreter. A missing `PATH` entry had converted scheduled sends into
+  durable `uncertain` receipts before a message identifier could be confirmed.
+- Retained the failed receipt and reconciliation record for manual verification; the delivery guard still
+  forbids an automatic replay that could duplicate a message.
+- Rebuilt and tested the release on VPS Hermes (209 regression checks, native contracts and Redis recovery),
+  then recreated only `worker-telegram` with `--no-deps`. The missed 17:00 MSK issue was recovered once after
+  an independent read-only topic check found no original bot message; confirmed receipts and the topic history
+  now agree, while the original uncertain record remains retained privately.
+
 ### Fixed — Benka Telegram first contact (2026-09-06)
 
 - Production finalization now derives Telegram's home channel only from a single trusted personal owner;
@@ -21,6 +33,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   rehearsal against a local production-state copy; Gateway health and live manifest loading were confirmed.
 - Made Benka's miniature-schnauzer identity explicit in the source persona, plugin metadata, and generated
   Hermes soul prompt.
+
+### Changed — Public architecture guide (2026-09-06)
+
+- Expanded the README into a navigable Hermes operating guide: end-to-end text and Mermaid architecture,
+  service boundaries, Telegram surfaces, the GPT-5.6 model ladder, memory, repository map, documentation
+  index, and security model. It uses only public, sanitized facts and links to the corresponding runbooks.
 
 ### Changed — Business-facing project narrative (2026-09-06)
 

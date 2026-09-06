@@ -154,6 +154,11 @@ state, sessions, vault mounts, URL wiki/RAG и Redis. Точные имена с
 Для native send этому worker нужен отдельный настроенный Hermes home и доверенный `delivery_targets` allowlist.
 Не запускать старые entrypoint/cron bridge HTTP endpoints вместе с новым worker.
 
+`benka_integrations.delivery` запускает `hermes send` из того же virtualenv, что и worker Python, и только
+затем использует `PATH` как резерв. Перед обновлением send-capable worker проверять наличие
+`/opt/benka/.venv/bin/hermes` внутри контейнера. Receipt `uncertain` не означает подтверждённую доставку:
+сначала сверить целевую Telegram-тему, затем принять одно зафиксированное операторское решение о восстановлении.
+
 ## Расписания и очереди
 
 Закрытый reviewed-source JSON для `jobs-prepare` содержит:
