@@ -10,6 +10,7 @@
 !scripts/test-hermes.py
 !scripts/verify-hermes-contract.py
 !scripts/verify-redis-vps.py
+!scripts/lightrag-ingest.sh
 !plugins/
 !plugins/**
 !skills/

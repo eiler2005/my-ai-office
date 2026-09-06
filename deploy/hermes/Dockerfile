@@ -45,7 +45,7 @@ USER root
 WORKDIR /opt/benka
 RUN uv sync --frozen --extra test --extra hermes --no-dev
 COPY tests ./tests
-COPY scripts/test-hermes.py scripts/verify-hermes-contract.py scripts/verify-redis-vps.py ./scripts/
+COPY scripts/test-hermes.py scripts/verify-hermes-contract.py scripts/verify-redis-vps.py scripts/lightrag-ingest.sh ./scripts/
 USER 1000:1000
 ENTRYPOINT ["python", "/opt/benka/scripts/test-hermes.py"]
 

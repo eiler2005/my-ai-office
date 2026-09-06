@@ -24,7 +24,7 @@ def main():
             if not suite.is_dir():
                 failures.append(str(suite.relative_to(ROOT)) + ": missing suite")
                 continue
-            result = subprocess.run([sys.executable, "-m", "pytest", "-q", "--tb=short", str(suite)],
+            result = subprocess.run([sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider", "--tb=short", str(suite)],
                                     cwd=temporary, env=env, check=False)
             if result.returncode:
                 failures.append(str(suite.relative_to(ROOT)))
