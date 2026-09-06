@@ -7,6 +7,25 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Changed — Hermes production cutover (2026-09-06)
+
+- Activated the Hermes production stack after an owner-directed fresh cold import on VPS Hermes. The
+  verified private state contains the imported OpenClaw user data, profile routing, model providers,
+  Redis, LightRAG, OmniRoute, wiki, workers and native cron jobs.
+- Replaced the isolated candidate with one production Gateway that owns Telegram polling. Dashboard access
+  remains protected by Caddy mTLS and Hermes password authentication on the existing separate panel port.
+- Added production Compose, idempotent state preparation/finalization, profile routing, native model
+  provider configuration, scheduler-owned Redis handoff and worker runtime hardening.
+- Re-authenticated the private ChatGPT Codex route on Hermes and introduced the GPT-5.6 model ladder:
+  Luna for auxiliary tasks, Terra for normal dialogue and one bounded Sol subagent for complex work.
+  Qwen Flash and DeepSeek remain fallback-only.
+- Preserved distinct production filesystem owners during finalization: Redis AOF, OmniRoute SQLite and
+  the Caddy mTLS material are no longer covered by a broad state-directory ownership change.
+- Stopped every Docker container on the former OpenClaw VPS after production checks. Source data and
+  stopped runtime are retained for rollback; the 48-hour observation window is open.
+- Documented the executed cutover and remaining real-world acceptance checks in
+  `docs/hermes/cutover-record-2026-09-06.md`.
+
 ### Added — Hermes migration candidate (2026-09-06)
 
 - Isolated VPS dashboard on the existing Reddit Compass hostname, separate port 8451. Its Caddy uses a private certificate copy, mandatory client certificate and native Hermes password authentication; neighboring DNS/proxy/services are unchanged. Login, API and single-use WebSocket ticket checks pass.

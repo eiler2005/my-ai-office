@@ -37,7 +37,7 @@ ENV PATH="/opt/benka/.venv/bin:$PATH" \
     TZ=Europe/Moscow
 USER 1000:1000
 WORKDIR /state
-ENTRYPOINT ["python", "-m", "benka_integrations.service"]
+ENTRYPOINT ["/opt/benka/.venv/bin/python", "-m", "benka_integrations.service"]
 CMD ["standby"]
 
 FROM runtime_base AS test

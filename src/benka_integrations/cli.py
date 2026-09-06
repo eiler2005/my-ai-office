@@ -18,6 +18,10 @@ def main():
     profiles.add_argument("bindings", type=Path)
     profiles.add_argument("destination", type=Path)
     profiles.add_argument("--repo", required=True, type=Path)
+    production = sub.add_parser("production-prepare")
+    production.add_argument("source", type=Path, help="Verified restored cold snapshot root")
+    production.add_argument("destination", type=Path, help="Empty private production state root")
+    production.add_argument("--snapshot-sha256", required=True)
     cron = sub.add_parser("cron-prepare")
     cron.add_argument("hermes_home", type=Path)
     export = sub.add_parser("snapshot")
@@ -54,6 +58,9 @@ def main():
     elif args.command == "profiles-prepare":
         from .profiles import prepare
         result = prepare(json.loads(args.bindings.read_text()), args.destination, repo=args.repo)
+    elif args.command == "production-prepare":
+        from .production import prepare
+        result = prepare(args.source, args.destination, snapshot_sha256=args.snapshot_sha256)
     elif args.command == "rollback-delta":
         result = migration.rollback_delta(args.baseline_vault, args.hermes_vault, args.old_vault)
     elif args.command == "cron-prepare":

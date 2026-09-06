@@ -18,7 +18,10 @@ def main():
             time.sleep(30)
     commands = {"gateway": ["hermes", "gateway", "run"],
                 "dashboard": ["hermes", "dashboard", "--no-open", "--skip-build", "--host", "0.0.0.0", "--port", "9119"],
-                "worker": ["benka", "worker"],
+                # Legacy bridge env files may define PATH.  Invoke the
+                # packaged console entry point directly so that cannot hide
+                # the Hermes integration worker.
+                "worker": ["/opt/benka/.venv/bin/benka", "worker"],
                 "wiki": [sys.executable, "/opt/benka/artifacts/wiki-import/service.py"]}
     if action not in commands:
         raise ValueError("Unknown service")

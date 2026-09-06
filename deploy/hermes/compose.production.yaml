@@ -1,0 +1,248 @@
+name: benka-hermes
+
+# The cutover driver supplies BENKA_STATE_ROOT and image tags from its private
+# environment.  All writable paths are outside this Git checkout.
+x-runtime: &runtime
+  image: ${BENKA_RUNTIME_IMAGE:?Set in private compose.env}
+  user: "1000:1000"
+  init: true
+  restart: unless-stopped
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  pids_limit: 256
+  mem_limit: 2g
+  cpus: 2
+  tmpfs: ["/tmp:size=256m,mode=1777"]
+  stop_grace_period: 90s
+  networks: [benka]
+  logging:
+    driver: json-file
+    options: {max-size: "10m", max-file: "3"}
+
+services:
+  redis:
+    image: redis:7.4@sha256:71da9275c5f3fcb97d0fa0c8c5b36cc995327265420f17a04bfd544f458059f7
+    user: "999:999"
+    command: [redis-server, --appendonly, "yes", --appendfsync, everysec]
+    volumes: ["${BENKA_STATE_ROOT:?}/data/redis:/data"]
+    networks: [benka]
+    restart: unless-stopped
+    mem_limit: 768m
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+
+  omniroute:
+    image: ${BENKA_OMNIROUTE_IMAGE:?Set in private compose.env}
+    env_file: ["${BENKA_STATE_ROOT:?}/private/bridges/omniroute.env"]
+    environment:
+      DATA_DIR: /app/data
+      API_HOST: 0.0.0.0
+    volumes: ["${BENKA_STATE_ROOT:?}/data/omniroute:/app/data"]
+    networks: [benka]
+    restart: unless-stopped
+    mem_limit: 1g
+    cpus: 1
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+
+  lightrag:
+    image: ${BENKA_LIGHTRAG_IMAGE:?Set in private compose.env}
+    env_file: ["${BENKA_STATE_ROOT:?}/private/config/lightrag/.env"]
+    environment:
+      HOST: 0.0.0.0
+      PORT: 9621
+      WORKING_DIR: /app/data
+      INPUT_DIR: /app/data/inputs
+    volumes:
+      - "${BENKA_STATE_ROOT:?}/private/config/lightrag/config.ini:/app/config.ini:ro"
+      - "${BENKA_STATE_ROOT:?}/data/lightrag/data:/app/data"
+      - "${BENKA_STATE_ROOT:?}/data/vault/personal:/app/data/inputs/obsidian:ro"
+    networks: [benka]
+    restart: unless-stopped
+    mem_limit: 4g
+    cpus: 2
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+
+  wiki:
+    <<: *runtime
+    command: [wiki]
+    env_file: ["${BENKA_STATE_ROOT:?}/private/bridges/wiki.env"]
+    environment:
+      WIKI_IMPORT_OBSIDIAN_ROOT: /vault
+      WIKI_IMPORT_HOST_OPT_ROOT: /host-opt
+      WIKI_IMPORT_STATE_ROOT: /state/wiki
+      WIKI_IMPORT_LIGHTRAG_URL: http://lightrag:9621
+    volumes:
+      - "${BENKA_STATE_ROOT:?}/private/manifests/wiki.json:/run/benka/manifest.json:ro"
+      - "${BENKA_STATE_ROOT:?}/private/activation:/run/benka/activation:ro"
+      - "${BENKA_STATE_ROOT:?}/data/wiki/state:/state/wiki"
+      - "${BENKA_STATE_ROOT:?}/data/vault/personal:/vault"
+      - "${BENKA_STATE_ROOT:?}/data/lightrag/data:/host-opt/lightrag:ro"
+    depends_on: [lightrag]
+
+  gateway:
+    <<: *runtime
+    command: [gateway]
+    volumes:
+      - "${BENKA_STATE_ROOT:?}/private/manifests/gateway.json:/run/benka/manifest.json:ro"
+      - "${BENKA_STATE_ROOT:?}/private/manifests/schedules.json:/run/benka/schedules.json:ro"
+      - "${BENKA_STATE_ROOT:?}/private/activation:/run/benka/activation:ro"
+      - "${BENKA_STATE_ROOT:?}/private/cron.json:/run/benka/cron.json:ro"
+      - "${BENKA_STATE_ROOT:?}/runtime/gateway:/state"
+      - "${BENKA_STATE_ROOT:?}/runtime/gateway/user-local:/home/benka/.local"
+      - "${BENKA_STATE_ROOT:?}/data/vault:/vault:ro"
+    depends_on: [redis, wiki]
+    healthcheck:
+      test: [CMD, hermes, status]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  dashboard:
+    <<: *runtime
+    command: [dashboard]
+    volumes:
+      - "${BENKA_STATE_ROOT:?}/private/manifests/dashboard.json:/run/benka/manifest.json:ro"
+      - "${BENKA_STATE_ROOT:?}/private/activation:/run/benka/activation:ro"
+      - "${BENKA_STATE_ROOT:?}/runtime/gateway:/state"
+      - "${BENKA_STATE_ROOT:?}/data/vault:/vault:ro"
+    expose: ["9119"]
+    depends_on: [gateway]
+
+  caddy:
+    image: caddy:2.10@sha256:c3d7ee5d2b11f9dc54f947f68a734c84e9c9666c92c88a7f30b9cba5da182adb
+    ports: ["8451:8443"]
+    environment:
+      BENKA_PANEL_HOST: ${BENKA_PANEL_HOST:?Set in private compose.env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - "${BENKA_STATE_ROOT:?}/private/panel/tls:/run/tls:ro"
+    networks: [benka, ingress]
+    restart: unless-stopped
+    read_only: true
+    tmpfs: ["/data:size=16m", "/config:size=16m", "/tmp:size=16m"]
+    mem_limit: 128m
+    cap_drop: [ALL]
+    cap_add: [NET_BIND_SERVICE]
+    security_opt: [no-new-privileges:true]
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+
+  worker-email-personal:
+    <<: *runtime
+    command: [worker]
+    env_file: ["${BENKA_STATE_ROOT:?}/private/bridges/agentmail-personal.env"]
+    environment: {BENKA_MODEL_PROVIDERS_FILE: /run/benka/model-providers.json}
+    volumes:
+      - "${BENKA_STATE_ROOT:?}/private/manifests/email-personal.json:/run/benka/manifest.json:ro"
+      - "${BENKA_STATE_ROOT:?}/private/activation:/run/benka/activation:ro"
+      - "${BENKA_STATE_ROOT:?}/private/redis-url:/run/benka/redis-url:ro"
+      - "${BENKA_STATE_ROOT:?}/private/model-providers.json:/run/benka/model-providers.json:ro"
+      - "${BENKA_STATE_ROOT:?}/private/config/agentmail/personal.json:/app/config.json:ro"
+      - "${BENKA_STATE_ROOT:?}/data/agentmail/personal/state:/app/state"
+      - "${BENKA_STATE_ROOT:?}/runtime/gateway/hermes:/state/hermes:ro"
+      - "${BENKA_STATE_ROOT:?}/data/worker/email-personal:/state"
+    depends_on: [redis, gateway]
+
+  worker-email-work:
+    <<: *runtime
+    command: [worker]
+    env_file: ["${BENKA_STATE_ROOT:?}/private/bridges/agentmail-work.env"]
+    environment: {BENKA_MODEL_PROVIDERS_FILE: /run/benka/model-providers.json}
+    volumes:
+      - "${BENKA_STATE_ROOT:?}/private/manifests/email-work.json:/run/benka/manifest.json:ro"
+      - "${BENKA_STATE_ROOT:?}/private/activation:/run/benka/activation:ro"
+      - "${BENKA_STATE_ROOT:?}/private/redis-url:/run/benka/redis-url:ro"
+      - "${BENKA_STATE_ROOT:?}/private/model-providers.json:/run/benka/model-providers.json:ro"
+      - "${BENKA_STATE_ROOT:?}/private/config/agentmail/work.json:/app/config.json:ro"
+      - "${BENKA_STATE_ROOT:?}/data/agentmail/work/state:/app/state"
+      - "${BENKA_STATE_ROOT:?}/runtime/gateway/hermes:/state/hermes:ro"
+      - "${BENKA_STATE_ROOT:?}/data/worker/email-work:/state"
+    depends_on: [redis, gateway]
+
+  worker-telegram:
+    <<: *runtime
+    command: [worker]
+    env_file: ["${BENKA_STATE_ROOT:?}/private/bridges/telethon.env"]
+    environment: {BENKA_MODEL_PROVIDERS_FILE: /run/benka/model-providers.json}
+    volumes:
+      - "${BENKA_STATE_ROOT:?}/private/manifests/telegram.json:/run/benka/manifest.json:ro"
+      - "${BENKA_STATE_ROOT:?}/private/activation:/run/benka/activation:ro"
+      - "${BENKA_STATE_ROOT:?}/private/redis-url:/run/benka/redis-url:ro"
+      - "${BENKA_STATE_ROOT:?}/private/model-providers.json:/run/benka/model-providers.json:ro"
+      - "${BENKA_STATE_ROOT:?}/private/config/telethon/config.json:/app/config.json:ro"
+      - "${BENKA_STATE_ROOT:?}/data/telethon/state:/app/state"
+      - "${BENKA_STATE_ROOT:?}/data/telethon/sessions:/app/sessions"
+      - "${BENKA_STATE_ROOT:?}/data/vault/personal:/app/obsidian"
+      - "${BENKA_STATE_ROOT:?}/runtime/gateway/hermes:/state/hermes:ro"
+      - "${BENKA_STATE_ROOT:?}/data/worker/telegram:/state"
+    depends_on: [redis, gateway, lightrag]
+
+  worker-signals:
+    <<: *runtime
+    command: [worker]
+    env_file: ["${BENKA_STATE_ROOT:?}/private/bridges/signals.env"]
+    environment: {BENKA_MODEL_PROVIDERS_FILE: /run/benka/model-providers.json}
+    volumes:
+      - "${BENKA_STATE_ROOT:?}/private/manifests/signals.json:/run/benka/manifest.json:ro"
+      - "${BENKA_STATE_ROOT:?}/private/activation:/run/benka/activation:ro"
+      - "${BENKA_STATE_ROOT:?}/private/redis-url:/run/benka/redis-url:ro"
+      - "${BENKA_STATE_ROOT:?}/private/model-providers.json:/run/benka/model-providers.json:ro"
+      - "${BENKA_STATE_ROOT:?}/private/config/signals/config.json:/app/config.json:ro"
+      - "${BENKA_STATE_ROOT:?}/data/signals/state:/app/state"
+      - "${BENKA_STATE_ROOT:?}/data/signals/sessions:/app/sessions"
+      - "${BENKA_STATE_ROOT:?}/data/signals/rules:/app/rules:ro"
+      - "${BENKA_STATE_ROOT:?}/data/vault/personal:/app/obsidian"
+      - "${BENKA_STATE_ROOT:?}/runtime/gateway/hermes:/state/hermes:ro"
+      - "${BENKA_STATE_ROOT:?}/data/worker/signals:/state"
+    depends_on: [redis, gateway, omniroute]
+
+  worker-last30days:
+    <<: *runtime
+    command: [worker]
+    env_file: ["${BENKA_STATE_ROOT:?}/private/bridges/signals.env"]
+    environment: {BENKA_MODEL_PROVIDERS_FILE: /run/benka/model-providers.json}
+    volumes:
+      - "${BENKA_STATE_ROOT:?}/private/manifests/last30days.json:/run/benka/manifest.json:ro"
+      - "${BENKA_STATE_ROOT:?}/private/activation:/run/benka/activation:ro"
+      - "${BENKA_STATE_ROOT:?}/private/redis-url:/run/benka/redis-url:ro"
+      - "${BENKA_STATE_ROOT:?}/private/model-providers.json:/run/benka/model-providers.json:ro"
+      - "${BENKA_STATE_ROOT:?}/private/config/signals/config.json:/app/config.json:ro"
+      - "${BENKA_STATE_ROOT:?}/data/signals/state:/app/state"
+      - "${BENKA_STATE_ROOT:?}/data/signals/sessions:/app/sessions"
+      - "${BENKA_STATE_ROOT:?}/data/signals/rules:/app/rules:ro"
+      - "${BENKA_STATE_ROOT:?}/data/vault/personal:/app/obsidian"
+      - "${BENKA_STATE_ROOT:?}/runtime/gateway/hermes:/state/hermes:ro"
+      - "${BENKA_STATE_ROOT:?}/data/worker/last30days:/state"
+    depends_on: [redis, gateway, omniroute]
+
+  worker-maintenance:
+    <<: *runtime
+    command: [worker]
+    env_file: ["${BENKA_STATE_ROOT:?}/private/bridges/maintenance.env"]
+    volumes:
+      - "${BENKA_STATE_ROOT:?}/private/manifests/maintenance.json:/run/benka/manifest.json:ro"
+      - "${BENKA_STATE_ROOT:?}/private/activation:/run/benka/activation:ro"
+      - "${BENKA_STATE_ROOT:?}/private/redis-url:/run/benka/redis-url:ro"
+      - "${BENKA_STATE_ROOT:?}/data/vault/personal:/vault"
+      - "${BENKA_STATE_ROOT:?}/data/worker/maintenance:/state"
+    depends_on: [redis, wiki, lightrag]
+
+networks:
+  # No service publishes an application port on this network.  It remains an
+  # ordinary bridge network because Telegram, AgentMail and model providers
+  # require outbound connections.
+  benka: {}
+  ingress: {}

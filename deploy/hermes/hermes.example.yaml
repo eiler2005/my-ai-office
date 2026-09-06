@@ -5,7 +5,7 @@ platform_toolsets:
   cli: [benka]
 agent:
   max_turns: 12
-  disabled_toolsets: [terminal, file, browser, code_execution, delegation, cronjob, kanban]
+  disabled_toolsets: [terminal, file, browser, code_execution, cronjob, kanban]
 database:
   journal_mode: delete
 memory:

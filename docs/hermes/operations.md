@@ -1,4 +1,10 @@
-# Подготовка и эксплуатация Hermes-кандидата
+# Эксплуатация Hermes
+
+## Текущий production status
+
+С 2026-09-06 Бенька работает на VPS Hermes. Актуальная запись переключения и проверки находится в
+[cutover-record-2026-09-06.md](cutover-record-2026-09-06.md). Старые разделы о candidate/rehearsal ниже
+сохранены как процедура повторной репетиции; они не являются инструкцией для остановки работающего production.
 
 Текущий статус и ограничения — в [протоколе](acceptance.md). Эти команды не являются разрешением переключить production.
 
@@ -14,6 +20,11 @@ Dockerfile собирает Hermes dashboard отдельной Node-стади�
 Runtime работает от UID/GID 1000, с read-only root, ограничением памяти/CPU/PID и без Docker socket.
 Логи контейнеров ротируются. Для SQLite задан `journal_mode: delete`; включать WAL можно только после проверки
 исправленной версии SQLite из upstream. Не переносить работающую SQLite как один файл без WAL/SHM.
+
+Не применять `chown -R` ко всему production state: Redis хранит AOF от UID/GID 999, OmniRoute пишет SQLite
+от root, а Caddy с `cap_drop: ALL` читает mTLS key через группу root. После запуска финализатора владельца
+можно вернуть только для `state/runtime`, `private/activation`, `private/manifests` и `private/bridges` —
+это UID/GID 1000. Владелец Redis, OmniRoute и `private/panel/tls` при этом не меняется.
 
 Compose по умолчанию запускает только offline standby. В `rehearsal` находятся шаблоны Gateway, dashboard,
 одного worker, wiki, Redis и Caddy. Это шаблон одного изолированного контура; перед полной репетицией необходимо
@@ -71,13 +82,28 @@ Receipt — операционная блокировка, не криптогр
 Один root Gateway владеет polling и маршрутизирует сообщения в domain profiles; unmatched route не получает инструментов.
 Проверить native profile routing, доступ постороннего пользователя и отсутствие чужих файлов/памяти в собранном контексте.
 Пустые списки admin IDs и отключённые опасные toolsets сохранять до отдельной проверки политик Hermes.
-Не выдавать terminal/file/browser/delegation/cronjob/kanban toolsets пользовательским сессиям.
+Не выдавать terminal/file/browser/cronjob/kanban toolsets пользовательским сессиям. `delegate_task` разрешён
+только для одного изолированного Sol-subagent без терминала, файлов, браузера, памяти или повторной
+делегации; он нужен для сложных многошаговых задач.
 
 Разместить созданные `benka-manifests/*.json` в read-only `/run/benka/profiles/`, а credential files —
 в `/run/benka/profile-secrets/<domain>/`. Config содержит пути; значения не разделяются через global env между multiplex profiles.
 Для панели выбрать отдельный scoped `HERMES_HOME` и разрешённый профиль; не открывать общий административный профиль семье.
 
 ## Модели и интеграции
+
+Интерактивная лестница использует отдельный ChatGPT Codex OAuth в закрытом Hermes auth store:
+
+| Уровень | Модель и назначение |
+|---|---|
+| Вспомогательные операции | `gpt-5.6-luna`, minimal/low reasoning: заголовки, compression и background review |
+| Обычный диалог | `gpt-5.6-terra`, medium reasoning |
+| Сложная многошаговая задача | Один `delegate_task` на `gpt-5.6-sol`, high reasoning, затем Terra проверяет и объединяет результат |
+| Отказ OpenAI маршрута | `qwen3.7-flash`, затем `deepseek-v4-flash` как аварийные fallback-провайдеры |
+
+Переход в Sol вызывается только для исследования, проектирования или проверки с несколькими шагами. Простые
+вопросы, статусы и короткие правки не создают subagent. Наличие Qwen в цепочке означает только отказоустойчивость,
+а не выбор основной модели.
 
 `BENKA_MODEL_PROVIDERS_FILE` — путь к приватному JSON-массиву вида `[{"model": "...", "provider": "...",
 "base_url": "...", "api_key": "..."}]`. Максимум четыре маршрута. Штатный OAuth настраивается средствами Hermes;

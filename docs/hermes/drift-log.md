@@ -11,6 +11,7 @@ OpenClaw остаётся production на протяжении подготов�
 | D003 / 2026-09-06 | Разделены config и workspace; на source замечен дополнительный кандидат OpenClaw вне Compose | Зафиксировать только фактический production baseline; кандидата не принимать за работающую версию | Inventory повторно перед cutover | OPEN |
 | D004 / 2026-09-06 | Новый private remote my-ai-office; проверки по указанию владельца только на VPS | Не создавать GitHub Actions / автодеплой | Отсутствие workflow; VPS protocol | Применено |
 | D005 / 2026-09-06 | Денис выбрал домен как у Reddit Compass или рядом | Тот же RC_PUBLIC_HOST, отдельный порт 8451, собственный Caddy; без изменения соседнего проекта | mTLS, login, WebSocket и отказ неавторизованного доступа | PASS на изолированной панели |
+| D006 / 2026-09-06 | Денис дал отдельную команду на production cutover и отменил требование хранить snapshot на Mac | Свежий cold snapshot создан и проверен непосредственно на VPS Hermes; source Docker-сервисы остановлены после запуска Hermes | Gateway, модель, Redis, wiki, LightRAG, panel mTLS и native cron smoke | ACTIVE_ON_HERMES; 48h observation OPEN |
 
 Добавлять строку при каждом изменении OpenClaw. Для ротаций указывать только имя секрета/назначение и дату;
 значение переносить через закрытое хранилище, затем проверять доступ на тестовом контуре допустимым способом.
@@ -23,8 +24,8 @@ OpenClaw остаётся production на протяжении подготов�
 |---|---|
 | Исходный Git baseline | `1d7ffedd7a6fcb6ef10dba5d7ed52e48417f2279` |
 | Hermes upstream | `01ae7a5668ce0fa2efca524a4567cacdd0786c95` |
-| READY_NOT_ACTIVE объявлен | Нет |
-| Начало примерно двух недель ожидания | Ещё не зафиксировано |
-| Команда Дениса на production activation | Не получена |
-| Финальный snapshot | Не создан |
-| Начало 48 часов наблюдения | Не наступило |
+| READY_NOT_ACTIVE объявлен | Пропущен отдельной командой production cutover |
+| Начало примерно двух недель ожидания | Завершено отдельной командой владельца |
+| Команда Дениса на production activation | Получена 2026-09-06 |
+| Финальный snapshot | Создан и проверен на VPS Hermes; private state |
+| Начало 48 часов наблюдения | 2026-09-06 |

@@ -63,7 +63,9 @@ def prepare(bindings, destination: Path, *, repo: Path, runtime_home="/state/her
                               "group_allow_admin_from": [str(x) for x in spec.get("admins", [])],
                               "user_allowed_commands": ["help", "new", "status"],
                               "group_user_allowed_commands": ["help", "new", "status"]}
-        config["plugins"]["entries"]["benka"]["settings"]["manifest_path"] = f"/run/benka/profiles/{domain}.json"
+        config["plugins"]["entries"]["benka"]["settings"]["manifest_path"] = (
+            f"{runtime_home}/profiles/{domain}/benka-manifest.json"
+        )
         (path / "config.yaml").write_text(yaml.safe_dump(config, allow_unicode=True))
         shutil.copytree(repo / "plugins/benka", path / "plugins/benka")
         for skill in ("benka-knowledge", "benka-scenarios"):
@@ -75,9 +77,7 @@ def prepare(bindings, destination: Path, *, repo: Path, runtime_home="/state/her
                     "redis_file": f"/run/benka/profile-secrets/{domain}/redis-url",
                     "wiki_token_file": f"/run/benka/profile-secrets/{domain}/wiki-token",
                     "rag_token_file": f"/run/benka/profile-secrets/{domain}/rag-token"}
-        manifests = destination / "benka-manifests"
-        private_directory(manifests)
-        (manifests / f"{domain}.json").write_text(json.dumps(manifest, indent=2))
+        (path / "benka-manifest.json").write_text(json.dumps(manifest, indent=2))
     default = copy.deepcopy(base)
     default["toolsets"] = []
     default["platform_toolsets"] = {"telegram": [], "cli": []}
