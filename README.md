@@ -37,7 +37,7 @@ Benka runs on [Hermes Agent](https://github.com/NousResearch/hermes-agent). The 
 | **Background workers** | 6, each with its own manifest, cursor, consumer group, and delivery route |
 | **Sources** | 2 mailboxes · ~150–200 Telegram channels · 7 research platforms |
 | **Surfaces** | 12 purpose-specific Telegram destinations, plus CLI and a dashboard |
-| **Verification** | 209 recorded checks on the VPS · 22 test modules |
+| **Verification** | 209 checks recorded at cutover on the VPS · 21 test modules |
 | **Decisions on record** | [12 ADRs](docs/adr/) with alternatives and costs |
 
 <picture>
@@ -459,7 +459,7 @@ Model selection is configured per workload. Interactive and auxiliary tasks have
 │   ├── hermes/                    Migration, operations, acceptance, cutover, panel
 │   ├── assets/                    Generated light/dark diagram pairs
 │   └── archive/                   Earlier stages, clearly marked historical
-├── tests/ · artifacts/*/tests/   22 test modules
+├── tests/ · artifacts/*/tests/   21 test modules
 └── vendor/hermes-agent/          Pinned upstream runtime submodule
 ```
 
@@ -491,7 +491,7 @@ deliberately excluded.
 | **Evaluating this as engineering work** | [Engineering case study](docs/engineering-case-study.md) → [Decision records](docs/adr/) → [Architecture](docs/architecture.md) |
 | **Trying to understand the system** | [Architecture](docs/architecture.md) → [Workflows](docs/workflows.md) → [Knowledge](docs/knowledge.md) |
 | **Going to operate it** | [Operations](docs/hermes/operations.md) → [Reliability](docs/reliability.md) → [Security](docs/security.md) → [Panel](docs/hermes/panel.md) |
-| **Looking something up** | [Glossary](docs/reference/glossary.md) · [Services](docs/reference/services.md) · [Schedules](docs/reference/schedules.md) |
+| **Looking something up** | [Glossary](docs/reference/glossary.md) · [Services](docs/reference/services.md) · [Schedules](docs/reference/schedules.md) · [Versions](docs/reference/versions.md) |
 | **Here for the migration story** | [Migration plan](docs/hermes/migration-plan.md) → [Acceptance record](docs/hermes/acceptance.md) → [Cutover record](docs/hermes/cutover-record-2026-09-06.md) → [Archive](docs/archive/) |
 
 Two conventions worth knowing before you read further. **Claims are bounded** — where a check has not

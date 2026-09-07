@@ -29,9 +29,13 @@ docker buildx inspect benka-migration >/dev/null 2>&1 || \
 The builder is used only for candidate images. Production Compose neither switches to it nor grants
 the agent's containers access to the Docker socket.
 
-Hermes is pinned to `01ae7a5668ce0fa2efca524a4567cacdd0786c95`; Last30Days is pinned to
-`01812ec1851e5c3d92a9049a41b7da4adbfbcb5d` with the existing Reddit and GitHub adaptations. Updating
-any pin requires re-running the native-contract checks and the regressions.
+Hermes is pinned to `01ae7a5668ce0fa2efca524a4567cacdd0786c95` (package version `0.21.0`, a `main`
+commit from 2026-09-06); Last30Days is pinned to `01812ec1851e5c3d92a9049a41b7da4adbfbcb5d` with the
+existing Reddit and GitHub adaptations. Updating any pin requires re-running the native-contract
+checks and the regressions.
+
+[Pinned versions](../reference/versions.md) records every pin, when currency was last checked, and
+the procedure for moving one.
 
 The Dockerfile builds the Hermes dashboard in a separate Node stage and installs the Python API from
 the submodule. The runtime runs as UID/GID 1000, with a read-only root, memory/CPU/PID limits, and

@@ -9,7 +9,7 @@ Start from the row that matches why you are here.
 | **Evaluating this as engineering work** | [Engineering case study](engineering-case-study.md) → [Decision records](adr/) → [Architecture](architecture.md) |
 | **Trying to understand the system** | [Architecture](architecture.md) → [Workflows](workflows.md) → [Knowledge](knowledge.md) |
 | **Going to operate it** | [Operations](hermes/operations.md) → [Reliability](reliability.md) → [Security](security.md) → [Panel](hermes/panel.md) |
-| **Looking something up** | [Glossary](reference/glossary.md) · [Services](reference/services.md) · [Schedules](reference/schedules.md) |
+| **Looking something up** | [Glossary](reference/glossary.md) · [Services](reference/services.md) · [Schedules](reference/schedules.md) · [Versions](reference/versions.md) |
 | **Here for the migration story** | [Migration plan](hermes/migration-plan.md) → [Acceptance](hermes/acceptance.md) → [Cutover record](hermes/cutover-record-2026-09-06.md) → [Archive](archive/) |
 
 ## Current documentation
@@ -46,6 +46,7 @@ Start from the row that matches why you are here.
 | [Glossary](reference/glossary.md) | Terms that mean something specific here. |
 | [Services](reference/services.md) | All 13 containers, their roles, and their boundaries. |
 | [Schedules](reference/schedules.md) | Every recurring job, and how a schedule becomes a paused cron job. |
+| [Versions](reference/versions.md) | What every component is pinned to, whether it is current, and how to move a pin. |
 
 ### Migration record
 

@@ -59,7 +59,7 @@ Hermes ([ADR-0009](0009-migrate-runtime-to-hermes.md)) — and the business algo
 essentially intact. The [drift log](../hermes/drift-log.md) tracks behavioural differences, and it
 is short.
 
-Domain logic is reviewable and testable as ordinary code: 22 test modules, 209 checks in the
+Domain logic is reviewable and testable as ordinary code: 21 test modules, 209 checks in the
 verification run.
 
 Model spend follows from structure rather than discipline: the signals path runs deterministic

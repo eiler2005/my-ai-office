@@ -109,6 +109,9 @@ The system previously ran on OpenClaw. That runtime is **retired**. Its document
 - Hermes Agent is a Git submodule pinned to an exact commit; every other dependency is pinned in
   `pyproject.toml` with `uv.lock` committed. See
   `docs/adr/0012-vendor-hermes-as-a-pinned-submodule.md`.
+- **`docs/reference/versions.md` is the single place recording what each pin is, whether it is
+  current, and how to move one.** Update it — including the Currency date — whenever a pin is
+  checked or changed.
 - **Moving any pin requires re-running the native-contract checks and the regressions.** A pin bump
   is a change to be verified, not a chore.
 - A healthy container, a channel probe, or an outbound-only Telegram delivery does not prove

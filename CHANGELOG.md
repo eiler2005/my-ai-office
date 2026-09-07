@@ -5,6 +5,37 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2026-09-07]
+
+### Fixed
+
+- **Benka tools reported `FileNotFoundError` with no path.** `wiki_ingest`, `wiki_lint`, and
+  `benka_status` all failed opaquely in the `personal` domain because the plugin handler reduced
+  every exception to `type(exc).__name__`, discarding the message and the path. The missing mount
+  could not be identified from the chat surface. `config.py` now raises a typed `DeploymentError`
+  naming the file and a remedy for a missing, unreadable, malformed, or misdirected manifest, a
+  missing credential file or environment variable, and a missing activation receipt; `plugin.py`
+  surfaces those and authored `PermissionError`/`ValueError` messages, while third-party exception
+  text stays reduced to its type because it can carry unreviewed request context. The `ideas`
+  capture path shared the fault, since it shares `wiki_ingest`, and shares the fix.
+  `tests/hermes/test_tool_errors.py` covers all of it, including that a readable credential value
+  never reaches a failure report.
+
+### Added
+
+- **`docs/reference/versions.md`** — the single place recording what each component is pinned to,
+  whether it is current, and how to move a pin. The Hermes commit SHA appeared in two documents but
+  its human-readable version did not appear anywhere, so currency could not be assessed. Recorded:
+  Hermes `01ae7a5` (`0.21.0`, a `main` commit of 2026-09-06, ahead of the latest upstream release
+  `v2026.8.31`), the Last30Days skill pin, Python, dependency and Actions pinning, and the embedding
+  dimension.
+
+### Changed
+
+- Documented test count corrected to 21 modules (it said 22, which was never right) and the local
+  suite total to 221 passing. The 209 in the acceptance record stays as written — it records the
+  count at the 2026-09-06 cutover, not a target.
+
 ## [Unreleased]
 
 ### Fixed — worker delivery and Signals schedule discovery (2026-09-06)
