@@ -18,13 +18,13 @@
 
 # My AI Office
 
-**A self-hosted AI operating layer for a busy professional: it turns scattered messages, mail, research, and ideas into a clear view of what matters and what to do next.**
+**A self-hosted AI operating layer for a busy professional. It turns mail, Telegram, research, and saved knowledge into source-linked briefings, decisions, and next actions.**
 
-Designed and built by **[Denis Ermilov](https://github.com/eiler2005)**. My AI Office connects agent orchestration, asynchronous workflows, knowledge engineering, and production operations in one working system. Its everyday surface is Telegram, with CLI and an authenticated web dashboard for direct work.
+Designed and built by **[Denis Ermilov](https://github.com/eiler2005)**. My AI Office connects agent orchestration, asynchronous workflows, knowledge engineering, and production operations in one working system. Telegram is its everyday surface; the Hermes CLI and authenticated web dashboard support direct operator work.
 
 ## Meet Benka 🐾
 
-**Benka is a miniature schnauzer — Denis's dog-shaped AI assistant and business co-pilot.** He is concise, sharp, warm when it helps, and deliberately unsentimental about weak ideas. His job is not to produce more chat. His job is to give Denis the right context, surface a decision, preserve the useful result, and help move the work forward.
+**Benka is a black miniature schnauzer — Denis's dog and the office's AI co-pilot.** He is concise, sharp, warm when it helps, and deliberately unsentimental about weak ideas. His job is to give Denis the right context, surface a decision, preserve the useful result, and help move the work forward.
 
 Benka runs on [Hermes Agent](https://github.com/NousResearch/hermes-agent). The surrounding office is designed by Denis: the workflows, integrations, knowledge model, recovery logic, and deployment boundaries are implemented here.
 
