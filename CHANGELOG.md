@@ -137,6 +137,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   and maps it through a `surfaces` setting to `knowledgebase`, `ideas` or `conversation`. Inert
   without a map, so an unconfigured deployment behaves exactly as before.
 
+  The production map is configured: twelve threads, with `conversation` on the operational and
+  outbound-feed topics so a reply in a digest is not filed away. The ids were recovered from the
+  predecessor's `telegram-topic-map.json` in the cutover snapshot, after the Telethon user session
+  was rejected as too risky and the Bot API refused `GetForumTopics` for bots.
+
 ### Fixed
 
 - **Documented wiki maintenance times were wrong.** Daily runs at `15 3 * * *` and weekly at

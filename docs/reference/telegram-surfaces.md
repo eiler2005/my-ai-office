@@ -129,8 +129,13 @@ plugins:
 ```
 
 Recognised surfaces are `knowledgebase`, `ideas` and `conversation` — the last one turns capture off
-for a topic that is for talking. A thread that is not in the map, or a deployment with no map at all,
-gets the base rules and behaves exactly as it did before, so the mechanism is inert until configured.
+for a topic that is for talking or that only receives an outbound feed. A thread that is not in the
+map, or a deployment with no map at all, gets the base rules and behaves exactly as it did before, so
+the mechanism is inert until configured.
+
+The predecessor kept the same mapping in `telegram-topic-map.json`, which is preserved in the cutover
+snapshot. That file is where the production thread ids came from; it is deployment-private and its
+values do not belong in this repository.
 
 Because the map is configuration rather than code, adding a topic needs a Gateway restart and a new
 session — **not** an image rebuild.

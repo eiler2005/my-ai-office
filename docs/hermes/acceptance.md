@@ -406,9 +406,32 @@ Deployed 2026-09-07 on candidate tree `c6798dee4bdb09ed40fb2f7d18c275ccb08da78e`
 map configured, it renders exactly the previous text — the mechanism is inert until someone
 configures it.
 
-**Still open.** The map itself is deployment configuration and has not been written. Until it is,
-Ideas still behaves as Knowledgebase. Adding it needs the thread ids and a Gateway restart plus a new
-session, but **no image rebuild**, because the map is config rather than code.
+### The map, and where the ids came from
+
+The thread ids were recovered from the predecessor's own `telegram-topic-map.json`, preserved in the
+cutover snapshot — the authoritative source, since it is the file the pin tooling used. Two routes
+were tried first and rejected: the Telethon user session, because a second connection with the same
+auth key risks invalidating the digest worker's session, and the Bot API, which refuses
+`GetForumTopics` for bots (`BotMethodInvalidError`).
+
+Twelve threads are mapped: `knowledgebase` and `ideas` for the two capture surfaces, and
+`conversation` for football, approvals, tasks, system, rag-log and the five outbound feed topics —
+so a reply in a digest topic is not silently filed away.
+
+Applied to the `personal` profile config and loaded by a Gateway restart. Verified against the live
+configuration inside the running container:
+
+```text
+232   Knowledgebase  -> knowledgebase capture
+639   Ideas          -> ideas capture
+11    Football       -> conversation, capture OFF
+123   System         -> conversation, capture OFF
+999   unmapped       -> base rules only
+```
+
+**Still open.** Sessions freeze their prompt at creation, so each surface needs `/new` before the
+change takes effect there. Ideas in particular has not been exercised end to end — the first
+forwarded item after `/new` should produce a light-curation capture rather than a knowledgebase one.
 
 ## Verified on the Hermes VPS
 
