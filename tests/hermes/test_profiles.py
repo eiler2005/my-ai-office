@@ -23,7 +23,13 @@ def test_profile_generation_keeps_shared_polling_disabled(tmp_path):
     for domain in result["profiles"]:
         profile = yaml.safe_load((destination / "profiles" / domain / "config.yaml").read_text())
         assert profile["telegram"]["enabled"] is False
-        assert profile["plugins"]["entries"]["benka"]["settings"]["manifest_path"].endswith(domain + ".json")
+        # Regression, 2026-09-07: this asserted only the filename, so a
+        # manifest_path pointing into the profile's Hermes home passed review and
+        # shipped. Every Benka tool then failed with FileNotFoundError. Assert the
+        # full path, and that it names a file the generator actually wrote.
+        configured = profile["plugins"]["entries"]["benka"]["settings"]["manifest_path"]
+        assert configured == f"/run/benka/profiles/{domain}.json"
+        assert (destination / "benka-manifests" / Path(configured).name).is_file()
         manifest = json.loads((destination / "benka-manifests" / (domain + ".json")).read_text())
         assert manifest["vault_root"] == "/vault/" + domain
         assert manifest["mode"] == "standby" and manifest["enabled_operations"] == []

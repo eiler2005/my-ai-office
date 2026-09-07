@@ -74,6 +74,54 @@ On the VPS only `worker-signals` was updated; the Gateway and the neighbouring s
 recreated. The new runtime and test image passed **209** isolated checks. After recovery the Gateway
 remained `healthy`, and all active Signals sources are healthy with no stale or error state.
 
+## Repair of the profile manifest path
+
+**2026-09-07.** Every Benka tool failed with `FileNotFoundError` in every domain. The owner reported
+it from the Knowledgebase surface after a save was refused.
+
+The generated profile configs set `manifest_path` to `/state/hermes/profiles/<domain>.json`. That
+path is inside the profile's Hermes home, where `<domain>` is a *directory*; the sibling
+`<domain>.json` never existed. Compose mounts the manifests read-only at `/run/benka/profiles/`, and
+[operations](operations.md#profiles-and-telegram) has always required `manifest_path` to point
+there. `load_manifest` therefore raised on every tool call, including `benka_status`, which does
+nothing else — that is what localised the fault.
+
+Reproduced read-only inside the running Gateway before anything was changed:
+
+```text
+FileNotFoundError: [Errno 2] No such file or directory:
+'/state/hermes/profiles/personal.json'
+```
+
+The root cause is in the generator, not the deployment: `profiles.py` composed the path from
+`runtime_home` rather than the mount. It is fixed at the source, with the mount as a named constant,
+and the regression test now asserts the full path and that the generator actually wrote a file
+there. The previous test asserted only that the value ended with `<domain>.json`, which the wrong
+path also satisfied.
+
+### Deployment
+
+The four live profile configs were corrected in place after being backed up. Only the Gateway and
+the dashboard were restarted, with `--no-deps`; the dashboard shares the Gateway's PID and network
+namespaces, so it follows the Gateway. The runtime image was not rebuilt.
+
+| Check after the change | Result |
+|---|---|
+| Gateway health | `healthy` after 50 s |
+| `benka_status`, personal domain | Returns the production personal manifest |
+| `wiki_lint` | Reaches the wiki service, 1,485 pages scanned — manifest, activation receipt and credential file all resolve |
+| `lightrag_query` | Returns a response with references |
+| Other Benka containers | Eleven untouched, original uptimes |
+| Neighbouring projects | All ten untouched |
+
+**Still open.** No Telegram save was executed as part of this repair: writing test content into the
+owner's knowledge base is a side effect that belongs to the owner, not the operator. The external
+smoke test — an ordinary save from the Knowledgebase surface — remains part of the observation
+window.
+
+The improved tool error reporting committed alongside this fix is **not yet live**: it lives in the
+runtime image and ships with the next image build.
+
 ## Verified on the Hermes VPS
 
 The server-side run executed in containers with a read-only root, no production secrets, and a

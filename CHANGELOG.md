@@ -9,10 +9,21 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
-- **Benka tools reported `FileNotFoundError` with no path.** `wiki_ingest`, `wiki_lint`, and
-  `benka_status` all failed opaquely in the `personal` domain because the plugin handler reduced
-  every exception to `type(exc).__name__`, discarding the message and the path. The missing mount
-  could not be identified from the chat surface. `config.py` now raises a typed `DeploymentError`
+- **Every Benka tool failed with `FileNotFoundError` in every domain.** `profiles.py` generated
+  `manifest_path` as `/state/hermes/profiles/<domain>.json`, inside the profile's Hermes home, but
+  Compose mounts the manifests read-only at `/run/benka/profiles/`. `{runtime_home}/profiles/<domain>`
+  is a *directory*, so the sibling `<domain>.json` never existed and `load_manifest` raised on every
+  call. Knowledgebase saves, Ideas capture, `wiki_lint`, `lightrag_query` and `benka_status` were all
+  affected. Fixed at the source, with `MANIFEST_MOUNT` as a named constant, and deployed to the four
+  live profile configs.
+
+  The existing test asserted only that `manifest_path` ended with `<domain>.json`, which the wrong
+  path also satisfied — that is why this shipped. It now asserts the full path and that the file the
+  generator wrote is actually there.
+
+- **The failure was undiagnosable from the chat surface.** The plugin handler reduced every exception
+  to `type(exc).__name__`, discarding the message and the path, so the tool could only answer
+  "FileNotFoundError". `config.py` now raises a typed `DeploymentError`
   naming the file and a remedy for a missing, unreadable, malformed, or misdirected manifest, a
   missing credential file or environment variable, and a missing activation receipt; `plugin.py`
   surfaces those and authored `PermissionError`/`ValueError` messages, while third-party exception
@@ -20,6 +31,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   capture path shared the fault, since it shares `wiki_ingest`, and shares the fix.
   `tests/hermes/test_tool_errors.py` covers all of it, including that a readable credential value
   never reaches a failure report.
+
+### Deployed
+
+- **2026-09-07** — corrected `manifest_path` in the four live profile configs and restarted the
+  Gateway and dashboard only, with `--no-deps`. Configs backed up first. Verified afterwards:
+  `benka_status` returns the production personal manifest, `wiki_lint` reaches the wiki service
+  (1,485 pages scanned) and `lightrag_query` returns references — so the manifest, activation
+  receipt, credential files and knowledge services all resolve. The eleven other Benka containers
+  and all ten neighbouring containers were untouched. The runtime image was not rebuilt, so the
+  improved error reporting above ships with the next image build.
 
 ### Added
 

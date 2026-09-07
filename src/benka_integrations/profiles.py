@@ -39,7 +39,13 @@ def validate_bindings(bindings):
             seen.add(identity)
 
 
-def prepare(bindings, destination: Path, *, repo: Path, runtime_home="/state/hermes"):
+# Compose mounts private/benka-manifests read-only at this path in every
+# container that loads a domain manifest. Keep it in step with deploy/hermes/.
+MANIFEST_MOUNT = "/run/benka/profiles"
+
+
+def prepare(bindings, destination: Path, *, repo: Path, runtime_home="/state/hermes",
+            manifest_mount=MANIFEST_MOUNT):
     validate_bindings(bindings)
     if destination.exists():
         raise FileExistsError("Render profiles into a new private staging directory")
@@ -65,8 +71,11 @@ def prepare(bindings, destination: Path, *, repo: Path, runtime_home="/state/her
                               "group_allow_admin_from": [str(x) for x in spec.get("admins", [])],
                               "user_allowed_commands": ["help", "new", "status"],
                               "group_user_allowed_commands": ["help", "new", "status"]}
+        # The manifest lives in the read-only directory Compose mounts, not in the
+        # profile's Hermes home: `{runtime_home}/profiles/{domain}` is a directory,
+        # so a sibling `{domain}.json` there never exists.
         config["plugins"]["entries"]["benka"]["settings"]["manifest_path"] = (
-            f"{runtime_home}/profiles/{domain}.json"
+            f"{manifest_mount}/{domain}.json"
         )
         (path / "config.yaml").write_text(yaml.safe_dump(config, allow_unicode=True))
         shutil.copytree(repo / "plugins/benka", path / "plugins/benka")
