@@ -153,6 +153,29 @@ def _private_file(path: Path, content: str) -> None:
     os.chmod(path, 0o600)
 
 
+def _delivery_targets(private: Path) -> list[str]:
+    """Every Telegram destination a worker is allowed to publish to.
+
+    Most bridges declare theirs in their own `.env`. Last30Days does not -- its
+    topic lives in the reviewed signals config -- so an env-only sweep produced
+    four allowlisted topics for five publishing workers, and every Last30Days
+    release was refused by `delivery.send()`.
+    """
+    delivery: list[str] = []
+    for name in ("agentmail-personal", "agentmail-work", "telethon", "signals"):
+        values = _read_env(private / "bridges" / f"{name}.env")
+        for prefix in ("EMAIL_DIGEST", "DIGEST", "SIGNALS"):
+            chat, topic = values.get(prefix + "_SUPERGROUP_ID"), values.get(prefix + "_TOPIC_ID")
+            if chat:
+                delivery.append(f"telegram:{chat}" + (f":{topic}" if topic else ""))
+    supergroup = next((t.split(":")[1] for t in delivery if t.startswith("telegram:")), None)
+    if supergroup:
+        reviewed = _read_json(private / "config/signals/config.json")
+        for topic in _find_topic_ids(reviewed.get("last30days", {})):
+            delivery.append(f"telegram:{supergroup}:{topic}")
+    return sorted(set(delivery))
+
+
 def _worker_manifest(*, domain: str, pipeline: str, stream: str, group: str,
                      delivery_targets: list[str], receipt: str) -> dict[str, Any]:
     return {
@@ -603,22 +626,7 @@ def finalize(destination: Path, *, snapshot_sha256: str) -> dict[str, Any]:
                        if (rag_root / name).is_dir()]
     if not rag_index_roots:
         raise ValueError("No reviewed LightRAG source roots are available")
-    delivery = []
-    for name in ("agentmail-personal", "agentmail-work", "telethon", "signals"):
-        values = _read_env(private / "bridges" / f"{name}.env")
-        for prefix in ("EMAIL_DIGEST", "DIGEST", "SIGNALS"):
-            chat, topic = values.get(prefix + "_SUPERGROUP_ID"), values.get(prefix + "_TOPIC_ID")
-            if chat:
-                delivery.append(f"telegram:{chat}" + (f":{topic}" if topic else ""))
-    # Last30Days declares its destination in the reviewed signals config, not in a
-    # bridge .env, so the env sweep above never saw it and the worker's own send was
-    # refused by its allowlist. Collect the reviewed topic ids too.
-    signals_review = _read_json(private / "config/signals/config.json")
-    supergroup = next((target.split(":")[1] for target in delivery if target.startswith("telegram:")), None)
-    if supergroup:
-        for topic in _find_topic_ids(signals_review.get("last30days", {})):
-            delivery.append(f"telegram:{supergroup}:{topic}")
-    delivery = sorted(set(delivery))
+    delivery = _delivery_targets(private)
     maintenance = _worker_manifest(domain="personal", pipeline="maintenance", stream="benka:maintenance:personal", group="benka-maintenance", delivery_targets=delivery, receipt="/run/benka/activation/maintenance.json")
     maintenance.update({
         "enabled_operations": ["worker", "wiki_write", "index"],

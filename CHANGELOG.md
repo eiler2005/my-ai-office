@@ -148,6 +148,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   `30 3 * * 0`, not 05:45 and Sunday 06:15 as `schedules.md`, `workflows.md` and `knowledge.md`
   claimed. Every other documented time matches the installed cron.
 
+### Tested
+
+- **The delivery-allowlist builder now has tests.** It was the one change today that shipped
+  uncovered, and it is the fix for the bug that cost the most to find. The construction is extracted
+  as `_delivery_targets()` and covered by six tests: the Last30Days topic reaching the allowlist, all
+  five publishing destinations present, a Signals *source* chat never being mistaken for a
+  destination, a config without a `last30days` section leaving the env sweep untouched, sorted and
+  deduplicated output, and a missing bridge env failing loudly rather than producing a silently short
+  allowlist — which is the failure this module exists to prevent.
+
 ### Deployed
 
 - **2026-09-07** — swept all 26 cron jobs against the reviewed registry (exact match, all active) and

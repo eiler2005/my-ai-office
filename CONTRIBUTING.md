@@ -121,7 +121,7 @@ interpreter with a clean environment and a temporary home — which also stops a
 a developer's real credentials. A bare `pytest` at the repository root additionally tries to collect
 the vendored runtime's own test suite.
 
-Expected result: **221 passing** across five suites (57 · 19 · 21 · 98 · 26). Omitting
+Expected result: **238 passing** across five suites (74 · 19 · 21 · 98 · 26). Omitting
 `--extra hermes` leaves 6 of them failing on a missing `gateway` module.
 
 The [acceptance record](docs/hermes/acceptance.md) records **209** — that was the count at the
