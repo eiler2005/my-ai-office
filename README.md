@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/my-ai-office.svg" alt="My AI Office by Denis Ermilov — Benka, a miniature schnauzer AI assistant, turns information into action" width="100%">
+  <img src="docs/assets/my-ai-office-hero-v2.png" alt="My AI Office — Benka, a black miniature schnauzer AI co-pilot, connects mail, Telegram, research, and knowledge to action" width="100%">
 </p>
 
 <p align="center">
