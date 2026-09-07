@@ -41,7 +41,7 @@ This folder is intended to become a safe operational repository, but only after 
 
 ## Existing protections in this folder
 
-[`.gitignore`](/Users/DenisErmilov/aiprojects/openclaw_firststeps/.gitignore) already blocks:
+[`.gitignore`](../../../.gitignore) already blocks:
 
 - `LOCAL_ACCESS.md`
 - `secrets/`

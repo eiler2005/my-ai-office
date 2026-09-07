@@ -9,6 +9,7 @@ import hashlib
 import json
 import os
 import secrets
+import shutil
 from pathlib import Path
 import subprocess
 import tempfile
@@ -73,8 +74,9 @@ def main():
             mapping[key] = {"path": name, "working_tree": True}
         sentinel = temp / "scanner-self-test.py"
         sentinel.write_text('github_token = "' + 'ghp_' + secrets.token_hex(18) + '"\n')
-        result = subprocess.run(["uv", "tool", "run", "--from", "detect-secrets==1.5.0",
-                                 "detect-secrets", "-C", str(temp), "scan", "--all-files", "--no-verify"],
+        scanner = (["detect-secrets"] if shutil.which("detect-secrets") else
+                   ["uv", "tool", "run", "--from", "detect-secrets==1.5.0", "detect-secrets"])
+        result = subprocess.run([*scanner, "-C", str(temp), "scan", "--all-files", "--no-verify"],
                                 capture_output=True, text=True, check=True)
         scan = json.loads(result.stdout)
         if not any(Path(name).name == sentinel.name for name in scan["results"]):

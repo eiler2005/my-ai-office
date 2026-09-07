@@ -20,6 +20,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   are short and independent, so the cancellation policy was removed; every
   triggered validation can now complete and report its actual result.
 
+- **The first completed CI runs then exposed two environment gaps.** An archived
+  document linked to a developer's old absolute path, which cannot resolve in a
+  fresh GitHub checkout. The link is now repository-relative. The project secret
+  scanner assumed the local `uv` executable, while CI installs `detect-secrets`
+  directly; it now prefers the installed scanner and retains `uv` as the local
+  fallback.
+
 - **Every Benka tool failed with `FileNotFoundError` in every domain.** `profiles.py` generated
   `manifest_path` as `/state/hermes/profiles/<domain>.json`, inside the profile's Hermes home, but
   Compose mounts the manifests read-only at `/run/benka/profiles/`. `{runtime_home}/profiles/<domain>`
