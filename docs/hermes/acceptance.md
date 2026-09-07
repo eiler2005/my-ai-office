@@ -433,6 +433,26 @@ configuration inside the running container:
 change takes effect there. Ideas in particular has not been exercised end to end — the first
 forwarded item after `/new` should produce a light-curation capture rather than a knowledgebase one.
 
+## Fleet aligned to `main`
+
+**2026-09-07.** Until now the deployed image lagged `main` and the fleet ran three different tags —
+`operational-fix-...a`, `...b` and `finalize-fix-e04d0cb8` — each from a container that happened not
+to have been recreated since. Correct, but the image a service runs could no longer be read off the
+branch.
+
+Candidate tree `3a0e1e77a6eda2d97cf7202f33c6511f3633a38d` was built and verified with
+`scripts/run-hermes-vps-tests.sh`, exit code 0 and **238 passing** across five suites
+(74 · 19 · 21 · 98 · 26), then tagged `benka-hermes:main-3a0e1e77`.
+
+All nine services that run the runtime image — Gateway, dashboard, `wiki` and the six workers — were
+recreated onto it with `--no-deps`. The Gateway returned to `healthy` in 50 s, the surface map still
+resolves 232 to `knowledgebase` and 639 to `ideas`, the wiki service answers with `rag_degraded:
+false`, and the ten neighbouring containers were untouched.
+
+The change itself was a no-op at runtime: only `production.py` differed, as an extraction covered by
+new tests, and it is reached from operator CLI commands rather than from the running services. The
+roll was for the invariant, not the behaviour — **what runs is now the tip of `main`.**
+
 ## Verified on the Hermes VPS
 
 The server-side run executed in containers with a read-only root, no production secrets, and a

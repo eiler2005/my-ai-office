@@ -160,6 +160,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Deployed
 
+- **2026-09-07** — aligned the whole fleet to `main`. Candidate tree
+  `3a0e1e77a6eda2d97cf7202f33c6511f3633a38d` verified on the VPS (exit 0, **238 passing**), tagged
+  `benka-hermes:main-3a0e1e77`, and all nine runtime services recreated onto it — Gateway, dashboard,
+  `wiki` and the six workers, which had drifted across three different tags. Gateway healthy in 50 s,
+  surface map still resolving, wiki `rag_degraded: false`, neighbours untouched. A no-op at runtime;
+  the roll was so that what runs is the tip of `main`.
+
 - **2026-09-07** — swept all 26 cron jobs against the reviewed registry (exact match, all active) and
   every publishing worker's destination against its allowlist (all five now correct). Recreated the
   Gateway and dashboard on candidate tree `c6798dee4bdb09ed40fb2f7d18c275ccb08da78e` (VPS run exit 0,
