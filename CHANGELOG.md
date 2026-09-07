@@ -106,7 +106,17 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   has been serving a frozen index since. `compose.production.yaml` now runs the service as
   `user: "1000:1000"`, matching its data and every other service in the project.
 
+  Switching the user exposed a second failure: the server writes its log to `/app/lightrag.log`, a
+  root-owned image layer, and exited during `configure_logging()` as uid 1000. `LOG_DIR: /app/data`
+  keeps the log with the rest of the writable state. As root it could write its log but not its
+  data; as 1000 it can do both.
+
 ### Deployed
+
+- **2026-09-07** — recreated `lightrag` alone with `--no-deps` for the fix above. Retrieval was down
+  for about four minutes between the two restarts. Verified after: container runs as `1000:1000`,
+  all state directories writable, no startup errors, `lightrag_query` returns references, and the
+  state directories are being written again. The other twelve containers were untouched.
 
 - **2026-09-07** — corrected `manifest_path` in the four live profile configs and restarted the
   Gateway and dashboard only, with `--no-deps`. Configs backed up first. Verified afterwards:

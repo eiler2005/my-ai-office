@@ -64,6 +64,10 @@ services:
       PORT: 9621
       WORKING_DIR: /app/data
       INPUT_DIR: /app/data/inputs
+      # /app is a root-owned image layer, so as uid 1000 the server cannot create
+      # its log there and exits during configure_logging(). Keep the log with the
+      # rest of the writable state.
+      LOG_DIR: /app/data
     volumes:
       - "${BENKA_STATE_ROOT:?}/private/config/lightrag/config.ini:/app/config.ini:ro"
       - "${BENKA_STATE_ROOT:?}/data/lightrag/data:/app/data"

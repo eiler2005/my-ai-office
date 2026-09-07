@@ -208,9 +208,9 @@ start a new session on every affected surface** — `/new` in the topic, which i
 with no save instruction, and confirm a `wiki/research/**` page appears. No test capture was written
 into the owner's knowledge base as part of this work.
 
-## Open defect: LightRAG cannot write its own state
+## LightRAG could not write its own state
 
-**Found 2026-09-07, not yet deployed.** After Knowledgebase capture was restored, the first real
+**Found and fixed 2026-09-07.** After Knowledgebase capture was restored, the first real
 save reported the wiki page created and indexing failed. The service log:
 
 ```text
@@ -233,16 +233,45 @@ container: uid=0(root), CapDrop=[ALL]
 /app/data/inputs  drwxr-xr-x 1000 1000   NOT-WRITABLE
 ```
 
-The fix is to run the service as the user that owns its data, which is also what every other service
-in the project does: `user: "1000:1000"` on the `lightrag` service. Applied in
-[`compose.production.yaml`](../../deploy/hermes/compose.production.yaml); **not yet deployed**, and
-deployment needs a separate instruction.
+The fix is to run the service as the user that owns its data, which is what every other service in
+the project already does: `user: "1000:1000"`.
 
-Deploying it requires recreating `lightrag` alone with `--no-deps`, then confirming the container can
-write and that a capture reaches `indexed` rather than only `upload accepted`. Captures made while
-this is broken keep their wiki pages — the artifact is the store, the index is derived
-([ADR-0005](../adr/0005-wiki-first-capture-rag-as-retrieval.md)) — so they can be re-indexed
-afterwards rather than re-captured.
+### Deployment, and the second failure it exposed
+
+Recreating `lightrag` alone with `--no-deps` made the data writable and immediately put the service
+into a restart loop:
+
+```text
+PermissionError: [Errno 13] Permission denied: '/app/lightrag.log'
+ValueError: Unable to configure handler 'file'
+```
+
+`/app` is a root-owned image layer. As root the server could create its log there and not write its
+data; as uid 1000 it can write its data and not its log. The server reads `LOG_DIR`
+(defaulting to the working directory), so the log now goes to `/app/data` with the rest of the
+writable state.
+
+This is worth recording because the intermediate state was **worse than the defect**: retrieval was
+down for about four minutes, where before it had merely been serving a stale index. A container that
+starts as root is not evidence that it will start as another user.
+
+| Check after the fix | Result |
+|---|---|
+| Container user | `uid=1000 gid=1000` |
+| `/app/data`, `/app/data/inputs`, `/app/data/rag_storage` | All writable |
+| Startup errors | None |
+| `lightrag_query` through the Gateway | Returns `response` and `references` |
+| Log file | `/app/data/lightrag.log`, owned by 1000 |
+| State directories writing again | `rag_storage` and `inputs` touched after restart; ingest markers `__enqueued__` / `__parsed__` present |
+| Other containers | Twelve untouched |
+
+Captures made while this was broken keep their wiki pages — the artifact is the store and the index
+is derived ([ADR-0005](../adr/0005-wiki-first-capture-rag-as-retrieval.md)) — so they are re-indexed
+by the scheduled refresh rather than re-captured.
+
+**Still open.** The graph state files themselves still carry their 2026-09-06 12:53 timestamps; the
+next scheduled refresh is what re-indexes the backlog. Confirm afterwards that a Knowledgebase
+question about recently captured content returns references, not just a response.
 
 ## Verified on the Hermes VPS
 
