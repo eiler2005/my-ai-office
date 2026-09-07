@@ -32,7 +32,7 @@
 
 Как обновляется:
 - Syncthing кладёт Obsidian markdown на сервер
-- workspace deploy кладёт bot markdown в `/opt/openclaw/workspace`
+- workspace deploy кладёт bot markdown в workspace Gateway (`/opt/benka-hermes`)
 - cron каждые 30 минут запускает `/opt/lightrag/scripts/lightrag-ingest.sh`
 - ingest делает `POST /documents/upload`, затем `POST /documents/reprocess_failed`
 
@@ -135,9 +135,9 @@ _(если ничего нет после review: «В локальной Knowle
 3. Если есть надёжный canonical URL статьи/поста — предпочесть `wiki_ingest({source_type: "url", source: "https://..."})`
 4. Иначе вызвать `wiki_ingest({source_type: "text", source: "[извлечённый markdown]"})`
 5. Убедиться, что результат содержит `wiki_page_paths` и `raw_path`; без этого save не считается успешным
-6. Не запускать broad repo/source diagnostics (`rg wiki_ingest`, чтение OpenClaw source/docs, поиск по
-   memory-wiki реализации) из Telegram save-turn. Если нативного `wiki_ingest` tool нет, использовать
-   узкий runtime wrapper из раздела `wiki_ingest`. Если wrapper вернул ошибку, ответить коротким
+6. Не запускать broad repo/source diagnostics (`rg wiki_ingest`, чтение runtime source/docs, поиск по
+   memory-wiki реализации) из Telegram save-turn. `wiki_ingest` — нативный инструмент Benka; если он
+   недоступен, ответить коротким
    operator error; если материал уже существует, ответить `уже сохранено` с существующим
    `wiki/research/**` путём.
 7. Ответить кратко в wiki-first формате:
@@ -225,7 +225,7 @@ Read-only fetch страницы из `wiki/` по относительному 
 ### wiki_ingest — curated import trigger
 
 Оркестрационный вызов во внутренний `wiki-import` bridge.
-Сам OpenClaw не пишет в vault напрямую; bridge:
+Сам агент не пишет в vault напрямую; bridge:
 - принимает `source_type: url | text | server_path`
 - принимает `capture_mode: knowledgebase | ideas | promotion`
 - сохраняет нормализованный source в `raw/articles/` или `raw/documents/`
@@ -241,16 +241,15 @@ Read-only fetch страницы из `wiki/` по относительному 
 - `wiki_ingest({"source_type":"text","source":"...markdown/text...","capture_mode":"ideas"})`
 - `wiki_ingest({"source_type":"server_path","source":"/opt/obsidian-vault/raw/documents/file.pdf","capture_mode":"promotion","promote_fingerprint":"..."})`
 
-Если `wiki_ingest` не показан как отдельный нативный tool в текущем runtime, вызвать тот же bridge
-через узкую обёртку, не через произвольную диагностику:
+`wiki_ingest` зарегистрирован как нативный инструмент Benka вместе с `wiki_read`, `wiki_lint`,
+`lightrag_query`, `benka_archive_search`, `benka_status` и `benka_run`. Вызывать его напрямую:
 
-```bash
-python3 /home/node/.openclaw/workspace/bin/wiki_import_tool.py trigger <<'JSON'
+```json
 {"source_type":"text","source":"...markdown/text...","capture_mode":"knowledgebase"}
-JSON
 ```
 
-Wrapper читает token из `WIKI_IMPORT_TOKEN_FILE` и не должен печатать секреты. Для LightRAG/wiki LLM
+Если инструмент недоступен, ответить коротким operator error и не искать реализацию по репозиторию.
+Токен читается из `WIKI_IMPORT_TOKEN_FILE`; секреты не печатать. Для LightRAG/wiki LLM
 API route order: OmniRoute first, then DeepSeek API fallback. DeepSeek не является embeddings
 provider; embeddings quota/cap остаётся отдельным degraded retrieval состоянием.
 

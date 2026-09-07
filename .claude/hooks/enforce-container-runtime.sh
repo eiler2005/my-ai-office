@@ -1,4 +1,13 @@
 #!/usr/bin/env bash
+# Blocks host-level installs of agent runtime dependencies.
+#
+# Runtime dependencies in this project are container-only by policy: the agent
+# runs under /opt/benka-hermes with a read-only root and no Docker socket, and
+# the VPS is shared with unrelated projects. Installing a runtime dependency on
+# the host OS both breaks reproducibility and touches a machine this project
+# does not own alone.
+#
+# Allowed: the same install inside a Dockerfile, a build, or docker compose exec.
 set -euo pipefail
 
 INPUT=$(cat)
@@ -19,14 +28,14 @@ print(payload.get("tool_input", {}).get("command", ""))
 
 LOWER_COMMAND=$(printf '%s' "$COMMAND" | tr '[:upper:]' '[:lower:]')
 
-INSTALL_PATTERN='(apt(-get)?[[:space:]]+install|pip3?[[:space:]]+install|python3[[:space:]]+-m[[:space:]]+pip[[:space:]]+install|brew[[:space:]]+install|npm[[:space:]]+install[[:space:]]+-g)'
-OPENCLAW_RUNTIME_PATTERN='(openclaw|openai-whisper|whisper|ffmpeg|ffprobe|torch)'
-CONTAINER_CONTEXT_PATTERN='(docker[[:space:]]+compose[[:space:]]+(exec|run|build)|docker[[:space:]]+build|dockerfile\.iproute2|/opt/openclaw/)'
+INSTALL_PATTERN='(apt(-get)?[[:space:]]+install|pip3?[[:space:]]+install|python3[[:space:]]+-m[[:space:]]+pip[[:space:]]+install|uv[[:space:]]+(pip[[:space:]]+install|sync)|brew[[:space:]]+install|npm[[:space:]]+install[[:space:]]+-g)'
+AGENT_RUNTIME_PATTERN='(hermes|hermes-agent|benka|telethon|lightrag|openai-whisper|whisper|ffmpeg|ffprobe|torch)'
+CONTAINER_CONTEXT_PATTERN='(docker[[:space:]]+compose[[:space:]]+(exec|run|build)|docker[[:space:]]+build|dockerfile|/opt/benka-hermes/|\.venv/)'
 
 if printf '%s\n' "$LOWER_COMMAND" | grep -Eq "$INSTALL_PATTERN" \
-  && printf '%s\n' "$LOWER_COMMAND" | grep -Eq "$OPENCLAW_RUNTIME_PATTERN" \
+  && printf '%s\n' "$LOWER_COMMAND" | grep -Eq "$AGENT_RUNTIME_PATTERN" \
   && ! printf '%s\n' "$LOWER_COMMAND" | grep -Eq "$CONTAINER_CONTEXT_PATTERN"; then
   cat <<'EOF'
-{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"OpenClaw runtime dependencies in this project are container-only by policy. Install them in /opt/openclaw/Dockerfile.iproute2 or run them via docker compose exec inside openclaw-gateway, not on the Hetzner host OS."}}
+{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"Agent runtime dependencies in this project are container-only by policy. Add them to deploy/hermes/Dockerfile and rebuild, or run inside the container via docker compose exec -- not on the shared VPS host OS. See CLAUDE.md 'Runtime boundary'."}}
 EOF
 fi

@@ -32,9 +32,11 @@
 
 ## Выбор модели по сложности задачи
 
-Основной диалог с Денисом идёт через OpenClaw; текущий основной маршрут — OpenAI Codex `openai/gpt-5.5`.
-Qwen — первый прямой текстовый резерв, а DeepSeek — последний текстовый резерв,
-если отказали OpenAI, OmniRoute/OpenRouter и Qwen. OmniRoute (`http://omniroute:20129/v1`) также используется
+Основной диалог с Денисом идёт через Hermes Gateway; текущий основной маршрут — OpenAI `gpt-5.6-terra`.
+Вспомогательные операции — `gpt-5.6-luna`; сложная многошаговая задача — одна делегация в `gpt-5.6-sol`,
+после чего Terra проверяет и объединяет результат.
+Qwen (`qwen3.7-flash`) — первый прямой текстовый резерв, а DeepSeek (`deepseek-v4-flash`) — последний
+текстовый резерв, если отказал маршрут OpenAI. OmniRoute (`http://omniroute:20129/v1`) также используется
 для делегирования подзадач и для LightRAG LLM extraction.
 
 ### Тиры и критерии
@@ -68,7 +70,7 @@ curl -s http://omniroute:20129/v1/chat/completions \
 ```
 
 Тир передаётся как `"model"`: `"smart"` | `"medium"` | `"light"`.  
-API ключ: переменная `OMNIROUTE_API_KEY` в окружении OpenClaw.
+API ключ: переменная `OMNIROUTE_API_KEY` в окружении Gateway.
 
 ### Ограничения
 
@@ -95,8 +97,8 @@ _маршрут: ... · модель: ... · [резервная модель ·
 
 Примеры:
 ```
-_маршрут: OpenClaw primary · модель: GPT-5.5 · сложность: обычная · память: включена_
-_маршрут: OpenClaw fallback · модель: OmniRoute Light · резервная модель · сложность: обычная · память: включена_
+_маршрут: Hermes primary · модель: gpt-5.6-terra · сложность: обычная · память: включена_
+_маршрут: Hermes fallback · модель: qwen3.7-flash · резервная модель · сложность: обычная · память: включена_
 _маршрут: OmniRoute smart · модель: Claude Sonnet 4.5 · резервная модель · сложность: сложная · память: включена_
 _маршрут: OmniRoute medium · модель: Claude Haiku 4.5 · сложность: простая · память: без memory-файлов_
 _маршрут: прямой рендер · модель: без LLM · сложность: шаблонный обзор · контекст: окно почты_
@@ -105,21 +107,23 @@ _маршрут: прямой рендер · модель: без LLM · сло
 ### Правила заполнения полей
 
 **Маршрут** — через какой путь был собран ответ:
-- `OpenClaw primary` — ответ сгенерирован основным маршрутом OpenClaw (`GPT-5.5`)
-- `OpenClaw fallback` — ответ сгенерирован резервным маршрутом OpenClaw (`OmniRoute Light` или DeepSeek)
+- `Hermes primary` — ответ сгенерирован основным маршрутом Hermes (`gpt-5.6-terra`, вспомогательные — `gpt-5.6-luna`)
+- `Hermes delegated` — задача делегирована в `gpt-5.6-sol`, результат проверен и объединён Terra
+- `Hermes fallback` — ответ сгенерирован резервной цепочкой (`qwen3.7-flash`, затем `deepseek-v4-flash`)
 - `OmniRoute smart` / `medium` / `light` — ответ делегирован в OmniRoute
 - `прямой рендер` — ответ собран без LLM, шаблонно/детерминированно
 
 **Модель** — конкретное имя модели:
-- Для `OpenClaw primary`: `GPT-5.5`
-- Для `OpenClaw fallback`: фактическая резервная модель (`OmniRoute Light`, DeepSeek и т.п.)
+- Для `Hermes primary`: фактическая модель (`gpt-5.6-terra` или `gpt-5.6-luna`)
+- Для `Hermes delegated`: `gpt-5.6-sol`
+- Для `Hermes fallback`: фактическая резервная модель (`qwen3.7-flash`, `deepseek-v4-flash`)
 - Для OmniRoute: фактическая модель из ответа (напр. `Claude Sonnet 4.5`, `Gemini 2.0 Flash`)
 - Для прямого рендера: `без LLM`
-- Если конкретная модель известна — писать её явно, не внутренний ярлык вроде `OpenClaw Agent`
+- Если конкретная модель известна — писать её явно, не внутренний ярлык вроде `Benka Agent`
 - Если неизвестно: честно писать `неизвестно`
 
-**резервная модель** — добавлять, если OmniRoute использовал fallback (не первую модель в цепочке) или если OpenClaw перешёл на `OpenClaw fallback`.
-Для `OpenClaw primary` и `прямого рендера` — не добавлять.
+**резервная модель** — добавлять, если OmniRoute использовал fallback (не первую модель в цепочке) или если Hermes перешёл на `Hermes fallback`.
+Для `Hermes primary` и `прямого рендера` — не добавлять.
 
 **Сложность** — объяснять человечески:
 - `простая` — факт, перевод, классификация, короткий ответ
@@ -217,7 +221,7 @@ embeddings-маршрут требует оплаченной квоты/credent
 
 Для явного save `rag_status=degraded` от `wiki_ingest` означает успешный wiki-first save с
 отложенной индексацией. Если нативного `wiki_ingest` tool нет в runtime, использовать узкий wrapper:
-`python3 /home/node/.openclaw/workspace/bin/wiki_import_tool.py trigger` с JSON payload из `TOOLS.md`.
+нативный инструмент `wiki_ingest` с полями из `TOOLS.md`.
 Не запускать из Telegram-контекста дополнительные infra-debug команды и не публиковать сырой вывод
 (`getent hosts`, `curl`, `docker`, stack trace, `(agent) failed`) отдельным сообщением после успешного
 сохранения. Для LightRAG/wiki API-only LLM задач после деплоя маршрут: OmniRoute first, затем Qwen, затем DeepSeek API fallback.

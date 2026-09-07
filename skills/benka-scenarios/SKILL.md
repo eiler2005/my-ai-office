@@ -3,8 +3,9 @@ name: benka-scenarios
 description: Trigger and inspect Benka's approved background scenarios.
 ---
 
-Use `benka_status` to inspect the candidate mode. Standby means OpenClaw still
-owns production. Waiting two weeks never authorizes activation.
+Use `benka_status` to inspect the runtime mode. Standby means this instance does
+not own production and must not act as if it does. Elapsed time never authorizes
+activation; only an explicit owner instruction does.
 
 Use `benka_run` only for a scenario in the deployment's approved job registry.
 Use a stable `request_id` for retries of the same request. Queue acceptance is
