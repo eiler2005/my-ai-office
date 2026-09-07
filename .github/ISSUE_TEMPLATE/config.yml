@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/eiler2005/my-ai-office/security/advisories/new
+    about: Report privately. Never in a public issue. See .github/SECURITY.md.
+  - name: Question about the design
+    url: https://github.com/eiler2005/my-ai-office/discussions
+    about: How or why something works. Start with docs/adr/ — the reasoning is usually recorded there.
+  - name: Hermes Agent issues
+    url: https://github.com/NousResearch/hermes-agent/issues
+    about: The agent runtime is vendored, not maintained here. Report upstream bugs upstream.

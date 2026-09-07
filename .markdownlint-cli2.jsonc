@@ -1,0 +1,49 @@
+{
+  // Documentation lint for a prose-heavy repository. Rules that fight technical
+  // writing are off; rules that catch real rendering bugs stay on.
+  "config": {
+    "default": true,
+
+    // Prose wraps at 100 characters by convention, but tables, code blocks, and
+    // long reference links legitimately exceed it.
+    "MD013": {
+      "line_length": 100,
+      "tables": false,
+      "code_blocks": false,
+      "headings": false
+    },
+
+    // Duplicate headings are fine when they sit under different parents --
+    // "Context" appears in every ADR, "Related" in most topic documents.
+    "MD024": { "siblings_only": true },
+
+    // Inline HTML is required: <picture> for theme-aware diagrams, and GitHub
+    // alert blocks render from blockquote syntax.
+    "MD033": {
+      "allowed_elements": ["picture", "source", "img", "a", "br", "details", "summary"]
+    },
+
+    // The first line is a <picture> hero on the front page, not a heading.
+    "MD041": false,
+
+    // Bare URLs appear inside code samples and command output.
+    "MD034": false,
+
+    // Emphasis used as a lead-in ("**The cost is that...**") is deliberate.
+    "MD036": false
+  },
+
+  "globs": ["**/*.md"],
+
+  "ignores": [
+    "vendor/**",
+    "node_modules/**",
+    // The archive preserves predecessor-era formatting on purpose. Relinting it
+    // would produce a large diff that changes nothing and obscures the history.
+    "docs/archive/**",
+    // Prompt artifacts mounted into the running agent -- treated as code.
+    "workspace/**",
+    // A long append-only history; reformatting it would rewrite the record.
+    "CHANGELOG.md"
+  ]
+}

@@ -1,0 +1,115 @@
+name: Docs
+
+# The documentation is the deliverable in this repository, and it was restructured
+# across 26 files with ~90 rewritten links. These checks are what make that safe to
+# do again. They do not run the application test suite -- that runs on the VPS, for
+# the reasons in docs/adr/0011-verification-on-the-vps-not-in-ci.md.
+
+on:
+  push:
+    branches: ["**"]
+    paths:
+      - "**.md"
+      - "docs/**"
+      - ".github/workflows/docs.yml"
+      - ".markdownlint-cli2.jsonc"
+      - "scripts/check-docs-links.py"
+      - "scripts/render-diagrams.py"
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  docs:
+    name: Lint, links, and diagrams
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          submodules: false
+
+      - uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Markdown lint
+        run: npx --yes markdownlint-cli2@0.18.1
+
+      - name: Internal links and heading anchors resolve
+        run: python3 scripts/check-docs-links.py
+
+      - name: Mermaid diagrams parse
+        run: |
+          npx --yes @mermaid-js/mermaid-cli@11.4.2 --version
+          python3 - <<'PY'
+          import pathlib, re, subprocess, sys, tempfile
+
+          FENCE = re.compile(r"^```mermaid\s*$(.*?)^```\s*$", re.M | re.S)
+          failed = []
+          blocks = 0
+
+          files = subprocess.run(
+              ["git", "ls-files", "*.md"],
+              capture_output=True, text=True, check=True,
+          ).stdout.split()
+
+          for rel in files:
+              if rel.startswith("vendor/"):
+                  continue
+              for i, body in enumerate(FENCE.findall(pathlib.Path(rel).read_text())):
+                  blocks += 1
+                  with tempfile.NamedTemporaryFile("w", suffix=".mmd", delete=False) as fh:
+                      fh.write(body)
+                      src = fh.name
+                  proc = subprocess.run(
+                      ["npx", "--yes", "@mermaid-js/mermaid-cli@11.4.2",
+                       "-i", src, "-o", src + ".svg"],
+                      capture_output=True, text=True,
+                  )
+                  if proc.returncode != 0:
+                      failed.append((rel, i + 1, proc.stderr.strip()[-500:]))
+
+          for rel, n, err in failed:
+              print(f"::error file={rel}::mermaid block {n} failed to parse\n{err}")
+          print(f"{blocks - len(failed)}/{blocks} mermaid blocks parse")
+          sys.exit(1 if failed else 0)
+          PY
+
+      - name: Diagram SVGs match their generator
+        # The light/dark pairs are generated. If someone edits an .svg by hand, the
+        # pair silently desynchronises -- this catches that.
+        run: |
+          python3 scripts/render-diagrams.py
+          if ! git diff --quiet -- docs/assets; then
+            echo "::error::docs/assets is out of sync with scripts/render-diagrams.py."
+            echo "Run 'python3 scripts/render-diagrams.py' and commit the result."
+            git diff --stat -- docs/assets
+            exit 1
+          fi
+          echo "Generated diagrams are up to date."
+
+      - name: No stray Cyrillic outside the documented exceptions
+        # The repository is English. workspace/ holds prompt artifacts mounted into
+        # the running agent, docs/archive/ is a historical record, and CHANGELOG.md
+        # records what actually shipped. See CONTRIBUTING.md#language.
+        run: |
+          status=0
+          for f in $(git ls-files '*.md' \
+                     ':!:workspace/**' ':!:docs/archive/**' ':!:vendor/**' \
+                     ':!:CHANGELOG.md' ':!:artifacts/openclaw/**'); do
+            hits=$(grep -o '[А-Яа-яЁё]' "$f" | wc -l | tr -d ' ')
+            allowed=$(grep -o 'обсуди' "$f" | wc -l | tr -d ' ')
+            if [ "$hits" -gt "$((allowed * 6))" ]; then
+              echo "::error file=$f::unexpected Cyrillic text ($hits characters)"
+              status=1
+            fi
+          done
+          exit $status

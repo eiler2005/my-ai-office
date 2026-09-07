@@ -1,0 +1,11 @@
+# Every change is reviewed by the maintainer. This is a single-operator system:
+# the deployment, the credentials, and the accountability all sit in one place.
+*       @eiler2005
+
+# Extra attention: these define runtime boundaries, and a mistake here has a
+# blast radius beyond the repository.
+/deploy/                @eiler2005
+/.github/workflows/     @eiler2005
+/scripts/               @eiler2005
+/docs/adr/              @eiler2005
+/workspace/             @eiler2005

@@ -1,0 +1,63 @@
+name: Bug in the published code
+description: Something in the integration code or the deployment templates is wrong
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For defects in `src/benka_integrations/`, `artifacts/`, `deploy/`, or `scripts/`.
+
+        **Not for security problems.** Use
+        [private reporting](https://github.com/eiler2005/my-ai-office/security/advisories/new).
+
+        This repository is not a deployable product — credentials, sessions, and live state are
+        deliberately outside Git ([ADR-0001](../../docs/adr/0001-self-host-on-one-private-vps.md)).
+        "It does not run after cloning" is expected, not a bug.
+
+  - type: input
+    id: where
+    attributes:
+      label: Where
+      placeholder: src/benka_integrations/delivery.py
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What should happen
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happens instead
+      description: Include the error and enough of the traceback to locate it.
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: How to reproduce
+      description: |
+        A failing test is ideal. Run the suite with `uv sync --frozen --extra test && uv run pytest -q`.
+      placeholder: |
+        1. …
+        2. …
+        3. …
+
+  - type: input
+    id: version
+    attributes:
+      label: Commit
+      description: Output of `git rev-parse --short HEAD`.
+
+  - type: checkboxes
+    id: hygiene
+    attributes:
+      label: Before submitting
+      options:
+        - label: My report contains no credentials, tokens, hostnames, or personal message content.
+          required: true

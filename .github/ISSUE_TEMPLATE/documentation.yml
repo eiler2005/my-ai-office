@@ -1,0 +1,50 @@
+name: Documentation problem
+description: Something here is wrong, unclear, or no longer true
+labels: ["documentation"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This is the most useful kind of issue this repository can receive. Documentation that
+        misleads the next reader is a real defect.
+
+        **Not for security problems.** Use
+        [private reporting](https://github.com/eiler2005/my-ai-office/security/advisories/new).
+
+  - type: input
+    id: where
+    attributes:
+      label: Which document
+      description: Path, and the heading if you have it.
+      placeholder: docs/reliability.md — "Receipts"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What kind of problem
+      options:
+        - Factually wrong — it does not describe the system
+        - Out of date — it was true, but no longer is
+        - Unclear — I could not work out what it meant
+        - Broken link, diagram, or formatting
+        - Missing — something that should be documented is not
+    validations:
+      required: true
+
+  - type: textarea
+    id: detail
+    attributes:
+      label: What it says, and what it should say
+      description: Quote the passage if you can. If you know the correct version, say so.
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: What you were trying to do
+      description: |
+        Optional, and genuinely useful — knowing what a reader was looking for often shows that
+        the document is organised wrongly rather than written wrongly.
