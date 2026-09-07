@@ -364,6 +364,8 @@ Containers, source adapters, and neighboring VPS projects are deliberately diffe
 
 Telegram is a set of purpose-specific surfaces rather than one unrestricted bot chat. The Gateway maps trusted users and configured routes to a `personal`, `work`, `family`, or `sandbox` profile before tools receive a request.
 
+**[Telegram surfaces](docs/reference/telegram-surfaces.md)** is the full reference: what each topic is for, what Benka does there, and — importantly for anyone changing it — where that behaviour is actually defined.
+
 | Surface | What happens there | Guardrails |
 | --- | --- | --- |
 | **Owner DM** | Benka's primary dialogue, follow-ups, and home channel for system notifications | A production home channel is derived only from one trusted personal owner. Consequential actions still require approval. |
@@ -491,7 +493,7 @@ deliberately excluded.
 | **Evaluating this as engineering work** | [Engineering case study](docs/engineering-case-study.md) → [Decision records](docs/adr/) → [Architecture](docs/architecture.md) |
 | **Trying to understand the system** | [Architecture](docs/architecture.md) → [Workflows](docs/workflows.md) → [Knowledge](docs/knowledge.md) |
 | **Going to operate it** | [Operations](docs/hermes/operations.md) → [Reliability](docs/reliability.md) → [Security](docs/security.md) → [Panel](docs/hermes/panel.md) |
-| **Looking something up** | [Glossary](docs/reference/glossary.md) · [Services](docs/reference/services.md) · [Schedules](docs/reference/schedules.md) · [Versions](docs/reference/versions.md) |
+| **Looking something up** | [Glossary](docs/reference/glossary.md) · [Telegram surfaces](docs/reference/telegram-surfaces.md) · [Services](docs/reference/services.md) · [Schedules](docs/reference/schedules.md) · [Versions](docs/reference/versions.md) |
 | **Here for the migration story** | [Migration plan](docs/hermes/migration-plan.md) → [Acceptance record](docs/hermes/acceptance.md) → [Cutover record](docs/hermes/cutover-record-2026-09-06.md) → [Archive](docs/archive/) |
 
 Two conventions worth knowing before you read further. **Claims are bounded** — where a check has not

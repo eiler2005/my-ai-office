@@ -138,6 +138,11 @@ behavioural record.
 `src/benka_integrations/plugin.py`.** Those are deployed and require an image rebuild plus a
 verified VPS run. See `CONTRIBUTING.md#language`.
 
+**Per-topic behaviour lives in those same two places — there is no per-topic config.**
+`docs/reference/telegram-surfaces.md` documents what each Telegram surface is for and how to change
+it. A prompt change also needs a new session (`/new`) on every affected surface, because Hermes
+freezes the prompt into a session at creation.
+
 ## Documentation
 
 - `docs/` is organised by topic. Only ADRs are numbered; the numbering under `docs/archive/openclaw/`
@@ -174,7 +179,8 @@ When behaviour changes, these must not fall behind:
 - `CHANGELOG.md`
 - `docs/architecture.md`, `docs/workflows.md`, `docs/reliability.md`, `docs/security.md`,
   `docs/knowledge.md`
-- `docs/reference/services.md` and `docs/reference/schedules.md`
+- `docs/reference/services.md`, `docs/reference/schedules.md` and
+  `docs/reference/telegram-surfaces.md`
 - `docs/hermes/operations.md`, `docs/hermes/acceptance.md`, `docs/hermes/panel.md`
 - `docs/adr/` — when the *reason* changes, not just the implementation
 

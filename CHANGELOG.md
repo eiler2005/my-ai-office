@@ -88,6 +88,24 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   which prompt a session is actually running, because the symptom — "the deploy did nothing" — is
   indistinguishable from a failed deployment without it.
 
+### Added
+
+- **`docs/reference/telegram-surfaces.md`** — per-surface reference: what each Telegram topic is for,
+  what Benka does there, what it must not do, and **where that behaviour is actually defined**. There
+  is no per-topic configuration; the rules live in the plugin's system prompt section and in
+  `skills/`, and changing them needs an image rebuild plus a new session on each surface. The page
+  exists because that was not written down anywhere, which is why a lost rule took a full
+  investigation to find. Linked from the README, the docs map and CLAUDE.md so future agents reach it.
+
+### Fixed
+
+- **LightRAG could not write its own state** (in the repository; **not yet deployed**). The image
+  runs as root, `cap_drop: [ALL]` removes `CAP_DAC_OVERRIDE`, and `/app/data` is owned by
+  `1000:1000` with mode 755 — so the service was subject to ordinary permission checks and could
+  write neither uploads nor `rag_storage`. Its last state write was 2026-09-06 12:53, so retrieval
+  has been serving a frozen index since. `compose.production.yaml` now runs the service as
+  `user: "1000:1000"`, matching its data and every other service in the project.
+
 ### Deployed
 
 - **2026-09-07** — corrected `manifest_path` in the four live profile configs and restarted the

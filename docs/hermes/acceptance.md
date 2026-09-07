@@ -208,6 +208,42 @@ start a new session on every affected surface** — `/new` in the topic, which i
 with no save instruction, and confirm a `wiki/research/**` page appears. No test capture was written
 into the owner's knowledge base as part of this work.
 
+## Open defect: LightRAG cannot write its own state
+
+**Found 2026-09-07, not yet deployed.** After Knowledgebase capture was restored, the first real
+save reported the wiki page created and indexing failed. The service log:
+
+```text
+ERROR: Error /documents/upload: selectel.md:
+[Errno 13] Permission denied: '/app/data/inputs/selectel.md'
+```
+
+It is not limited to uploads. The container cannot write **anywhere** under `/app/data`, including
+`rag_storage`, where the graph and vector state live. The last successful state write was
+**2026-09-06 12:53**; retrieval has been answering from that frozen index since.
+
+The cause is a combination that looks safe in isolation. The image declares no user, so it runs as
+root; the Compose service sets `cap_drop: [ALL]`, which removes `CAP_DAC_OVERRIDE` — the capability
+that lets root bypass file permission checks. The state directories are owned by `1000:1000` with
+mode 755, so root-without-override gets `r-x` and no write.
+
+```text
+container: uid=0(root), CapDrop=[ALL]
+/app/data         drwxr-xr-x 1000 1000   NOT-WRITABLE
+/app/data/inputs  drwxr-xr-x 1000 1000   NOT-WRITABLE
+```
+
+The fix is to run the service as the user that owns its data, which is also what every other service
+in the project does: `user: "1000:1000"` on the `lightrag` service. Applied in
+[`compose.production.yaml`](../../deploy/hermes/compose.production.yaml); **not yet deployed**, and
+deployment needs a separate instruction.
+
+Deploying it requires recreating `lightrag` alone with `--no-deps`, then confirming the container can
+write and that a capture reaches `indexed` rather than only `upload accepted`. Captures made while
+this is broken keep their wiki pages — the artifact is the store, the index is derived
+([ADR-0005](../adr/0005-wiki-first-capture-rag-as-retrieval.md)) — so they can be re-indexed
+afterwards rather than re-captured.
+
 ## Verified on the Hermes VPS
 
 The server-side run executed in containers with a read-only root, no production secrets, and a

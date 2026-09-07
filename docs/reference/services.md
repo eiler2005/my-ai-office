@@ -42,7 +42,7 @@ public architecture can be compared directly against a runtime inventory.
 | Service | Role | Boundary |
 | --- | --- | --- |
 | `wiki` | Wiki ingestion and query | Writes source-backed Markdown **first**, then asks LightRAG to index selected artifacts. |
-| `lightrag` | Graph-assisted retrieval | Reads the approved vault input; keeps independent graph, vector, and KV state. Embedding identity and dimension 3072 are pinned. |
+| `lightrag` | Graph-assisted retrieval | Reads the approved vault input; keeps independent graph, vector, and KV state. Runs as `1000:1000` to match that state — see the ownership note below. Embedding identity and dimension 3072 are pinned. |
 
 ## Model routing
 
@@ -65,6 +65,13 @@ SQLite as root, and Caddy reads the mTLS key through the root group.
 Each send-capable worker also needs private `/state/uploads` and `/state/worker-logs` directories.
 These are created during production preparation, because a read-only image cannot create them after
 the bind mount — a missing one was a real cause of failed deliveries.
+> [!IMPORTANT]
+> **`cap_drop: [ALL]` removes `CAP_DAC_OVERRIDE`, so a container running as root is still subject to
+> ordinary file permissions.** A service whose data is owned by another uid then silently fails to
+> write. This is not theoretical: `lightrag` ran as root against state owned by `1000:1000` and could
+> write neither uploads nor its own graph, so retrieval served a frozen index while every capture
+> reported success. Any service that writes must run as the uid that owns its data — set `user:`
+> explicitly rather than relying on root.
 
 ## Where the integration bus lives
 

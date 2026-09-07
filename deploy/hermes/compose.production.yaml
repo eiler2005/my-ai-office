@@ -54,6 +54,10 @@ services:
 
   lightrag:
     image: ${BENKA_LIGHTRAG_IMAGE:?Set in private compose.env}
+    # The state under /app/data is owned by 1000:1000. The image defaults to root,
+    # and with cap_drop: [ALL] root loses CAP_DAC_OVERRIDE -- so it is subject to
+    # ordinary permission checks and cannot write its own graph or accept uploads.
+    user: "1000:1000"
     env_file: ["${BENKA_STATE_ROOT:?}/private/config/lightrag/.env"]
     environment:
       HOST: 0.0.0.0
