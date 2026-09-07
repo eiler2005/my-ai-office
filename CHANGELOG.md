@@ -27,6 +27,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   directly; it now prefers the installed scanner and retains `uv` as the local
   fallback.
 
+- **Mermaid validation could not launch its headless browser on GitHub Actions.**
+  The diagrams themselves were not the fault: every block failed before parsing.
+  The browser-only check was removed. GitHub renders Mermaid fences natively, while
+  CI continues to validate Markdown, links, language, and the generated SVG diagrams.
+
 - **Every Benka tool failed with `FileNotFoundError` in every domain.** `profiles.py` generated
   `manifest_path` as `/state/hermes/profiles/<domain>.json`, inside the profile's Hermes home, but
   Compose mounts the manifests read-only at `/run/benka/profiles/`. `{runtime_home}/profiles/<domain>`

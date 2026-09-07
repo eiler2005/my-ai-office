@@ -43,43 +43,6 @@ jobs:
       - name: Internal links and heading anchors resolve
         run: python3 scripts/check-docs-links.py
 
-      - name: Mermaid diagrams parse
-        run: |
-          npx --yes @mermaid-js/mermaid-cli@11.4.2 --version
-          python3 - <<'PY'
-          import pathlib, re, subprocess, sys, tempfile
-
-          FENCE = re.compile(r"^```mermaid\s*$(.*?)^```\s*$", re.M | re.S)
-          failed = []
-          blocks = 0
-
-          files = subprocess.run(
-              ["git", "ls-files", "*.md"],
-              capture_output=True, text=True, check=True,
-          ).stdout.split()
-
-          for rel in files:
-              if rel.startswith("vendor/"):
-                  continue
-              for i, body in enumerate(FENCE.findall(pathlib.Path(rel).read_text())):
-                  blocks += 1
-                  with tempfile.NamedTemporaryFile("w", suffix=".mmd", delete=False) as fh:
-                      fh.write(body)
-                      src = fh.name
-                  proc = subprocess.run(
-                      ["npx", "--yes", "@mermaid-js/mermaid-cli@11.4.2",
-                       "-i", src, "-o", src + ".svg"],
-                      capture_output=True, text=True,
-                  )
-                  if proc.returncode != 0:
-                      failed.append((rel, i + 1, proc.stderr.strip()[-500:]))
-
-          for rel, n, err in failed:
-              print(f"::error file={rel}::mermaid block {n} failed to parse\n{err}")
-          print(f"{blocks - len(failed)}/{blocks} mermaid blocks parse")
-          sys.exit(1 if failed else 0)
-          PY
-
       - name: Diagram SVGs match their generator
         # The light/dark pairs are generated. If someone edits an .svg by hand, the
         # pair silently desynchronises -- this catches that.
