@@ -127,7 +127,28 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   `Destination is not in this domain's allowlist`. `finalize()` now also collects reviewed topic ids
   from the signals config's `last30days` section.
 
+### Added
+
+- **The agent can tell one Telegram surface from another again.** Under the predecessor,
+  `workspace/TELEGRAM_POLICY.md` gave each topic its own rules and named the ids; Hermes mounts none
+  of it and hands a prompt section no chat or thread. So Knowledgebase and Ideas were
+  indistinguishable, `capture_mode=ideas` was unreachable, and the capture rule applied everywhere
+  equally. The prompt section is now a callable that recovers the thread from the Telegram session id
+  and maps it through a `surfaces` setting to `knowledgebase`, `ideas` or `conversation`. Inert
+  without a map, so an unconfigured deployment behaves exactly as before.
+
+### Fixed
+
+- **Documented wiki maintenance times were wrong.** Daily runs at `15 3 * * *` and weekly at
+  `30 3 * * 0`, not 05:45 and Sunday 06:15 as `schedules.md`, `workflows.md` and `knowledge.md`
+  claimed. Every other documented time matches the installed cron.
+
 ### Deployed
+
+- **2026-09-07** — swept all 26 cron jobs against the reviewed registry (exact match, all active) and
+  every publishing worker's destination against its allowlist (all five now correct). Recreated the
+  Gateway and dashboard on candidate tree `c6798dee4bdb09ed40fb2f7d18c275ccb08da78e` (VPS run exit 0,
+  **232 passing**) for the surface mechanism; verified live that it is inert without a map.
 
 - **2026-09-07** — recreated `worker-maintenance` on candidate tree
   `72cfb4451c967128fb1e990788dc821b396ac6e2` (VPS verification exit 0, **224 passing**), then ran a

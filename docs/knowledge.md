@@ -117,8 +117,8 @@ runtime migration precisely so the knowledge base did not have to be rebuilt.
 
 | Job | Schedule | Mode |
 | --- | --- | --- |
-| Wiki daily | 05:45 | `dry_run`, `report` |
-| Wiki weekly | Sun 06:15 | `apply` — report, archive, refresh topics, refresh overview |
+| Wiki daily | 03:15 | `dry_run`, `report` |
+| Wiki weekly | Sun 03:30 | `apply` — report, archive, refresh topics, refresh overview |
 | Retrieval refresh | Every 30 min | Indexes the explicitly allowed roots only |
 
 The daily job reports without changing anything; only the weekly job applies. Lifecycle changes to a

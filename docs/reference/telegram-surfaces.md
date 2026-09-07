@@ -92,13 +92,48 @@ Promotion later uses `capture_mode=promotion` with the existing `promote_fingerp
 This is the part that is easy to get wrong, and it is why a per-surface change is more work than it
 looks.
 
-There is **no per-topic configuration**. Topic behaviour is expressed as instructions to the model,
-in exactly two deployed places:
+Topic behaviour is expressed as instructions to the model, in two deployed places — plus one small
+piece of deployment configuration that tells the agent *which* surface it is in.
 
 | Place | What it holds | Deployed how |
 | --- | --- | --- |
 | [`src/benka_integrations/plugin.py`](../../src/benka_integrations/plugin.py) — the `benka.wiki-first` system prompt section | The capture rule, the search/capture distinction, the `обсуди:` opt-out | **Inside the runtime image.** Requires a rebuild. |
 | [`skills/benka-knowledge/SKILL.md`](../../skills/benka-knowledge/SKILL.md) | The same rules in fuller form, plus retrieval and archive guidance | Copied into each profile home under `skills/` |
+
+### Telling the agent which surface it is in
+
+Hermes gives a plugin prompt section only `session_id`, `model`, `provider`, `platform`,
+`profile_name` and `cwd` — **no chat id and no thread id**. Without help, the agent cannot tell
+Knowledgebase from Ideas, so `capture_mode=ideas` and the promotion chain are unreachable and the
+capture rule applies everywhere equally.
+
+The Telegram session id is the one place the thread survives:
+
+```text
+agent:<profile>:telegram:group:<chat_id>:<thread_id>
+```
+
+The plugin therefore registers its prompt section as a **callable**, resolves the trailing thread id
+against a `surfaces` map in the profile's plugin settings, and appends surface-specific guidance:
+
+```yaml
+plugins:
+  entries:
+    benka:
+      settings:
+        manifest_path: /run/benka/profiles/personal.json
+        surfaces:
+          "232": knowledgebase
+          "<thread>": ideas
+          "<thread>": conversation
+```
+
+Recognised surfaces are `knowledgebase`, `ideas` and `conversation` — the last one turns capture off
+for a topic that is for talking. A thread that is not in the map, or a deployment with no map at all,
+gets the base rules and behaves exactly as it did before, so the mechanism is inert until configured.
+
+Because the map is configuration rather than code, adding a topic needs a Gateway restart and a new
+session — **not** an image rebuild.
 
 > [!CAUTION]
 > **`workspace/TELEGRAM_POLICY.md` is not deployed.** The predecessor mounted `workspace/` into the

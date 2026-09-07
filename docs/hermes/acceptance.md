@@ -353,6 +353,63 @@ where before, the first duplicate ended the run.
 Captures kept their wiki pages throughout, because the artifact is the store and the index is
 derived. Nothing was lost; it was not yet searchable.
 
+## Sweep of every Telegram topic against the predecessor
+
+**2026-09-07.** A check that each surface still does under Hermes what it did under OpenClaw.
+
+**Schedules.** The reviewed registry and the installed cron agree exactly — 26 declared, 26
+installed, none missing and none extra. All are active and their last run reported `ok`. The single
+exception is `benka-personal-wiki-weekly` (`30 3 * * 0`), which has never run because no Sunday has
+occurred since the cutover; the first is 2026-09-13 and it is unverified until then.
+
+> [!WARNING]
+> Cron reporting `ok` means the job was **enqueued**, not that it delivered. The Last30Days release
+> that never arrived is logged as `ok` in `hermes cron list`. Check the worker's job record and its
+> log, not the scheduler, when output is missing.
+
+**Delivery.** Every publishing worker's configured destination is now allowlisted, checked as a set
+rather than by sampling:
+
+| Worker | Configured topic | In its allowlist |
+|---|---|---|
+| `email-personal` | 119 · inbox-email | yes |
+| `signals` | 122 · signals | yes |
+| `email-work` | 125 · work-email | yes |
+| `telegram` | 126 · telegram-digest | yes |
+| `last30days` | 414 · last30daysTrend | yes, after today's fix |
+
+Four of the five delivered on 2026-09-07. Last30Days is fixed but unverified in production until the
+next 07:00 run.
+
+**Documentation corrected.** The wiki maintenance times in this repository were wrong: daily is
+`15 3 * * *` and weekly `30 3 * * 0`, not the 05:45 and Sunday 06:15 that `schedules.md`,
+`workflows.md` and `knowledge.md` claimed. Every other documented time matches the installed cron.
+
+### The gap this sweep found
+
+Under the predecessor, `workspace/TELEGRAM_POLICY.md` and `TOOLS.md` gave each topic its own rules
+and named the ids — `knowledge_channel` naming the Knowledgebase topic by its numeric id. Hermes mounts neither,
+and a plugin prompt section receives only `session_id`, `model`, `provider`, `platform`,
+`profile_name` and `cwd`: **no chat id and no thread id.**
+
+So the agent could not tell Knowledgebase from Ideas. `capture_mode=ideas` and the promotion chain
+were unreachable, and the capture rule applied to every surface equally rather than to the two it was
+written for.
+
+The Telegram session id is the one place the thread survives —
+`agent:<profile>:telegram:group:<chat>:<thread>` — so the prompt section is now a callable that
+resolves the trailing thread against a `surfaces` map in the profile's plugin settings and appends
+surface-specific guidance. Recognised values are `knowledgebase`, `ideas` and `conversation`.
+
+Deployed 2026-09-07 on candidate tree `c6798dee4bdb09ed40fb2f7d18c275ccb08da78e` (VPS run exit 0,
+**232 passing**). Verified in the running Gateway that the section is a callable and that, with no
+map configured, it renders exactly the previous text — the mechanism is inert until someone
+configures it.
+
+**Still open.** The map itself is deployment configuration and has not been written. Until it is,
+Ideas still behaves as Knowledgebase. Adding it needs the thread ids and a Gateway restart plus a new
+session, but **no image rebuild**, because the map is config rather than code.
+
 ## Verified on the Hermes VPS
 
 The server-side run executed in containers with a read-only root, no production secrets, and a

@@ -23,8 +23,8 @@ Every recurring job in one table. All times are **`Europe/Moscow`**.
 | Telegram Digest | 08:00, 11:00, 14:00, 17:00, 21:00 | A digest run with its slot and `digest_type` preserved | `telegram-digest` |
 | Work mail briefing | 8 slots, 08:30–19:00 | Work-only summaries with forwarded-sender resolution and triage | `work-email` |
 | LightRAG refresh | Every 30 min | Indexing of the explicitly allowed knowledge roots | Retrieval index |
-| Wiki daily | 05:45 | `dry_run`, `report` — reports without changing anything | Wiki reports |
-| Wiki weekly | Sun 06:15 | `apply` — report, archive, refresh topics, refresh overview | Wiki |
+| Wiki daily | 03:15 | `dry_run`, `report` — reports without changing anything | Wiki reports |
+| Wiki weekly | Sun 03:30 | `apply` — report, archive, refresh topics, refresh overview | Wiki |
 
 Intermediate minutes for the work-mail slots come from the actual private config, not from this
 page.
@@ -32,7 +32,7 @@ page.
 ## A day, in order
 
 ```text
-05:45  wiki daily report (dry run)
+03:15  wiki daily report (dry run)
 07:00  Last30Days — Personal Feed
 08:00  personal mail briefing · Telegram Digest
 08:30  work mail briefing begins
@@ -48,7 +48,7 @@ page.
 every  5 min  — mailbox polling · Signals
 every 30 min  — LightRAG refresh
 every  60 min — Signals retention
-Sun 06:15     — wiki weekly maintenance (apply)
+Sun 03:30     — wiki weekly maintenance (apply)
 ```
 
 ## How a schedule becomes a job

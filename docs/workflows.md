@@ -132,7 +132,7 @@ The full state machine, including what an operator does with a reconciliation en
 | **Ideas** | A forwarded thought or fragment | Light capture now; promotion later extends the same chain instead of duplicating it | Wiki |
 | **Grounded search** | A question in the knowledge surface | Retrieval, opens the top references, answers with citations | The same conversation |
 | **LightRAG refresh** | Every 30 min | Indexes the explicitly allowed roots only | Retrieval index |
-| **Wiki maintenance** | Daily 05:45 · weekly Sun 06:15 | Daily reports in dry-run; weekly applies report, archive, topic and overview refresh | Wiki |
+| **Wiki maintenance** | Daily 03:15 · weekly Sun 03:30 | Daily reports in dry-run; weekly applies report, archive, topic and overview refresh | Wiki |
 
 The private deployment manifest remains the operational source of truth for which jobs are actually
 enabled and at what minute. This table is the shape, not the switch.
