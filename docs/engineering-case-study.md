@@ -22,7 +22,7 @@ Bringing these together requires more than a shared prompt. Each workflow needs 
 
 ## 1. Keep orchestration separate from domain logic
 
-The original OpenClaw system already contained useful source parsing, scoring, triage, and formatting. Moving to Hermes did not require discarding that work.
+The original system already contained useful source parsing, scoring, triage, and formatting. Moving to Hermes did not require discarding that work — see [ADR-0009](adr/0009-migrate-runtime-to-hermes.md).
 
 The integration package registers native tools and connects cron, workers, model calls, and delivery. The source-specific pipelines remain recognizable Python modules. This makes the runtime boundary visible to a reviewer and keeps workflow behavior easier to carry across platforms.
 

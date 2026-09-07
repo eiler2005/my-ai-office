@@ -109,9 +109,18 @@ Never rewrite an ADR to look better in hindsight. Supersede it with a new one an
 ## Running the tests
 
 ```bash
-uv sync --frozen --extra test
-uv run pytest -q
+uv sync --frozen --extra test --extra hermes
+uv run python scripts/test-hermes.py
 ```
+
+Use that runner, not bare `pytest`. The suites share module basenames, so each one runs in its own
+interpreter with a clean environment and a temporary home — which also stops a test from picking up
+a developer's real credentials. A bare `pytest` at the repository root additionally tries to collect
+the vendored runtime's own test suite.
+
+Expected result: **209 passing** across five suites (45 · 19 · 21 · 98 · 26), matching the
+[acceptance record](docs/hermes/acceptance.md). Omitting `--extra hermes` leaves 6 of them failing on
+a missing `gateway` module.
 
 Note that this is **not** the release gate. Functional verification runs on the VPS against real
 Redis, a read-only root filesystem, and real resource limits, because those are the conditions that

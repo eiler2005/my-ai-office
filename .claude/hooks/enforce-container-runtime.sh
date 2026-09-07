@@ -28,7 +28,10 @@ print(payload.get("tool_input", {}).get("command", ""))
 
 LOWER_COMMAND=$(printf '%s' "$COMMAND" | tr '[:upper:]' '[:lower:]')
 
-INSTALL_PATTERN='(apt(-get)?[[:space:]]+install|pip3?[[:space:]]+install|python3[[:space:]]+-m[[:space:]]+pip[[:space:]]+install|uv[[:space:]]+(pip[[:space:]]+install|sync)|brew[[:space:]]+install|npm[[:space:]]+install[[:space:]]+-g)'
+# `uv sync` and `uv run` resolve into the project virtualenv, not the host, so
+# they are deliberately absent below -- CONTRIBUTING.md tells contributors to
+# use them. Only host-level installers are matched.
+INSTALL_PATTERN='(apt(-get)?[[:space:]]+install|pip3?[[:space:]]+install|python3[[:space:]]+-m[[:space:]]+pip[[:space:]]+install|uv[[:space:]]+pip[[:space:]]+install[[:space:]]+--system|brew[[:space:]]+install|npm[[:space:]]+install[[:space:]]+-g)'
 AGENT_RUNTIME_PATTERN='(hermes|hermes-agent|benka|telethon|lightrag|openai-whisper|whisper|ffmpeg|ffprobe|torch)'
 CONTAINER_CONTEXT_PATTERN='(docker[[:space:]]+compose[[:space:]]+(exec|run|build)|docker[[:space:]]+build|dockerfile|/opt/benka-hermes/|\.venv/)'
 

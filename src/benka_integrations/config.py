@@ -52,7 +52,7 @@ def require_active(config: dict, operation: str) -> None:
                 or data.get("old_writers_stopped") is not True):
             raise PermissionError("A separate owner activation receipt for this manifest is required")
     else:
-        raise PermissionError("Hermes is in standby; production remains on OpenClaw")
+        raise PermissionError("This instance is in standby and does not own production")
     if operation not in config.get("enabled_operations", []):
         raise PermissionError(f"Operation is disabled: {operation}")
 

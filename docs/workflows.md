@@ -88,7 +88,7 @@ sequenceDiagram
     Cron->>R: XADD one job with a stable run id
     Note over R: slot dedupe is atomic —<br/>a repeat of the same slot is refused
 
-    R->>W: consumer group delivers; entry enters the pending list
+    R->>W: consumer group delivers, entry enters the pending list
     W->>Src: fetch from the cursor
     Src-->>W: raw items
     W->>W: deterministic rules, dedupe, scoring

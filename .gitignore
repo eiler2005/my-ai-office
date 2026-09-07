@@ -91,3 +91,4 @@ logs/
 .vscode/
 *.swp
 *.so
+.pytest-cache/

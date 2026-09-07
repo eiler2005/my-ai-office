@@ -14,6 +14,7 @@ on:
       - ".github/workflows/docs.yml"
       - ".markdownlint-cli2.jsonc"
       - "scripts/check-docs-links.py"
+      - "scripts/check-docs-language.py"
       - "scripts/render-diagrams.py"
   pull_request:
   workflow_dispatch:
@@ -41,7 +42,7 @@ jobs:
           python-version: "3.12"
 
       - name: Markdown lint
-        run: npx --yes markdownlint-cli2@0.18.1
+        run: npx --yes markdownlint-cli2@0.23.2
 
       - name: Internal links and heading anchors resolve
         run: python3 scripts/check-docs-links.py
@@ -100,16 +101,4 @@ jobs:
         # The repository is English. workspace/ holds prompt artifacts mounted into
         # the running agent, docs/archive/ is a historical record, and CHANGELOG.md
         # records what actually shipped. See CONTRIBUTING.md#language.
-        run: |
-          status=0
-          for f in $(git ls-files '*.md' \
-                     ':!:workspace/**' ':!:docs/archive/**' ':!:vendor/**' \
-                     ':!:CHANGELOG.md' ':!:artifacts/openclaw/**'); do
-            hits=$(grep -o '[А-Яа-яЁё]' "$f" | wc -l | tr -d ' ')
-            allowed=$(grep -o 'обсуди' "$f" | wc -l | tr -d ' ')
-            if [ "$hits" -gt "$((allowed * 6))" ]; then
-              echo "::error file=$f::unexpected Cyrillic text ($hits characters)"
-              status=1
-            fi
-          done
-          exit $status
+        run: python3 scripts/check-docs-language.py

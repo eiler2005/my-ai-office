@@ -4,7 +4,26 @@
 
 My AI Office connects a conversational assistant to durable background workflows. Hermes Agent supplies the runtime and interfaces; the `benka-integrations` package supplies the office-specific tools, adapters, queue handling, delivery controls, and migration logic.
 
-The recorded production switch to Hermes took place on **6 September 2026**. The [cutover record](hermes/cutover-record-2026-09-06.md) and [acceptance record](hermes/acceptance.md) distinguish completed checks from open production acceptance. Earlier numbered OpenClaw documents describe the source deployment.
+The recorded production switch to Hermes took place on **6 September 2026**. The [cutover record](hermes/cutover-record-2026-09-06.md) and [acceptance record](hermes/acceptance.md) distinguish completed checks from open production acceptance. The predecessor runtime's documents are archived under [`archive/openclaw/`](archive/openclaw/) and describe the source deployment, not this one.
+
+## Timeline
+
+```mermaid
+timeline
+    title From the first deployment to today
+    2026-05 : First deployment on the predecessor runtime
+            : Four HTTP bridge services
+    2026-07 : Redis Streams becomes the integration bus
+            : Wiki-first knowledge capture
+    2026-08 : Business logic extracted into benka_integrations
+            : Hermes candidate built and pinned
+    2026-09-06 : READY_NOT_ACTIVE reached, then cutover on owner instruction
+               : Cold snapshot, 209 checks, predecessor stopped and retained
+    Now : ACTIVE_ON_HERMES
+        : 48-hour observation and full acceptance still open
+```
+
+The decisions behind each step are in the [decision records](adr/).
 
 ## Layered system view
 
@@ -197,7 +216,7 @@ Source APIs and model providers are external dependencies. Persisting state on a
 
 ## Migration and recovery
 
-The OpenClaw-to-Hermes migration preserves processing behavior and state contracts while replacing the runtime adapters. The tooling covers cold snapshot creation and verification, staged restore, a compatible OpenClaw import layout, archive indexing, and a three-way wiki comparison for rollback.
+The migration from the predecessor runtime to Hermes preserves processing behavior and state contracts while replacing the runtime adapters. The tooling covers cold snapshot creation and verification, staged restore, a compatible predecessor import layout, archive indexing, and a three-way wiki comparison for rollback.
 
 Deployment preparation and production activation are separate operations. Activation requires an explicit operator decision, a fresh consistent snapshot, and stopping the former writers. Rollback after new writes requires reconciling new artifacts, cursors, confirmed deliveries, and pending work before restarting old processors.
 

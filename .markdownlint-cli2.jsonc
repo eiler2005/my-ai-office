@@ -4,14 +4,14 @@
   "config": {
     "default": true,
 
-    // Prose wraps at 100 characters by convention, but tables, code blocks, and
-    // long reference links legitimately exceed it.
-    "MD013": {
-      "line_length": 100,
-      "tables": false,
-      "code_blocks": false,
-      "headings": false
-    },
+    // Line length is not enforced. The repository mixes reflowed prose (most of
+    // docs/) with long-line prose (README.md, inherited). Reflowing the latter
+    // would produce a large diff that changes nothing a reader can see, and
+    // GitHub soft-wraps either way.
+    "MD013": false,
+
+    // Table pipe alignment is cosmetic; GitHub renders both forms identically.
+    "MD060": false,
 
     // Duplicate headings are fine when they sit under different parents --
     // "Context" appears in every ADR, "Related" in most topic documents.
@@ -20,7 +20,9 @@
     // Inline HTML is required: <picture> for theme-aware diagrams, and GitHub
     // alert blocks render from blockquote syntax.
     "MD033": {
-      "allowed_elements": ["picture", "source", "img", "a", "br", "details", "summary"]
+      "allowed_elements": [
+        "picture", "source", "img", "a", "p", "br", "code", "details", "summary"
+      ]
     },
 
     // The first line is a <picture> hero on the front page, not a heading.
@@ -44,6 +46,9 @@
     // Prompt artifacts mounted into the running agent -- treated as code.
     "workspace/**",
     // A long append-only history; reformatting it would rewrite the record.
-    "CHANGELOG.md"
+    "CHANGELOG.md",
+    // Wiki schema and page templates. These are parsed by the wiki service --
+    // they are data, not prose, and reformatting them risks breaking ingestion.
+    "artifacts/llm-wiki/**"
   ]
 }

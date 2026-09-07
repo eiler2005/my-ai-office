@@ -3,10 +3,16 @@
 </p>
 
 <p align="center">
+  <a href=".github/workflows/secret-scan.yml"><img src="https://github.com/eiler2005/my-ai-office/actions/workflows/secret-scan.yml/badge.svg" alt="Secret scan status"></a>
+  <a href=".github/workflows/docs.yml"><img src="https://github.com/eiler2005/my-ai-office/actions/workflows/docs.yml/badge.svg" alt="Docs check status"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-dbe7ef?style=flat-square" alt="MIT license"></a>
+</p>
+
+<p align="center">
   <a href="https://github.com/NousResearch/hermes-agent"><img src="https://img.shields.io/badge/Runtime-Hermes_Agent-64dac7?style=flat-square" alt="Hermes Agent runtime"></a>
   <a href="src/benka_integrations"><img src="https://img.shields.io/badge/Integrations-Python_3.12-8cbaf3?style=flat-square" alt="Python 3.12 integrations"></a>
-  <a href="deploy/hermes"><img src="https://img.shields.io/badge/Deployment-Docker_Compose-8cbaf3?style=flat-square" alt="Docker Compose deployment"></a>
+  <a href="deploy/hermes"><img src="https://img.shields.io/badge/Deployment-13_containers-8cbaf3?style=flat-square" alt="Thirteen container Docker Compose deployment"></a>
+  <a href="docs/adr/"><img src="https://img.shields.io/badge/Decisions-12_ADRs-b8a4d4?style=flat-square" alt="Twelve architecture decision records"></a>
   <a href="#memory-that-improves-with-work"><img src="https://img.shields.io/badge/Knowledge-Wiki_%2B_Graph_RAG-e8be7b?style=flat-square" alt="Wiki and graph retrieval"></a>
 </p>
 
@@ -22,8 +28,30 @@ Designed and built by **[Denis Ermilov](https://github.com/eiler2005)**. My AI O
 
 Benka runs on [Hermes Agent](https://github.com/NousResearch/hermes-agent). The surrounding office is designed by Denis: the workflows, integrations, knowledge model, recovery logic, and deployment boundaries are implemented here.
 
+## At a glance
+
+| | |
+| --- | --- |
+| **In production since** | 6 September 2026 — status `ACTIVE_ON_HERMES`, [observation window still open](docs/hermes/acceptance.md) |
+| **Deployment** | 13 containers, one private VPS, one published port |
+| **Background workers** | 6, each with its own manifest, cursor, consumer group, and delivery route |
+| **Sources** | 2 mailboxes · ~150–200 Telegram channels · 7 research platforms |
+| **Surfaces** | 12 purpose-specific Telegram destinations, plus CLI and a dashboard |
+| **Verification** | 209 recorded checks on the VPS · 22 test modules |
+| **Decisions on record** | [12 ADRs](docs/adr/) with alternatives and costs |
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/c4-context-dark.svg">
+  <img alt="System context diagram: Denis interacts with My AI Office, which reads Telegram, two mailboxes, and seven research platforms, depends on external model providers, syncs an Obsidian vault, and publishes briefings back into Telegram" src="docs/assets/c4-context-light.svg">
+</picture>
+
+**New here?** The [documentation map](docs/README.md) routes by what you are trying to do. If you are
+evaluating this as engineering work, start with the
+[engineering case study](docs/engineering-case-study.md) and the [decision records](docs/adr/).
+
 ## Table of contents
 
+- [At a glance](#at-a-glance)
 - [Overview](#overview)
 - [Business layer](#business-layer)
 - [How Hermes runs the office](#how-hermes-runs-the-office)
@@ -52,7 +80,7 @@ The result is a practical personal operating system for business and life:
 - **Compounding knowledge.** Useful ideas, links, decisions, and research become editable memory instead of disappearing into chat history.
 - **Control remains human.** Benka prepares, routes, summarizes, and reminds. Denis keeps approval for consequential actions and external communication.
 
-The first version ran on OpenClaw. The current implementation moved the assistant runtime to Hermes while preserving the processing pipelines, state contracts, and migration/rollback discipline from the [predecessor](https://github.com/eiler2005/clawden-ai).
+The first version ran on a different agent runtime. Moving to Hermes preserved the processing pipelines and state contracts intact — which was the point of keeping the business logic out of the runtime in the first place ([ADR-0004](docs/adr/0004-separate-orchestration-from-domain-logic.md)). The [predecessor repository](https://github.com/eiler2005/clawden-ai) is frozen; the migration is recorded in [ADR-0009](docs/adr/0009-migrate-runtime-to-hermes.md).
 
 ## Business layer
 
@@ -405,59 +433,72 @@ Model selection is configured per workload. Interactive and auxiliary tasks have
 
 ```text
 .
-├── src/benka_integrations/       Native Hermes plugin and office runtime
-│   ├── plugin.py                  Seven Benka tools and tool registration
-│   ├── pipelines.py               Worker entry point for preserved business algorithms
+├── src/benka_integrations/       Native plugin and office runtime
+│   ├── plugin.py                  Seven Benka tools and their registration
+│   ├── pipelines.py               Worker entry point for the business algorithms
 │   ├── queue.py / delivery.py     Redis handoff, dedupe, receipts, reconciliation
-│   ├── models.py                  Bounded background model execution
+│   ├── models.py / model_child.py Bounded background model execution
 │   ├── wiki.py                    Knowledge and Ideas capture / retrieval adapters
 │   └── migration.py               Snapshot, import, archive, and rollback helpers
 ├── artifacts/                    Source-specific business logic
 │   ├── agentmail-email/           Personal and work mailbox workflow
-│   ├── telethon-digest/           Telegram channel digest reader, scorer, renderer
+│   ├── telethon-digest/           Telegram channel reader, scorer, renderer
 │   ├── signals-bridge/            Signals and Last30Days source adapters
 │   │   └── last30days_patches/    Reddit hybrid adapter and pinned upstream patches
-│   ├── integration-bus/          Historical standalone Redis Compose artifact
 │   ├── wiki-import/               Curated wiki ingestion service
 │   └── llm-wiki/                  Wiki schema and templates
-├── deploy/hermes/                Current 13-service Compose, Dockerfile, Caddy, examples
-├── plugins/benka/                Hermes plugin manifest and metadata
-├── skills/                       Benka workflow skills
-├── workspace/                    Persona, Telegram policy, memory index, tool contracts
-├── scripts/                      Candidate packaging, VPS verification, migration operations
-├── docs/                         Architecture, public case study, migration plan, runbooks
-│   └── hermes/                   Inventory, acceptance, cutover, rollback, panel operations
-├── vendor/hermes-agent/          Pinned upstream Hermes Agent submodule
-├── README.openclaw.md            Historical predecessor overview
-└── README.md                     Current Hermes architecture and project guide
+├── deploy/hermes/                Production Compose, Dockerfile, Caddy, examples
+├── plugins/benka/                Plugin manifest and metadata
+├── skills/                       Deployed agent skills — see skills/README.md
+├── workspace/                    Prompt artifacts mounted into the running agent
+├── scripts/                      Verification, packaging, and diagram tooling
+│   └── README.md                  Current vs predecessor-era — read before running
+├── docs/                         See docs/README.md for the map
+│   ├── adr/                       12 architecture decision records
+│   ├── reference/                 Glossary, services, schedules
+│   ├── hermes/                    Migration, operations, acceptance, cutover, panel
+│   ├── assets/                    Generated light/dark diagram pairs
+│   └── archive/                   Earlier stages, clearly marked historical
+├── tests/ · artifacts/*/tests/   22 test modules
+└── vendor/hermes-agent/          Pinned upstream runtime submodule
 ```
 
-To obtain the source and pinned runtime on an isolated VPS:
+To obtain the source and the pinned runtime:
 
 ```bash
 git clone --recurse-submodules https://github.com/eiler2005/my-ai-office.git
 cd my-ai-office
 ```
 
-Continue with the [operations runbook](docs/hermes/operations.md) for container builds and private deployment configuration.
+The `--recurse-submodules` flag matters: the runtime is a pinned submodule
+([ADR-0012](docs/adr/0012-vendor-hermes-as-a-pinned-submodule.md)), and a clone without it fails
+confusingly later.
+
+Continue with the [operations runbook](docs/hermes/operations.md) for container builds and private
+deployment configuration.
 
 ## Documentation
 
-The repository keeps the public engineering story, reproducible deployment templates, and operational evidence together. Live access details, credentials, message bodies, and private archives are deliberately excluded.
+The repository keeps the engineering story, reproducible deployment templates, and operational
+evidence together. Live access details, credentials, message bodies, and private archives are
+deliberately excluded.
 
-| Document | What it covers |
+**Start from the row that matches why you are here.** The full index is in
+[`docs/README.md`](docs/README.md).
+
+| If you are… | Read, in this order |
 | --- | --- |
-| [Architecture](docs/architecture.md) | Layered business and agent architecture, workflow catalog, runtime boundaries, queue and delivery semantics, models, knowledge, interfaces, and recovery. |
-| [Engineering case study](docs/engineering-case-study.md) | The design decisions behind the office: integration boundaries, model limits, provenance, delivery uncertainty, and migration. |
-| [Hermes migration plan](docs/hermes/migration-plan.md) | The original staged migration, rehearsal, cutover, rollback, and acceptance plan. |
-| [Transfer inventory](docs/hermes/inventory.md) | Service and data mapping, schedules, dependencies, and secret categories without their values. |
-| [Operations](docs/hermes/operations.md) | Build, manifests, profiles, model configuration, queues, knowledge services, panel, and observation procedures. |
-| [Acceptance record](docs/hermes/acceptance.md) | VPS verification scope, recorded results, production fixes, and remaining observation gates. |
-| [Cutover record](docs/hermes/cutover-record-2026-09-06.md) | The recorded production switch and the retained rollback boundary. |
-| [Cutover and rollback](docs/hermes/cutover-rollback.md) | Fresh snapshot, activation, reconciliation, and safe rollback procedure. |
-| [Panel runbook](docs/hermes/panel.md) | Isolated dashboard proxy, authentication, WebSocket, and certificate maintenance. |
-| [Drift log](docs/hermes/drift-log.md) | Differences found between the predecessor and the Hermes implementation. |
-| [OpenClaw predecessor](docs/archive/openclaw/README.md) | Historical handoff material; not an installation guide for the current office. |
+| **Evaluating this as engineering work** | [Engineering case study](docs/engineering-case-study.md) → [Decision records](docs/adr/) → [Architecture](docs/architecture.md) |
+| **Trying to understand the system** | [Architecture](docs/architecture.md) → [Workflows](docs/workflows.md) → [Knowledge](docs/knowledge.md) |
+| **Going to operate it** | [Operations](docs/hermes/operations.md) → [Reliability](docs/reliability.md) → [Security](docs/security.md) → [Panel](docs/hermes/panel.md) |
+| **Looking something up** | [Glossary](docs/reference/glossary.md) · [Services](docs/reference/services.md) · [Schedules](docs/reference/schedules.md) |
+| **Here for the migration story** | [Migration plan](docs/hermes/migration-plan.md) → [Acceptance record](docs/hermes/acceptance.md) → [Cutover record](docs/hermes/cutover-record-2026-09-06.md) → [Archive](docs/archive/) |
+
+Two conventions worth knowing before you read further. **Claims are bounded** — where a check has not
+been run, the documentation says so, and the [acceptance record](docs/hermes/acceptance.md) keeps its
+open gates open. **The archive is not the current system** — documents under
+[`docs/archive/`](docs/archive/) describe the retired predecessor runtime and are kept because the
+migration is part of the engineering story, not because they describe anything running today.
 
 ## Security
 
@@ -471,15 +512,17 @@ Security is implemented as runtime boundaries and recovery rules, rather than a 
 - **Delivery is defensive.** A run is deduplicated before execution; a Telegram delivery is confirmed only after a message identifier is returned. Pending or uncertain results go to reconciliation, never automatic replay.
 - **Models are bounded.** Background work has a fresh Hermes home, no inherited conversation memory, limited tools and time, output validation, and deterministic fallback paths where suitable.
 
-See the [security and architecture boundary](docs/architecture.md#runtime-boundaries) and the [Git/redaction policy](docs/archive/openclaw/08-git-and-redaction-policy.md) for the inherited policy record.
+The full model — what is protected, the six trust boundaries, and the **known limits** — is in [docs/security.md](docs/security.md). Decisions: [ADR-0001](docs/adr/0001-self-host-on-one-private-vps.md), [ADR-0010](docs/adr/0010-single-public-listener-with-mtls.md).
 
 ## Deployment status & evidence
 
-**Recorded status, 6 September 2026: `ACTIVE_ON_HERMES`.** The production switch used a fresh cold snapshot on the Hermes VPS. The former OpenClaw server's Docker services were stopped, and its state was retained for rollback. The [cutover record](docs/hermes/cutover-record-2026-09-06.md) documents the operation.
+**Recorded status, 6 September 2026: `ACTIVE_ON_HERMES`.** The production switch used a fresh cold snapshot on the Hermes VPS. The predecessor server's Docker services were stopped and its state retained for rollback — kept real rather than theoretical, for at least 14 days after full acceptance. The [cutover record](docs/hermes/cutover-record-2026-09-06.md) documents the operation.
 
 The [VPS rehearsal record](docs/hermes/acceptance.md) reports **209 passing regression checks**, native Hermes contract checks, Redis persistence/recovery checks, and authenticated dashboard checks. Results are tied to the candidate and scope documented there. The required 48-hour observation and full production acceptance remain open in that record.
 
-Builds and runtime verification run on the VPS. This project does not use GitHub Actions for deployment or application testing.
+Builds and functional verification run on the VPS, against real Redis, a read-only root filesystem, and real resource limits — the conditions that catch real defects. The first such run found three that no hosted runner would have surfaced.
+
+CI is therefore scoped to publication safety: a secret scan over the full history, and a documentation check (lint, link and anchor resolution, Mermaid parsing, and a guard that the generated diagrams still match their generator). **There is deliberately no test workflow and no deployment workflow**, and the repository holds no credential for the VPS. The reasoning, including why the absence of a green test badge is the honest choice, is in [ADR-0011](docs/adr/0011-verification-on-the-vps-not-in-ci.md).
 
 ## Public code, private office
 
