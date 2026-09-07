@@ -14,6 +14,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
+- **The public Docs and Secret scan badges could show `failing` even when their
+  checks had not failed.** GitHub cancelled each run before its job started when
+  a competing request entered the workflow's concurrency group. The workflows
+  are short and independent, so the cancellation policy was removed; every
+  triggered validation can now complete and report its actual result.
+
 - **Every Benka tool failed with `FileNotFoundError` in every domain.** `profiles.py` generated
   `manifest_path` as `/state/hermes/profiles/<domain>.json`, inside the profile's Hermes home, but
   Compose mounts the manifests read-only at `/run/benka/profiles/`. `{runtime_home}/profiles/<domain>`
