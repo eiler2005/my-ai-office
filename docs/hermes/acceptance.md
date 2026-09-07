@@ -273,6 +273,86 @@ by the scheduled refresh rather than re-captured.
 next scheduled refresh is what re-indexes the backlog. Confirm afterwards that a Knowledgebase
 question about recently captured content returns references, not just a response.
 
+## Why the index stayed frozen, and why Last30Days went undelivered
+
+**2026-09-07.** Two separate causes, both now fixed. Manifests are hash-bound to their activation
+receipts, so neither could be repaired by editing a file in place — the generator had to be fixed and
+the manifests regenerated.
+
+### Last30Days delivery is refused by the allowlist
+
+The 07:00 MSK run on 2026-09-07 executed and wrote `Last30Days/Expanded/2026-09-07-last30daysTrend.md`,
+then failed:
+
+```text
+delivery.py: PermissionError: Destination is not in this domain's allowlist
+```
+
+The worker posts to Telegram topic `414`. Every worker manifest carries the same four-topic
+allowlist — `119`, `122`, `125`, `126` — and `414` is in none of them. There are five publishing
+workers and four allowlisted topics.
+
+`414` is the pipeline's own declared destination: the live reviewed `signals/config.json` names it
+in three places — `.last30days.telegram.topic_id` and both presets — and Last30Days' state files
+carry it back to April.
+
+The cause is in the generator. `production.finalize()` built the allowlist by sweeping bridge `.env`
+files for `EMAIL_DIGEST` / `DIGEST` / `SIGNALS` topic variables. Last30Days declares its topic in the
+reviewed signals config instead, so the sweep never saw it: five publishing workers, four allowlisted
+topics. `finalize()` now also collects reviewed topic ids from the signals config's `last30days`
+section, using the `_find_topic_ids()` helper that already existed for bindings.
+
+The delivery contract behaved correctly throughout. A worker may not publish to a destination that is
+not configured, and it did not.
+
+**Deployed 2026-09-07.** The manifest is hash-bound, so the receipt was rebound alongside it: `414`
+was added to `delivery_targets`, the manifest digest recomputed, and `manifest_sha256` updated in
+`activation/last30days.json` with `command`, `snapshot_sha256` and `old_writers_stopped` left
+untouched. Both files were backed up first. `require_active(config, "send")` accepts the rebound
+receipt.
+
+The missed 2026-09-07 07:00 release was never sent — it failed before delivery, so there is no
+duplicate risk in a controlled catch-up. That remains the owner's call; the next scheduled run
+delivers normally.
+
+### The RAG scan aborted on the first document LightRAG already had
+
+Every 30 minutes since the cutover, `rag-scan` failed and went to reconciliation — 50 entries by
+2026-09-07 11:30.
+
+The first diagnosis in this record was wrong and is corrected here. It reported that the `personal`
+profile manifest lacked `rag_source_root`, `rag_index_roots` and the `index` operation. That manifest
+does lack them, but it is not the one the scan uses: `rag-scan` runs in the **maintenance** worker,
+against `/run/benka/manifest.json`, which has all three:
+
+```text
+enabled_operations : ['worker', 'wiki_write', 'index']
+rag_source_root    : /vault
+rag_index_roots    : ['wiki', 'Telegram Digest', 'Last30Days', 'PlatformPulse', 'Recordings']
+```
+
+The real fault was in this project's code. `maintenance.upload()` called `raise_for_status()` on
+every response, and LightRAG answers **409 Conflict** for content it already holds:
+
+```text
+HTTPError: 409 Client Error: Conflict for url: http://lightrag:9621/documents/upload
+```
+
+For a scan, 409 means "already indexed" — a success. Treating it as fatal aborted the run on the
+first known file, so it never reached the new ones. `upload()` now records the digest and returns
+`status: "duplicate"`, and the scan continues. Three regression tests cover the single response, the
+scan continuing past it, and the digest preventing a re-upload on the next pass.
+
+The permission defect fixed earlier the same day was real and independent: before it, the same
+uploads returned 500. Fixing it changed the failure from 500 to 409 and revealed this one.
+
+**Deployed 2026-09-07.** The maintenance worker was recreated on the verified image. The first real
+scan afterwards completed across **2,760 files: 2,126 submitted, 482 duplicates, 152 unchanged** —
+where before, the first duplicate ended the run.
+
+Captures kept their wiki pages throughout, because the artifact is the store and the index is
+derived. Nothing was lost; it was not yet searchable.
+
 ## Verified on the Hermes VPS
 
 The server-side run executed in containers with a read-only root, no production secrets, and a

@@ -41,6 +41,12 @@ def upload(config, client, path):
     with path.open("rb") as content:
         response = requests.post(config["rag_url"].rstrip("/") + "/documents/upload",
             files={"file": (path.name, content, "text/markdown")}, headers={"X-API-Key": token}, timeout=120)
+    if response.status_code == 409:
+        # LightRAG already holds this content. For a scan that is success, not a
+        # fault: aborting here leaves every later file -- including genuinely new
+        # ones -- unindexed. Record the digest so the next pass skips it locally.
+        client.set(key, sha)
+        return {"source": relative, "status": "duplicate"}
     response.raise_for_status()
     result = response.json()
     if result.get("status") in {"failure", "failed", "error"} or result.get("ok") is False:

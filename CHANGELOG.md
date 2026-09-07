@@ -111,7 +111,30 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   keeps the log with the rest of the writable state. As root it could write its log but not its
   data; as 1000 it can do both.
 
+### Fixed
+
+- **A RAG scan aborted on the first document LightRAG already held.** `maintenance.upload()` called
+  `raise_for_status()` on every response, and LightRAG answers **409 Conflict** for content it
+  already has. For a scan that is success, not a fault — but it ended the run before any new file was
+  reached, so the graph stayed frozen and `benka:reconcile` collected 50 entries. `upload()` now
+  records the digest and returns `status: "duplicate"`. Three regression tests cover the response,
+  the scan continuing past it, and the digest preventing a re-upload.
+
+- **Last30Days had no allowlisted destination.** `production.finalize()` built `delivery_targets` by
+  sweeping bridge `.env` files for `EMAIL_DIGEST` / `DIGEST` / `SIGNALS` topic variables. Last30Days
+  declares its topic in the reviewed signals config, so the sweep missed it — five publishing
+  workers, four allowlisted topics — and every release failed at `delivery.py` with
+  `Destination is not in this domain's allowlist`. `finalize()` now also collects reviewed topic ids
+  from the signals config's `last30days` section.
+
 ### Deployed
+
+- **2026-09-07** — recreated `worker-maintenance` on candidate tree
+  `72cfb4451c967128fb1e990788dc821b396ac6e2` (VPS verification exit 0, **224 passing**), then ran a
+  real scan: 2,760 files, 2,126 submitted, 482 duplicates, 152 unchanged. Added topic `414` to the
+  Last30Days `delivery_targets` and rebound its hash-bound activation receipt, leaving `command`,
+  `snapshot_sha256` and `old_writers_stopped` untouched; both files backed up first.
+  `require_active(config, "send")` accepts the result.
 
 - **2026-09-07** — recreated `lightrag` alone with `--no-deps` for the fix above. Retrieval was down
   for about four minutes between the two restarts. Verified after: container runs as `1000:1000`,

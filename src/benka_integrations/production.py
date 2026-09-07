@@ -610,6 +610,14 @@ def finalize(destination: Path, *, snapshot_sha256: str) -> dict[str, Any]:
             chat, topic = values.get(prefix + "_SUPERGROUP_ID"), values.get(prefix + "_TOPIC_ID")
             if chat:
                 delivery.append(f"telegram:{chat}" + (f":{topic}" if topic else ""))
+    # Last30Days declares its destination in the reviewed signals config, not in a
+    # bridge .env, so the env sweep above never saw it and the worker's own send was
+    # refused by its allowlist. Collect the reviewed topic ids too.
+    signals_review = _read_json(private / "config/signals/config.json")
+    supergroup = next((target.split(":")[1] for target in delivery if target.startswith("telegram:")), None)
+    if supergroup:
+        for topic in _find_topic_ids(signals_review.get("last30days", {})):
+            delivery.append(f"telegram:{supergroup}:{topic}")
     delivery = sorted(set(delivery))
     maintenance = _worker_manifest(domain="personal", pipeline="maintenance", stream="benka:maintenance:personal", group="benka-maintenance", delivery_targets=delivery, receipt="/run/benka/activation/maintenance.json")
     maintenance.update({
