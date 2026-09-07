@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
+# ---------------------------------------------------------------------------
+# PREDECESSOR-ERA SCRIPT -- DO NOT RUN AGAINST PRODUCTION.
+# Targets the retired OpenClaw deployment. Production moved to Hermes Agent on
+# 2026-09-06 and is operated through docs/hermes/operations.md. Kept for
+# rollback and migration reference only. See scripts/README.md.
+# ---------------------------------------------------------------------------
+
 # Apply only the Qwen direct-provider and fallback-order migration to the
 # existing live OpenClaw config. The remote script makes a dated backup before
 # replacing the JSON and never emits environment values.

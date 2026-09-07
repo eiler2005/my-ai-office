@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
+# ---------------------------------------------------------------------------
+# PREDECESSOR-ERA SCRIPT -- DO NOT RUN AGAINST PRODUCTION.
+# Targets the retired OpenClaw deployment. Production moved to Hermes Agent on
+# 2026-09-06 and is operated through docs/hermes/operations.md. Kept for
+# rollback and migration reference only. See scripts/README.md.
+# ---------------------------------------------------------------------------
+
 # sync-obsidian.sh
 # One-way rsync: Obsidian vault (Mac/iCloud) → server (/opt/obsidian-vault/)
 # Read-only on server — server never writes back to vault.

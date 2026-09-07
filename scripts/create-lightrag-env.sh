@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
+# ---------------------------------------------------------------------------
+# PREDECESSOR-ERA SCRIPT -- DO NOT RUN AGAINST PRODUCTION.
+# Targets the retired OpenClaw deployment. Production moved to Hermes Agent on
+# 2026-09-06 and is operated through docs/hermes/operations.md. Kept for
+# rollback and migration reference only. See scripts/README.md.
+# ---------------------------------------------------------------------------
+
 # create-lightrag-env.sh
 # Creates scripts/lightrag.env by prompting for OmniRoute and wiki-import keys.
 # OmniRoute `light` uses Qwen first and DeepSeek only as the last reserve;

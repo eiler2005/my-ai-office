@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
+# ---------------------------------------------------------------------------
+# PREDECESSOR-ERA SCRIPT -- DO NOT RUN AGAINST PRODUCTION.
+# Targets the retired OpenClaw deployment. Production moved to Hermes Agent on
+# 2026-09-06 and is operated through docs/hermes/operations.md. Kept for
+# rollback and migration reference only. See scripts/README.md.
+# ---------------------------------------------------------------------------
+
 
 set -euo pipefail
 
