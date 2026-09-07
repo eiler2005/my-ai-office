@@ -130,9 +130,13 @@ The system previously ran on OpenClaw. That runtime is **retired**. Its document
 English everywhere, with three exceptions: the `обсуди:` trigger keyword, Russian product names in
 historical `CHANGELOG.md` entries, and **`workspace/*.md`**.
 
-`workspace/*.md` files are prompt artifacts mounted into the running agent. Benka converses with its
-owner in Russian. **Translating them changes production behaviour** — treat them as code, not
-documentation. See `CONTRIBUTING.md#language`.
+`workspace/*.md` are **predecessor-era** prompt artifacts. Hermes does not mount them; the live
+prompt surface is each profile's `SOUL.md` and its installed skills. They are kept in Russian as a
+behavioural record.
+
+**To change what Benka does, edit `skills/` or the system prompt section in
+`src/benka_integrations/plugin.py`.** Those are deployed and require an image rebuild plus a
+verified VPS run. See `CONTRIBUTING.md#language`.
 
 ## Documentation
 

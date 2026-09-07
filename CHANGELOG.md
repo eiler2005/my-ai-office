@@ -32,6 +32,29 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   `tests/hermes/test_tool_errors.py` covers all of it, including that a readable credential value
   never reaches a failure report.
 
+### Changed
+
+- **Knowledgebase captures forwarded content again.** After the manifest repair the tools worked but
+  were never called: `skills/benka-knowledge` said "capture only on the user's request" and the
+  plugin system prompt agreed, while the surface's pinned message and the README promised
+  auto-capture. The rule that made the predecessor behave as documented lived in
+  `workspace/TELEGRAM_POLICY.md`, which **Hermes does not mount** — a migration gap, now `D007` in
+  the drift log.
+
+  A forwarded post, a URL, long multi-line content, or an explicit instruction is a capture request;
+  short question-shaped messages are searches; ambiguous ones are captured. `обсуди:` remains the
+  opt-out and is now the only one. A save may be reported as done only with a real
+  `wiki/research/**` path.
+
+- **`workspace/*.md` provenance corrected.** These files were documented — by me, in the previous
+  commits — as prompt artifacts mounted into the running agent. They are not, under Hermes: the live
+  prompt surface is each profile's `SOUL.md` and its installed skills. They are predecessor-era
+  records, and the banners, CONTRIBUTING, CLAUDE.md and the docs index now say so.
+
+- **Memory enabled on the `personal` profile.** `memory_enabled` and `user_profile_enabled` were
+  off. The reviewed files were within the documented limits: `USER.md` 1,376 characters against
+  1,375 (the trailing newline) and `MEMORY.md` 2,183 against 2,200.
+
 ### Deployed
 
 - **2026-09-07** — corrected `manifest_path` in the four live profile configs and restarted the
@@ -39,8 +62,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   `benka_status` returns the production personal manifest, `wiki_lint` reaches the wiki service
   (1,485 pages scanned) and `lightrag_query` returns references — so the manifest, activation
   receipt, credential files and knowledge services all resolve. The eleven other Benka containers
-  and all ten neighbouring containers were untouched. The runtime image was not rebuilt, so the
-  improved error reporting above ships with the next image build.
+  and all ten neighbouring containers were untouched.
+
+- **2026-09-07** — rebuilt and deployed the runtime image for the capture-rule and error-reporting
+  changes, which live in the image rather than in config. Candidate tree
+  `2a245b48f3488b29663db843b7d60d45e38c805f`, verified by `scripts/run-hermes-vps-tests.sh` on the
+  isolated builder with exit code 0: **221 passing** across five suites, 7 native plugin tools,
+  paused idempotent cron, bounded AIAgent contract, offline standby. Tagged
+  `benka-hermes:capture-fix-2a245b48`. Only the Gateway and dashboard were recreated with
+  `--no-deps`; the six workers stayed on their previous image and the neighbours were untouched.
+  Gateway healthy in 50 s; the new rule confirmed loaded and the old one absent.
 
 ### Added
 

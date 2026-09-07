@@ -67,8 +67,8 @@ Start from the row that matches why you are here.
 ## Conventions
 
 **Language.** Everything is English, with three deliberate exceptions: the `обсуди:` trigger keyword,
-Russian product names in historical changelog entries, and `workspace/*.md` — those are prompt
-artifacts mounted into the running agent, so translating them would change production behaviour. See
+Russian product names in historical changelog entries, and `workspace/*.md` — predecessor-era prompt
+artifacts kept as a behavioural record, which Hermes does not mount. See
 [CONTRIBUTING](../CONTRIBUTING.md#language).
 
 **Status claims are bounded.** Where a check has not been run, the documentation says so. The

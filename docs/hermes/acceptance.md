@@ -122,6 +122,71 @@ window.
 The improved tool error reporting committed alongside this fix is **not yet live**: it lives in the
 runtime image and ships with the next image build.
 
+## Restoring Knowledgebase auto-capture
+
+**2026-09-07.** After the manifest path was repaired, a forwarded post in Knowledgebase still
+produced only a conversational reply and no wiki page. Nothing had been written to the vault in six
+hours apart from the scheduled Last30Days run.
+
+The tools were working; they were simply never called. The live instructions said not to:
+
+| Source | Rule | Deployed? |
+|---|---|---|
+| `workspace/TELEGRAM_POLICY.md` | A forwarded post, URL or long text **is** a capture request; when in doubt, save | **No** — the predecessor mounted `workspace/`; Hermes does not |
+| `skills/benka-knowledge/SKILL.md` | "Capture only on the user's request" | Yes |
+| Plugin system prompt | "Save only on explicit capture intent" | Yes |
+
+So the per-surface capture rule was lost in the migration, while the topic's pinned message and the
+README continued to promise it. Recorded as `D007` in the [drift log](drift-log.md).
+
+The `workspace/` provenance was also documented incorrectly in this repository — those files were
+described as mounted into the running agent. They are not, under Hermes. Corrected.
+
+### What changed
+
+The rule now lives in the two places that are actually deployed: `skills/benka-knowledge` and the
+plugin's system prompt section. A forwarded post, a URL, long multi-line content, or an explicit
+instruction is a capture request; short question-shaped messages are searches; ambiguous messages
+are captured, because a page the owner did not need is cheaper than a lost source. `обсуди:` remains
+the opt-out, and is now the *only* one — the agent may not decline because content looks
+unimportant. A save may be reported as done only with a real `wiki/research/**` path in the result.
+
+`memory_enabled` and `user_profile_enabled` were also switched on for the `personal` profile. The
+reviewed files were within the documented limits beforehand: `USER.md` 1,376 characters against
+1,375, which is the trailing newline, and `MEMORY.md` 2,183 against 2,200.
+
+### Verification
+
+The system prompt lives in the runtime image, so this required a rebuild rather than a config edit.
+Candidate tree `2a245b48f3488b29663db843b7d60d45e38c805f`, built and verified with
+`scripts/run-hermes-vps-tests.sh` on the isolated `benka-migration` builder, exit code 0:
+
+| Suite | Result |
+|---|---|
+| Hermes safety / migration / archive / cron / profiles / maintenance / tool errors | 57 passed |
+| AgentMail | 19 passed |
+| Telegram Digest | 21 passed |
+| Signals / Last30Days | 98 passed |
+| Wiki-import | 26 passed |
+| **Total** | **221 passed** |
+| Native plugin / cron / AIAgent contract | 7 tools, paused idempotent cron, bounded API |
+| Offline standby | `standby` / `sandbox` / `automatic_cutover=false` |
+
+Runtime image `sha256:76f4f4271ae311ccbaa4d303dd0dd0ca104aa6fe46e337a9e2367160ee2e8637`, tagged
+`benka-hermes:capture-fix-2a245b48`.
+
+Deployed by recreating **only** the Gateway and the dashboard with `--no-deps`; the dashboard
+follows because it shares the Gateway's namespaces. The six workers stayed on their previous image —
+they do not use the plugin's prompt — and the ten neighbouring containers were untouched. Configs,
+the env file and the four skill files were backed up first.
+
+After deployment the Gateway reached `healthy` in 50 s, the new rule was confirmed present in the
+loaded module and the old one absent, and `benka_status` returned the production personal manifest.
+
+**Still open.** The behavioural check itself is the owner's: forward a post into Knowledgebase with
+no save instruction and confirm a `wiki/research/**` page appears. No test capture was written into
+the owner's knowledge base as part of this work.
+
 ## Verified on the Hermes VPS
 
 The server-side run executed in containers with a read-only root, no production secrets, and a

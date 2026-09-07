@@ -61,9 +61,12 @@ Everything is **English**, with three deliberate exceptions.
 | --- | --- |
 | The `обсуди:` trigger keyword | It is a literal user-facing command. Translating it breaks it. |
 | Russian product names in historical `CHANGELOG.md` entries | They record what actually shipped. Rewriting history is falsification. |
-| **`workspace/*.md`** | These are prompt artifacts **mounted into the running agent**. Benka converses with its owner in Russian; translating them changes production behaviour. |
+| **`workspace/*.md`** | Predecessor-era prompt artifacts. Hermes does not mount them — the live prompt surface is each profile's `SOUL.md` and its installed skills. Kept in Russian as a behavioural record, for the same reason the archive is. |
 
-`workspace/` is not documentation. Treat every file there as code that happens to be prose.
+`workspace/` is a record, not a live configuration. To change what Benka actually does, edit
+[`skills/`](skills/) or the system prompt section in
+[`plugin.py`](src/benka_integrations/plugin.py) — those *are* deployed, and changing them changes
+production behaviour.
 
 ## Documentation conventions
 
