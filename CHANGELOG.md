@@ -7,6 +7,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [2026-09-07]
 
+### Documentation
+
+- Promoted the current Hermes documentation map and reference set to the
+  public mainline while preserving the branded Benka hero banner in the README.
+
 ### Fixed
 
 - **Every Benka tool failed with `FileNotFoundError` in every domain.** `profiles.py` generated
@@ -54,6 +59,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Memory enabled on the `personal` profile.** `memory_enabled` and `user_profile_enabled` were
   off. The reviewed files were within the documented limits: `USER.md` 1,376 characters against
   1,375 (the trailing newline) and `MEMORY.md` 2,183 against 2,200.
+
+### Documented
+
+- **A prompt change does not reach an open conversation.** Hermes freezes a plugin's system prompt
+  section into a session at creation and persists it verbatim, so a rebuilt image changes nothing
+  for sessions that were already open. Both live personal sessions referenced one stored prompt,
+  `d90d26505a0b6c96`, holding the old capture rule. Recorded in
+  [operations](docs/hermes/operations.md#changing-the-agents-instructions) with the query that shows
+  which prompt a session is actually running, because the symptom — "the deploy did nothing" — is
+  indistinguishable from a failed deployment without it.
 
 ### Deployed
 

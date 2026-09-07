@@ -169,6 +169,39 @@ not shared through the global environment between multiplex profiles.
 For the panel, choose a separate scoped `HERMES_HOME` and a permitted profile; do not open the
 shared administrative profile to the family.
 
+### Changing the agent's instructions
+
+The plugin's system prompt section is **frozen into each session when that session is created**, and
+Hermes persists the rendered text verbatim.
+
+> [!IMPORTANT]
+> Deploying a new image does **not** change how an existing conversation behaves. Sessions that were
+> open before the deployment keep the old prompt indefinitely — `ended_at` stays null and the
+> session keeps reusing its stored `system_prompt_hash`.
+
+So a prompt or skill change needs three things, not one:
+
+1. Rebuild and deploy the image (the prompt section lives in `benka_integrations`, not in config).
+2. Deploy the skill files into each profile home, if they changed.
+3. **Start a new session on every affected surface.** In Telegram that is `/new` in the topic;
+   `new` must be in that profile's `user_allowed_commands`.
+
+Confirm which prompt a session is actually using before concluding a change did not work:
+
+```bash
+docker exec benka-hermes-gateway-1 python3 -c "
+import sqlite3
+con = sqlite3.connect('file:/state/hermes/profiles/personal/state.db?mode=ro', uri=True)
+h, prompt = con.execute('select hash, prompt from system_prompts').fetchone()
+print(h[:16], len(prompt))
+for row in con.execute('select session_key, message_count, ended_at, substr(system_prompt_hash,1,16) from sessions'):
+    print(row)
+"
+```
+
+A session whose `system_prompt_hash` matches a prompt that lacks your change is running the old
+instructions, however correct the deployment is.
+
 ## Models and integrations
 
 The interactive ladder uses a dedicated ChatGPT Codex OAuth credential in the private Hermes auth

@@ -183,9 +183,30 @@ the env file and the four skill files were backed up first.
 After deployment the Gateway reached `healthy` in 50 s, the new rule was confirmed present in the
 loaded module and the old one absent, and `benka_status` returned the production personal manifest.
 
-**Still open.** The behavioural check itself is the owner's: forward a post into Knowledgebase with
-no save instruction and confirm a `wiki/research/**` page appears. No test capture was written into
-the owner's knowledge base as part of this work.
+### The deployment alone was not enough
+
+A forwarded post after the deployment still produced only a reply. The deployment was correct; the
+**session** was not.
+
+Hermes freezes a plugin's system prompt section into a session when the session is created and
+persists it verbatim. Both live personal sessions — including the Knowledgebase topic, open with 25
+messages — referenced one stored prompt, hash `d90d26505a0b6c96`, which contains the old rule and
+not the new one:
+
+```text
+system_prompts.prompt : rows with the old rule = 1, with the new rule = 0
+sessions              : both rows reference d90d26505a0b6c96, ended_at = null
+```
+
+An existing conversation therefore keeps the old instructions indefinitely, no matter how many times
+the image is rebuilt. The procedure is recorded in
+[operations](operations.md#changing-the-agents-instructions): rebuild, deploy the skills, **and
+start a new session on every affected surface** — `/new` in the topic, which is in this profile's
+`user_allowed_commands`.
+
+**Still open.** The behavioural check is the owner's: send `/new` in Knowledgebase, forward a post
+with no save instruction, and confirm a `wiki/research/**` page appears. No test capture was written
+into the owner's knowledge base as part of this work.
 
 ## Verified on the Hermes VPS
 
