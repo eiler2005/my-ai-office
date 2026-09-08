@@ -16,7 +16,7 @@ Used to build, verify, and operate the Hermes system.
 | `verify-hermes-panel-vps.py` | Panel checks, negatives first: mTLS refusal, no-session refusal, wrong password, then a successful login, cookies, APIs, WebSocket upgrade, and ticket replay refusal. Reports no endpoint, cookie, or credential. |
 | `verify-redis-vps.py` | Redis persistence and recovery against a real instance. |
 | `verify-hermes-claw-vps.py` | Native importer rehearsal against synthetic data. |
-| `test-hermes.py` | Local contract smoke. |
+| `test-hermes.py` | The offline suite: five functional areas (`hermes`, `email`, `telegram`, `signals`, `wiki`), one interpreter each, scrubbed environment. `--suite NAME` narrows a run, `--list` names them. Not the release gate — see [testing](../docs/testing.md). |
 | `prepare-hermes-panel.py` | Operator-only panel preparation: private directories, certificate copy, client certificate issue. Refuses to repeat initial setup so existing credentials cannot be replaced by accident. |
 | `package-hermes-candidate.py` | Builds a candidate export for VPS verification. |
 | `prepare-hermes-adapters.py` | Migration tooling: maps predecessor service configuration onto Hermes workers. |

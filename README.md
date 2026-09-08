@@ -37,7 +37,7 @@ Benka runs on [Hermes Agent](https://github.com/NousResearch/hermes-agent). The 
 | **Background workers** | 6, each with its own manifest, cursor, consumer group, and delivery route |
 | **Sources** | 2 mailboxes · ~150–200 Telegram channels · 7 research platforms |
 | **Surfaces** | 12 purpose-specific Telegram destinations, plus CLI and a dashboard |
-| **Verification** | 209 checks recorded at cutover on the VPS · 21 test modules |
+| **Verification** | 209 checks recorded at cutover on the VPS · [28 test modules](docs/testing.md) |
 | **Decisions on record** | [12 ADRs](docs/adr/) with alternatives and costs |
 
 <picture>
@@ -461,7 +461,7 @@ Model selection is configured per workload. Interactive and auxiliary tasks have
 │   ├── hermes/                    Migration, operations, acceptance, cutover, panel
 │   ├── assets/                    Generated light/dark diagram pairs
 │   └── archive/                   Earlier stages, clearly marked historical
-├── tests/ · artifacts/*/tests/   21 test modules
+├── tests/ · artifacts/*/tests/   28 test modules — see tests/README.md
 └── vendor/hermes-agent/          Pinned upstream runtime submodule
 ```
 
@@ -523,6 +523,8 @@ The full model — what is protected, the six trust boundaries, and the **known 
 The [VPS rehearsal record](docs/hermes/acceptance.md) reports **209 passing regression checks**, native Hermes contract checks, Redis persistence/recovery checks, and authenticated dashboard checks. Results are tied to the candidate and scope documented there. The required 48-hour observation and full production acceptance remain open in that record.
 
 Builds and functional verification run on the VPS, against real Redis, a read-only root filesystem, and real resource limits — the conditions that catch real defects. The first such run found three that no hosted runner would have surfaced.
+
+Beneath that gate sits an offline suite of **28 test modules across five functional areas** — permission gates, container entrypoints, worker dispatch, the isolated model subprocess, delivery allowlists, and the production cutover tree — run locally in one interpreter per suite with a scrubbed environment. It is organised around what each layer *refuses* to do, and every regression test names the incident it came from. The layering, the runners, and what is deliberately left untested are in [docs/testing.md](docs/testing.md).
 
 CI is therefore scoped to publication safety: a secret scan over the full history, and a documentation check (lint, link and anchor resolution, Mermaid parsing, and a guard that the generated diagrams still match their generator). **There is deliberately no test workflow and no deployment workflow**, and the repository holds no credential for the VPS. The reasoning, including why the absence of a green test badge is the honest choice, is in [ADR-0011](docs/adr/0011-verification-on-the-vps-not-in-ci.md).
 

@@ -5,6 +5,54 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2026-09-08]
+
+### Added
+
+- **Tests for the four modules that had none.** `service.py` and `cli.py` are the container
+  ENTRYPOINT and the `benka status` healthcheck; `pipelines.py` derives which permission a queued
+  job needs and owns its private logs; `model_child.py` is the isolated model subprocess. All four
+  sit in front of side effects, and all four were previously exercised only as black boxes on the
+  VPS. The new suites assert the refusals: an unactivated manifest starts no service, a job cannot
+  pick a weaker permission than its work needs, a worker log is named by hash and readable only by
+  its owner, and a provider's exception message never crosses the pipe to its parent.
+
+- **Tests for the production cutover path.** `production.py` is the highest-stakes module here and
+  only its delivery allowlist was covered. `prepare` and `refresh_schedules` now have a synthetic
+  restored snapshot to run against, covering identifier validation, refusal to touch a populated
+  destination, an incomplete restore copying nothing, symlink omission, the container-network
+  rewrite of every bridge env, and the hash binding between a refreshed manifest and its receipt.
+
+- **`docs/testing.md` and `tests/README.md`.** The strategy document carries the pyramid from the
+  offline suites up to the VPS release gate, a runner table, a module-to-suite coverage map, and an
+  explicit account of what is deliberately not tested — Telegram ingress above all. The tests README
+  is the operator view, one section per functional area.
+
+### Changed
+
+- **`scripts/test-hermes.py` can run one functional area.** The suites are now a named registry —
+  `hermes`, `email`, `telegram`, `signals`, `wiki` — selectable with `--suite` and listable with
+  `--list`, and the run ends with a per-suite summary that names which area failed. The
+  one-interpreter-per-suite isolation and the scrubbed environment are unchanged.
+
+- **A bare `pytest` at the repository root no longer collects the vendored runtime's own suite.**
+  `pyproject.toml` gained a minimal `[tool.pytest.ini_options]` excluding `vendor/`. The project
+  runner remains the supported way to run the tests.
+
+### Fixed
+
+- **`production.refresh_schedules` reported one Signals ruleset more than it scheduled.** The
+  `signals_jobs` count matched every job name beginning with `signals-`, which includes the single
+  `signals-cleanup` retention job. An operator runs this command precisely to confirm that a newly
+  reviewed ruleset arrived, and reads that number to check — so two rulesets reporting three made
+  the one check the command exists for unreliable. Cleanup is excluded from the count; it is still
+  scheduled as before. Found while writing the first tests for this function.
+
+- **The README reported 21 test modules when there were 24.** It now reports the current count and
+  links the new testing documentation.
+
+---
+
 ## [2026-09-07]
 
 ### Documentation

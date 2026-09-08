@@ -113,16 +113,22 @@ Never rewrite an ADR to look better in hindsight. Supersede it with a new one an
 
 ```bash
 uv sync --frozen --extra test --extra hermes
-uv run python scripts/test-hermes.py
+uv run python scripts/test-hermes.py                 # all five suites
+uv run python scripts/test-hermes.py --suite hermes  # one functional area
+uv run python scripts/test-hermes.py --list          # what the suites are
 ```
 
 Use that runner, not bare `pytest`. The suites share module basenames, so each one runs in its own
 interpreter with a clean environment and a temporary home — which also stops a test from picking up
-a developer's real credentials. A bare `pytest` at the repository root additionally tries to collect
-the vendored runtime's own test suite.
+a developer's real credentials. A bare `pytest` at the repository root collects only `tests/hermes`,
+in one process, without any of that.
 
-Expected result: **238 passing** across five suites (74 · 19 · 21 · 98 · 26). Omitting
-`--extra hermes` leaves 6 of them failing on a missing `gateway` module.
+Expected result: **334 passing** across five suites (170 · 19 · 21 · 98 · 26), observed 2026-09-08.
+Omitting `--extra hermes` leaves a handful of them failing on a missing `gateway` module.
+
+[`docs/testing.md`](docs/testing.md) has the layering, the runner table, a module-to-suite coverage
+map, and the conventions for adding a test. [`tests/README.md`](tests/README.md) is the per-suite
+operator view.
 
 The [acceptance record](docs/hermes/acceptance.md) records **209** — that was the count at the
 2026-09-06 cutover, and it stays as written because it is a record of that run, not a target to keep

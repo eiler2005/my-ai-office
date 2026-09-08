@@ -6,9 +6,9 @@ Start from the row that matches why you are here.
 
 | If you are… | Read, in this order |
 | --- | --- |
-| **Evaluating this as engineering work** | [Engineering case study](engineering-case-study.md) → [Decision records](adr/) → [Architecture](architecture.md) |
+| **Evaluating this as engineering work** | [Engineering case study](engineering-case-study.md) → [Decision records](adr/) → [Architecture](architecture.md) → [Testing](testing.md) |
 | **Trying to understand the system** | [Architecture](architecture.md) → [Workflows](workflows.md) → [Knowledge](knowledge.md) |
-| **Going to operate it** | [Operations](hermes/operations.md) → [Reliability](reliability.md) → [Security](security.md) → [Panel](hermes/panel.md) |
+| **Going to operate it** | [Operations](hermes/operations.md) → [Reliability](reliability.md) → [Security](security.md) → [Panel](hermes/panel.md) → [Testing](testing.md) |
 | **Looking something up** | [Glossary](reference/glossary.md) · [Telegram surfaces](reference/telegram-surfaces.md) · [Services](reference/services.md) · [Schedules](reference/schedules.md) · [Versions](reference/versions.md) |
 | **Here for the migration story** | [Migration plan](hermes/migration-plan.md) → [Acceptance](hermes/acceptance.md) → [Cutover record](hermes/cutover-record-2026-09-06.md) → [Archive](archive/) |
 
@@ -24,6 +24,13 @@ Start from the row that matches why you are here.
 | [Knowledge](knowledge.md) | The five memory layers, why capture is explicit, and how grounded search works. |
 | [Security](security.md) | What is protected, the six trust boundaries, secret handling, and the known limits. |
 | [Engineering case study](engineering-case-study.md) | The design decisions as a narrative: integration boundaries, model limits, provenance, delivery uncertainty, migration. |
+
+### Verification
+
+| Document | What it covers |
+| --- | --- |
+| [Testing](testing.md) | The pyramid from offline suites to the VPS release gate, the runners, a module-to-suite coverage map, and what is deliberately not tested. |
+| [Tests README](../tests/README.md) | The operator view: what to run per functional area, and what each run does not tell you. |
 
 ### Decisions
 
