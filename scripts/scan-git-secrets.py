@@ -20,13 +20,21 @@ REVIEWED_VALUES = {
     "artifacts/signals-bridge/tests/test_model_fallbacks.py": {"test-key", "reserve-key"},
     "artifacts/telethon-digest/tests/test_llm_fallbacks.py": {"test-key", "reserve-key", "test"},
     "tests/hermes/test_model_native.py": {"synthetic-local-fixture"},
+    "tests/hermes/test_model_child.py": {"synthetic-provider-key"},
+    "tests/hermes/test_production_prepare.py": {
+        # Synthetic snapshot fixture: a container name and a placeholder model key.
+        "OPENCLAW_EXEC_CONTAINER=openclaw-gateway\\n",
+        "DASHSCOPE_API_KEY=synthetic-qwen-fixture\\nOPENCLAW_EXEC_CONTAINER=openclaw-gateway\\n",
+    },
     "scripts/deploy-agentmail-email.sh": {
         "OPENCLAW_EXEC_CONTAINER=openclaw-openclaw-gateway-1\\n",
         "EMAIL_CONTAINER_NAME=agentmail-email-bridge\\n",
     },
 }
 REVIEWED_VALUES["scripts/scan-git-secrets.py"] = {
-    value.replace("\\n", "\\\\n") for value in REVIEWED_VALUES["scripts/deploy-agentmail-email.sh"]
+    value.replace("\\n", "\\\\n") for source in ("scripts/deploy-agentmail-email.sh",
+                                                 "tests/hermes/test_production_prepare.py")
+    for value in REVIEWED_VALUES[source]
 }
 
 

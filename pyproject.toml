@@ -37,3 +37,9 @@ hermes = ["hermes-agent", "python-telegram-bot[webhooks]==22.8"]
 
 [tool.uv.sources]
 hermes-agent = {path = "vendor/hermes-agent", editable = true}
+
+[tool.pytest.ini_options]
+# The vendored runtime ships its own suite. Collecting it from this root would
+# run a dependency's tests as if they were this project's.
+norecursedirs = ["vendor", ".venv", "node_modules", "docs"]
+testpaths = ["tests/hermes"]
