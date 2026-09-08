@@ -14,7 +14,7 @@ dependencies = [
     "aiohttp==3.14.3",
     "python-dotenv==1.2.2",
     "telethon==1.43.2",
-    "apscheduler==3.10.4",
+    "apscheduler==3.11.3",
     "pytz==2024.1",
     "httpx==0.28.1",
     "beautifulsoup4==4.14.3",
