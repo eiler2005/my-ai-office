@@ -310,8 +310,12 @@ def refresh_schedules(source: Path, destination: Path) -> dict[str, int]:
         raise ValueError("Active Hermes cron runtime is missing")
     _private_file(cron_runtime / "schedules.json", manifest_path.read_text())
     _private_file(cron_receipt_root / "schedules.json", (receipt_root / "schedules.json").read_text())
+    # ``signals-cleanup`` is retention housekeeping, not a reviewed ruleset. An
+    # operator reads these counts to confirm a ruleset arrived, so counting it
+    # here reported one more ruleset than the refresh actually scheduled.
     return {"schedule_count": len(schedules["jobs"]),
-            "signals_jobs": sum(name.startswith("signals-") for name in schedules["jobs"]),
+            "signals_jobs": sum(name.startswith("signals-") and name != "signals-cleanup"
+                                for name in schedules["jobs"]),
             "last30days_jobs": sum(name.startswith("last30days-") for name in schedules["jobs"])}
 
 
