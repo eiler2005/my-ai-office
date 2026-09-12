@@ -131,9 +131,10 @@ knowledge base should be reviewable before they happen.
 > incompatible model silently invalidates the index — the queries keep returning results, and the
 > results stop being right.
 
-`rag_source_root` and `rag_index_roots` are set explicitly; URL ingest is disabled by default;
-`legacy_path_map` translates old absolute queue paths into the new root, and unknown paths and `..`
-are rejected.
+`rag_source_root` and `rag_index_roots` are set explicitly. The personal Knowledgebase profile
+accepts owner-supplied `text` and `url` sources; other domain profiles retain the conservative
+text-only default. `legacy_path_map` translates old absolute queue paths into the new root, and
+unknown paths and `..` are rejected.
 
 ## Related
 

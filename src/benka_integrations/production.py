@@ -616,6 +616,10 @@ def finalize(destination: Path, *, snapshot_sha256: str) -> dict[str, Any]:
                 "enabled_operations": ["wiki", "wiki_read", "wiki_write", "archive_read", "enqueue"],
                 "wiki_url": "http://wiki:8095",
                 "rag_url": "http://lightrag:9621",
+                # Knowledgebase is an owner-controlled capture surface. A URL
+                # sent there is a first-class source, alongside a typed note.
+                # Other domains retain the conservative text-only default.
+                "wiki_source_types": ["text", "url"],
             })
         else:
             for key in ("redis_file", "wiki_token_file", "rag_token_file"):

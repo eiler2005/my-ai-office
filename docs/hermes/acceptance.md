@@ -453,6 +453,22 @@ The change itself was a no-op at runtime: only `production.py` differed, as an e
 new tests, and it is reached from operator CLI commands rather than from the running services. The
 roll was for the invariant, not the behaviour — **what runs is now the tip of `main`.**
 
+## Personal Knowledgebase URL capture restored
+
+**2026-09-12.** The personal profile manifest had no `wiki_source_types` value. The integration
+correctly fell back to `text` only, so a URL in the Knowledgebase topic reached the capture decision
+but was refused before it could reach the wiki service.
+
+The profile now explicitly permits `text` and `url`; its hash-bound activation receipt was updated
+in the same atomic maintenance step. The running Gateway reads the profile manifest per tool call,
+so it did not need a restart. A direct production tool smoke for the owner-supplied link created a
+`wiki/research/**` artifact and an import-queue entry. The initial retrieval state was `delayed`,
+which preserves the capture and lets the normal maintenance worker complete indexing. The Gateway
+remained healthy after the change.
+
+`production.finalize` now emits the same allowlist for future personal production manifests. Other
+profiles remain text-only until their data boundary and owner policy are separately reviewed.
+
 ## Verified on the Hermes VPS
 
 The server-side run executed in containers with a read-only root, no production secrets, and a

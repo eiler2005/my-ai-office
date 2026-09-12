@@ -5,6 +5,19 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2026-09-12]
+
+### Fixed
+
+- **Knowledgebase rejected an owner-supplied URL despite recognizing it as a capture request.**
+  The personal production manifest omitted `wiki_source_types`, so the integration correctly fell
+  back to the safest possible default — `text` only — and refused a link with `PermissionError`.
+  Production now permits owner-supplied `text` and `url` sources in the personal Knowledgebase;
+  other domains remain text-only. The manifest generator carries the policy forward for future
+  production finalization.
+
+---
+
 ## [2026-09-08]
 
 ### Added

@@ -69,6 +69,11 @@ knowledge base, open the strongest references, and answer with citations.
 **When a message could be either, capture it.** A page the owner did not need is cheap; a lost
 source is not.
 
+The personal profile explicitly permits the `text` and `url` source types. That permission is part
+of the private production manifest rather than a model instruction: a correct decision to capture
+a link must still reach the wiki service. The other profiles stay text-only until their owner and
+data boundary are reviewed.
+
 **`обсуди:` is the opt-out** — the only one. Benka may not decline to capture because the content
 looks unimportant.
 
