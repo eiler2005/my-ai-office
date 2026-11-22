@@ -18,7 +18,7 @@ def register(ctx):
         "wiki_lint": ("Inspect wiki consistency without changing files.", {}, []),
         "lightrag_query": ("Search the knowledgebase before answering; preserve source references.", {"query": {"type": "string"}}, ["query"]),
         "benka_archive_search": ("Search old conversations; return excerpts with source and line.", {"query": {"type": "string"}}, ["query"]),
-        "benka_status": ("Show configured candidate mode and domain; mode alone does not prove activation.", {}, []),
+        "benka_status": ("Report the running Hermes version and the configured Benka mode and domain.", {}, []),
         "benka_run": ("Enqueue an approved scenario with a stable request identifier.",
                       {"job": {"type": "string"}, "request_id": {"type": "string"}}, ["job", "request_id"]),
     }
@@ -39,6 +39,7 @@ def register(ctx):
 
 
 BASE_PROMPT = (
+    "When asked which Hermes version you are running, call benka_status and report its hermes_version. "
     "Use wiki and LightRAG for knowledge questions. Return source references. "
     "A forwarded post, a URL, long multi-line content or an explicit save instruction is a capture "
     "request: call wiki_ingest yourself. Short question-shaped messages are searches. When a message "
@@ -118,7 +119,10 @@ def dispatch(name, args, *, manifest_path=None):
         require_active(config, "archive_read")
         return archive.search(Path(config["archive_database"]), args["query"])
     if name == "benka_status":
-        return {"mode": config["mode"], "domain": config["domain"], "automatic_cutover": False}
+        from hermes_cli.version_info import get_version_info
+
+        return {"mode": config["mode"], "domain": config["domain"], "automatic_cutover": False,
+                "hermes_version": get_version_info().display_version}
     if name == "benka_run":
         from .queue import connection, enqueue
         return {"entry_id": enqueue(connection(config), config, args["job"], "manual:" + args["request_id"])}

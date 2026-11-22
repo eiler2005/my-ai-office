@@ -61,9 +61,10 @@ verified on the VPS, against the actual candidate image. The reasoning is in
 | [`scripts/test-hermes.py`](../scripts/test-hermes.py) | All five offline suites, one interpreter each | none | **local, every change** |
 | [`scripts/test-hermes.py --suite NAME`](../scripts/test-hermes.py) | One functional area | none | local, while working |
 | [`scripts/run-hermes-vps-tests.sh`](../scripts/run-hermes-vps-tests.sh) | Candidate image, contract, Redis, compose config | container-internal only | **the release gate, on the VPS** |
-| [`scripts/verify-hermes-contract.py`](../scripts/verify-hermes-contract.py) | Plugin, cron and `AIAgent` contract | none | release gate, pin bumps |
+| [`scripts/verify-hermes-contract.py`](../scripts/verify-hermes-contract.py) | Plugin, runtime version, Telegram routing, cron and `AIAgent` contract | none | release gate, pin bumps |
 | [`scripts/verify-redis-vps.py`](../scripts/verify-redis-vps.py) | Persistence and recovery across a restart | real Redis | release gate |
-| [`scripts/verify-hermes-claw-vps.py`](../scripts/verify-hermes-claw-vps.py) | Importer rehearsal on synthetic data | none | release gate |
+| [`scripts/verify-hermes-state.py`](../scripts/verify-hermes-state.py) | Existing sessions, transcripts and cron jobs on a disposable copy | none | runtime upgrade rehearsal |
+| [`scripts/verify-hermes-claw-vps.py`](../scripts/verify-hermes-claw-vps.py) | Historical importer rehearsal for the original runtime pin | none | predecessor cutover evidence |
 | [`scripts/verify-hermes-panel-vps.py`](../scripts/verify-hermes-panel-vps.py) | Panel, negatives first: mTLS, session, password, WebSocket | real panel | operator, after panel changes |
 
 The offline runner spawns **one interpreter per suite** on purpose. The four artifact suites share

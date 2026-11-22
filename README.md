@@ -10,7 +10,7 @@
 
 <p align="center">
   <a href="https://github.com/NousResearch/hermes-agent"><img src="https://img.shields.io/badge/Runtime-Hermes_Agent-64dac7?style=flat-square" alt="Hermes Agent runtime"></a>
-  <a href="src/benka_integrations"><img src="https://img.shields.io/badge/Integrations-Python_3.12-8cbaf3?style=flat-square" alt="Python 3.12 integrations"></a>
+  <a href="src/benka_integrations"><img src="https://img.shields.io/badge/Integrations-Python_3.14-8cbaf3?style=flat-square" alt="Python 3.14 integrations"></a>
   <a href="deploy/hermes"><img src="https://img.shields.io/badge/Deployment-13_containers-8cbaf3?style=flat-square" alt="Thirteen container Docker Compose deployment"></a>
   <a href="docs/adr/"><img src="https://img.shields.io/badge/Decisions-12_ADRs-b8a4d4?style=flat-square" alt="Twelve architecture decision records"></a>
   <a href="#memory-that-improves-with-work"><img src="https://img.shields.io/badge/Knowledge-Wiki_%2B_Graph_RAG-e8be7b?style=flat-square" alt="Wiki and graph retrieval"></a>
@@ -378,14 +378,14 @@ Telegram is a set of purpose-specific surfaces rather than one unrestricted bot 
 
 ## Model routing
 
-OpenAI is the primary interactive route. Qwen and DeepSeek are resilience fallbacks, not a silent replacement for the main assistant. Each background workflow has its own bounded provider chain, because summarising a digest and holding a personal conversation are different jobs.
+Benka uses direct Qwen and DeepSeek routes. Background integrations make bounded calls with provider
+chains defined per workload.
 
 | Task | Primary route | Execution rule |
 | --- | --- | --- |
-| Auxiliary work | `gpt-5.6-luna` | Minimal or low reasoning for small transformations and review. |
-| Everyday dialogue | `gpt-5.6-terra` | Medium reasoning for Benka's normal conversation. |
-| Complex multi-step work | One `gpt-5.6-sol` delegation, then Terra reviews and combines it | The delegated agent has no terminal, browser, filesystem, personal memory, or further delegation. |
-| OpenAI route unavailable | `qwen3.7-flash`, then `deepseek-v4-flash` | Used only as the configured fallback chain; output remains validated. |
+| Auxiliary work and everyday dialogue | `qwen3.8-flash` | Handles titles, compression, background review, and normal conversation. |
+| Complex multi-step work | One `qwen4-max` delegation, reviewed by the main model | The delegated agent has no terminal, browser, filesystem, personal memory, or further delegation. |
+| Reserve | `deepseek-flash` | Used when the primary route is unavailable. |
 | Background integrations | Per-worker provider routes or assigned OmniRoute workload | Fresh Hermes home, no personal memory/context files, restricted tools, bounded time/tokens/turns, and deterministic fallback where available. |
 
 ## Memory that improves with work
@@ -423,7 +423,7 @@ Read the [memory architecture](docs/architecture.md#knowledge-and-context) and [
 | Layer | Technologies |
 | --- | --- |
 | Agent & interfaces | Hermes Agent, native Benka plugin, Telegram, CLI, Hermes web dashboard |
-| Integration runtime | Python 3.12, source-specific pipelines, isolated model subprocesses |
+| Integration runtime | Python 3.14, source-specific pipelines, isolated model subprocesses |
 | Scheduling & recovery | Hermes cron, Redis Streams, worker state, delivery receipts |
 | Knowledge | Obsidian-compatible Markdown wiki, `wiki-import`, LightRAG, SQLite FTS archive |
 | Model access | OpenAI for the main assistant; configurable fallback chains including Qwen and DeepSeek; OmniRoute for assigned workloads |

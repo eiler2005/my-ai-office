@@ -12,7 +12,7 @@ here constitute permission to switch production.
 
 ## Installation
 
-Inside the image, use Python 3.12, `uv sync --frozen --extra hermes`, and Git submodules. Add
+Inside the image, use Python 3.14, `uv sync --frozen --extra hermes`, and Git submodules. Add
 `--extra test` for tests. The agent's Python dependencies are not installed on the VPS host: the
 Docker `test` target contains the required environment.
 
@@ -29,26 +29,29 @@ docker buildx inspect benka-migration >/dev/null 2>&1 || \
 The builder is used only for candidate images. Production Compose neither switches to it nor grants
 the agent's containers access to the Docker socket.
 
-Hermes is pinned to `01ae7a5668ce0fa2efca524a4567cacdd0786c95` (package version `0.21.0`, a `main`
-commit from 2026-09-06); Last30Days is pinned to `01812ec1851e5c3d92a9049a41b7da4adbfbcb5d` with the
-existing Reddit and GitHub adaptations. Updating any pin requires re-running the native-contract
-checks and the regressions.
+Hermes is pinned to `caafe5389ae585ef77387a962aee05b1bcf17029` (release `v0.23.3`). Last30Days is pinned
+to `01812ec1851e5c3d92a9049a41b7da4adbfbcb5d` with the existing Reddit and GitHub adaptations. Updating
+any pin requires re-running the native-contract checks and the regressions.
 
 [Pinned versions](../reference/versions.md) records every pin, when currency was last checked, and
 the procedure for moving one.
 
-The Dockerfile builds the Hermes dashboard in a separate Node stage and installs the Python API from
-the submodule. The runtime runs as UID/GID 1000, with a read-only root, memory/CPU/PID limits, and
-no Docker socket. Container logs are rotated.
+The Dockerfile builds the Hermes dashboard in a separate stage with the pnpm version pinned by
+upstream. It installs the Python API from the submodule and uses the upstream install stamp to
+report the release and commit. The runtime runs as UID/GID 1000, with a read-only root,
+memory/CPU/PID limits, and no Docker socket. Container logs are rotated.
 
 ### Runtime upgrade rehearsal
 
-For the move to Hermes `v0.23.3`, prepare a separate candidate with a pinned Python 3.14 base,
-reconciled Python dependencies and a frozen lockfile. Port the dashboard build to the upstream
-pnpm workspace and verify the dashboard assets in the runtime image. Leave production polling
+Export a staged source tree with `scripts/package-hermes-candidate.py`. Extract it on the VPS in
+a private candidate directory with `tar --no-same-owner --same-permissions -xzf` so source modes
+survive the operator's private umask and UID 1000 can read the image. Leave production polling
 and scheduled jobs with the current Gateway while the candidate is under test.
 
 Run the VPS suite, including the native plugin, paused cron, bounded agent, and Redis checks.
+Run [the state verification script](../../scripts/verify-hermes-state.py) with `HERMES_HOME`
+pointing to a disposable copy in an offline container. It checks that the runtime can read
+existing transcripts and load cron jobs with the same identities and enabled status.
 Use a consistent, isolated copy of the current profile and session state to check that existing
 sessions resume, Telegram topic routing and permissions survive, the dashboard still authenticates,
 and existing cron jobs keep their identity and paused or enabled state without dispatching
@@ -176,7 +179,7 @@ Keep the admin ID lists empty and the dangerous toolsets disabled until the Herm
 separately reviewed. Do not grant the terminal, file, browser, cronjob, or kanban toolsets to user
 sessions.
 
-`delegate_task` is permitted only for a single isolated Sol subagent with no terminal, files,
+`delegate_task` is permitted only for a single isolated Qwen4 Max subagent with no terminal, files,
 browser, memory, or further delegation; it exists for complex multi-step tasks.
 
 Place the generated `benka-manifests/*.json` in the read-only `/run/benka/profiles/`, and the
@@ -188,52 +191,31 @@ shared administrative profile to the family.
 
 ### Changing the agent's instructions
 
-The plugin's system prompt section is **frozen into each session when that session is created**, and
-Hermes persists the rendered text verbatim.
-
-> [!IMPORTANT]
-> Deploying a new image does **not** change how an existing conversation behaves. Sessions that were
-> open before the deployment keep the old prompt indefinitely — `ended_at` stays null and the
-> session keeps reusing its stored `system_prompt_hash`.
-
-So a prompt or skill change needs three things, not one:
-
-1. Rebuild and deploy the image (the prompt section lives in `benka_integrations`, not in config).
-2. Deploy the skill files into each profile home, if they changed.
-3. **Start a new session on every affected surface.** In Telegram that is `/new` in the topic;
-   `new` must be in that profile's `user_allowed_commands`.
-
-Confirm which prompt a session is actually using before concluding a change did not work:
+Hermes stores the rendered system prompt for each session. After deploying an image with a changed
+prompt section or updating a profile's skill files, ask continuing sessions to rebuild their prompt.
+The refresh preserves the session ID and history and takes effect on the next turn.
 
 ```bash
-docker exec benka-hermes-gateway-1 python3 -c "
-import sqlite3
-con = sqlite3.connect('file:/state/hermes/profiles/personal/state.db?mode=ro', uri=True)
-h, prompt = con.execute('select hash, prompt from system_prompts').fetchone()
-print(h[:16], len(prompt))
-for row in con.execute('select session_key, message_count, ended_at, substr(system_prompt_hash,1,16) from sessions'):
-    print(row)
-"
+docker exec benka-hermes-gateway-1 hermes --profile personal sessions refresh-prompts --json
 ```
 
-A session whose `system_prompt_hash` matches a prompt that lacks your change is running the old
-instructions, however correct the deployment is.
+Repeat for the affected profiles. `benka_status` reads the installed Hermes version from the runtime
+so the agent can answer version questions without opening a shell.
 
 ## Models and integrations
 
-The interactive ladder uses a dedicated ChatGPT Codex OAuth credential in the private Hermes auth
-store:
+The interactive ladder uses the direct API providers configured for Benka.
 
 | Tier | Model and purpose |
 |---|---|
-| Auxiliary operations | `gpt-5.6-luna`, minimal/low reasoning: titles, compression, background review |
-| Ordinary dialogue | `gpt-5.6-terra`, medium reasoning |
-| Complex multi-step task | One `delegate_task` to `gpt-5.6-sol`, high reasoning, after which Terra reviews and combines the result |
-| OpenAI route unavailable | `qwen3.7-flash`, then `deepseek-v4-flash` as emergency fallback providers |
+| Auxiliary operations and ordinary dialogue | Qwen3.8 Flash (`qwen3.8-flash`) |
+| Complex multi-step task | One `delegate_task` to Qwen4 Max (`qwen4-max`), with the main model reviewing and combining the result |
+| Reserve | DeepSeek V4.1 Flash (`deepseek-flash`) |
 
-Escalation to Sol is triggered only for research, design, or verification spanning several steps.
-Simple questions, status checks, and short edits do not create a subagent. The presence of Qwen in
-the chain means fault tolerance only — it is not a choice of primary model.
+Delegation is reserved for research, design, or verification spanning several steps. Bounded worker
+calls use Qwen3.8 Flash, then DeepSeek V4.1 Flash. GPT-6.2 is not available through the configured
+model router. The installed Codex OAuth credential needs reauthorization before it can serve
+interactive requests again.
 
 `BENKA_MODEL_PROVIDERS_FILE` is the path to a private JSON array of the form
 `[{"model": "...", "provider": "...", "base_url": "...", "api_key": "..."}]`, with a maximum of four

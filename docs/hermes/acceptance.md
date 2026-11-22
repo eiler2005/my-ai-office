@@ -9,6 +9,33 @@ activation; this cutover was performed only after a separate instruction from th
 By Denis's instruction, further builds and tests run on the VPS; GitHub Actions is not used for
 them. Production tokens, the production bot, mail, and Syncthing are never used in rehearsal tests.
 
+## Hermes v0.23.3 runtime and model update
+
+On 2026-11-22, the Benka runtime moved to Hermes `v0.23.3` and Python 3.14. The isolated VPS build
+passed **335** regressions, native plugin and Telegram topic routing checks, paused cron
+registration, the bounded agent API, Redis recovery, and standby startup. Docker Engine remained
+at `29.9.3`. The operator captured the writable state while the old runtime services were
+stopped and retained the previous image.
+
+Separate offline copies let the old and new versions read five SQLite databases, 13 sessions,
+84 messages, and 26 cron jobs. The checks preserved session and message identities and cron
+enablement. A fresh manual inbound message received an ordinary reply in the owner's Telegram
+DM after the Hermes switch. The profile model update reused that release and refreshed
+continuing prompts without starting new sessions. A disposable copy taken after the model
+update again loaded the five databases, the 13 sessions, and the 26 jobs, with 92 messages.
+
+Codex OAuth refresh was rejected. Both GPT-6.2 model IDs were also rejected by the configured
+model router. Direct API calls confirmed tool calling and structured JSON for Qwen3.8 Flash,
+Qwen4 Max, and DeepSeek V4.1 Flash. A synthetic agent turn called `benka_status` and returned
+`0.23.3`. A bounded probe in a running worker returned the expected JSON through its configured
+routes. The gateway, dashboard, wiki, and all six workers ran the verified image after the model
+update. The neighboring containers retained their identities, images, and start times.
+
+The production panel's expired leaf was refreshed from the existing renewal source. With trust
+scoped to the Benka Caddy address, the production panel passed mTLS, negative and positive
+password checks, Secure and HttpOnly cookies, HTML and authenticated APIs, and WebSocket ticket
+and replay checks. The full production acceptance and observation window remain open.
+
 ## Corrective deployment of Telegram and profile manifests
 
 After the production cutover, a corrective deployment was performed on the Hermes VPS. An isolated

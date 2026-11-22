@@ -404,8 +404,8 @@ def prepare(source: Path, destination: Path, *, snapshot_sha256: str) -> dict[st
     _private_file(private / "bindings.json", json.dumps(bindings, indent=2))
     model_routes = []
     for key_name, endpoint_name, default_url, default_model in (
-        ("DASHSCOPE_API_KEY", "QWEN_URL", "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions", "qwen3.7-flash"),
-        ("DEEPSEEK_API_KEY", "DEEPSEEK_URL", "https://api.deepseek.com/chat/completions", "deepseek-v4-flash"),
+        ("DASHSCOPE_API_KEY", "QWEN_URL", "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions", "qwen3.8-flash"),
+        ("DEEPSEEK_API_KEY", "DEEPSEEK_URL", "https://api.deepseek.com/chat/completions", "deepseek-flash"),
     ):
         api_key = envs["openclaw"].get(key_name) or envs["telethon"].get(key_name) or envs["signals"].get(key_name)
         if api_key:
@@ -431,6 +431,24 @@ def prepare(source: Path, destination: Path, *, snapshot_sha256: str) -> dict[st
     return {"snapshot_sha256": snapshot_sha256, "domains": sorted(DOMAINS),
             "interactive_routes": sum(len(domain["routes"]) for domain in bindings["domains"].values()),
             "schedule_count": len(schedules["jobs"])}
+
+
+def interactive_model_settings(routes: list[dict[str, str]]) -> dict[str, Any]:
+    """Use the reviewed direct providers in order for interactive and auxiliary work."""
+    if not routes:
+        raise ValueError("No reviewed Hermes model route is available")
+    primary = routes[0]
+    delegate = dict(primary)
+    if primary["model"] == "qwen3.8-flash":
+        delegate["model"] = "qwen4-max"
+    return {
+        "model": {"provider": primary["provider"], "default": primary["model"]},
+        "fallback_providers": routes[1:],
+        "auxiliary": {task: dict(primary) for task in ("title_generation", "compression", "background_review")},
+        "delegation": {
+            **delegate, "max_concurrent_children": 1, "max_spawn_depth": 1, "orchestrator_enabled": False,
+        },
+    }
 
 
 def finalize(destination: Path, *, snapshot_sha256: str) -> dict[str, Any]:
@@ -461,14 +479,6 @@ def finalize(destination: Path, *, snapshot_sha256: str) -> dict[str, Any]:
     baseline = yaml.safe_load((Path("/opt/benka/deploy/hermes/hermes.example.yaml")).read_text())
     for key in ("timezone", "toolsets", "platform_toolsets", "agent", "database", "memory", "onboarding"):
         root[key] = copy.deepcopy(baseline[key])
-    root["agent"].update({
-        "reasoning_effort": "medium",
-        "reasoning_overrides": {
-            "gpt-5.6-luna": "minimal",
-            "gpt-5.6-terra": "medium",
-            "gpt-5.6-sol": "high",
-        },
-    })
     all_users = sorted({str(user) for domain in bindings["domains"].values() for user in domain["users"]})
     chats = bindings["chats"]
     routes = []
@@ -503,9 +513,7 @@ def finalize(destination: Path, *, snapshot_sha256: str) -> dict[str, Any]:
     for index, route in enumerate(model_routes):
         if not isinstance(route, dict):
             raise ValueError("Invalid reviewed Hermes model route")
-        # The user-facing agent keeps the established ChatGPT Codex route as
-        # its primary model.  Direct API providers are deliberately reserves:
-        # Qwen is the first reserve and DeepSeek follows it when available.
+        # Existing provider aliases also carry the credential references in live profiles.
         reserve_number = index + 1
         label = f"benka-fallback-{reserve_number}"
         api_key_env = f"BENKA_FALLBACK_{reserve_number}_API_KEY"
@@ -518,18 +526,7 @@ def finalize(destination: Path, *, snapshot_sha256: str) -> dict[str, Any]:
         }
         fallback_chain.append({"provider": f"custom:{label}", "model": route["model"]})
     root["providers"] = provider_configs
-    root["model"] = {"provider": "openai-codex", "default": "gpt-5.6-terra"}
-    root["fallback_providers"] = fallback_chain
-    root["auxiliary"] = {
-        "title_generation": {"provider": "openai-codex", "model": "gpt-5.6-luna", "reasoning_effort": "minimal"},
-        "compression": {"provider": "openai-codex", "model": "gpt-5.6-luna", "reasoning_effort": "low"},
-        "background_review": {"provider": "openai-codex", "model": "gpt-5.6-luna", "reasoning_effort": "low"},
-    }
-    root["delegation"] = {
-        "provider": "openai-codex", "model": "gpt-5.6-sol",
-        "max_concurrent_children": 1, "max_spawn_depth": 1,
-        "orchestrator_enabled": False,
-    }
+    root.update(interactive_model_settings(fallback_chain))
     (runtime / "config.yaml").write_text(yaml.safe_dump(root, allow_unicode=True, sort_keys=False))
     os.chmod(runtime / "config.yaml", 0o600)
 
@@ -566,7 +563,8 @@ def finalize(destination: Path, *, snapshot_sha256: str) -> dict[str, Any]:
         "изолированного delegate_task, затем проверь и синтезируй его результат. Не делегируй "
         "простые вопросы, статусы и короткие правки.\n"
     )
-    model_keys = {key: copy.deepcopy(root[key]) for key in ("model", "providers", "custom_providers", "fallback_providers") if key in root}
+    model_keys = {key: root[key] for key in ("model", "providers", "custom_providers", "fallback_providers",
+                                             "auxiliary", "delegation") if key in root}
     for domain in DOMAINS:
         profile = profiles_root / domain
         profile_config = yaml.safe_load((profile / "config.yaml").read_text()) or {}

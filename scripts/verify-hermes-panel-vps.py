@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Run operator smoke checks on the VPS; print no hosts, cookies or credentials."""
+import argparse
 import base64
 import http.client
 import json
@@ -13,6 +14,9 @@ ROOT = Path("/opt/benka-hermes/panel-rehearsal/private")
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--target", choices=("rehearsal", "production"), default="rehearsal")
+    target = parser.parse_args().target
     access = json.loads((ROOT / "access.json").read_text())
     host, port = access["host"], 8451
     context = ssl.create_default_context()
@@ -83,8 +87,8 @@ def main():
     assert upgrade(ticket) == 101, "WebSocket upgrade failed"
     assert upgrade(ticket) == 403, "WebSocket ticket replay accepted"
     results["websocket_upgrade_and_replay_denial"] = True
-    report = {"checks": results, "production_connections": False, "model_chat_tested": False}
-    report_file = ROOT.parent / "verification.json"
+    report = {"checks": results, "target": target, "model_chat_tested": False}
+    report_file = ROOT.parent / ("verification-production.json" if target == "production" else "verification.json")
     report_file.write_text(json.dumps(report, indent=2))
     os.chmod(report_file, 0o600)
     print(json.dumps(report))

@@ -18,40 +18,32 @@ current.
 | | |
 | --- | --- |
 | **Project** | [NousResearch/hermes-agent](https://github.com/NousResearch/hermes-agent) |
-| **Pinned commit** | `01ae7a5668ce0fa2efca524a4567cacdd0786c95` |
-| **Commit date** | 2026-09-06 |
-| **`git describe`** | `v2026.8.31-5348-g01ae7a5668` |
-| **Package version** | `0.21.0` (from the vendored `pyproject.toml`) |
+| **Pinned commit** | `caafe5389ae585ef77387a962aee05b1bcf17029` |
+| **Commit date** | 2026-11-19 |
+| **Release tag** | `v0.23.3` |
+| **Package metadata** | `0.0.0`; the image install stamp supplies the release version and commit |
 | **How it is vendored** | Git submodule at `vendor/hermes-agent`, installed via `[tool.uv.sources]` |
 
 **Currency, checked 2026-11-22:** the latest stable upstream release is
-[`v0.23.3`](https://github.com/NousResearch/hermes-agent/releases/tag/v0.23.3), dated 2026-11-19 in
-the upstream release notes. The tag resolves to `caafe5389ae585ef77387a962aee05b1bcf17029`
-and descends from the repository pin. A read-only VPS check reported Hermes `0.21.0` and
-Python `3.12.14` in the running Gateway.
+[`v0.23.3`](https://github.com/NousResearch/hermes-agent/releases/tag/v0.23.3), the pinned release.
+It descends from the former pin `01ae7a5668ce0fa2efca524a4567cacdd0786c95`
+(Hermes `0.21.0`).
 
 The release brings [unified Gateway session ownership and cron changes](https://github.com/NousResearch/hermes-agent/releases/tag/v0.23.0),
-as well as changes to prompt caching, compaction, and SQLite persistence. A submodule-only bump
-is blocked. [Upstream supports Python 3.14](https://github.com/NousResearch/hermes-agent/blob/v0.23.3/pyproject.toml)
-for this tag and gates core dependencies on that version. Benka builds on Python 3.12, and its
-project metadata excludes 3.14. Its exact `croniter`, `requests`, and `python-dotenv` pins also
-differ from the tag's Python 3.14 requirements. The
-[upstream frontend build](https://github.com/NousResearch/hermes-agent/blob/v0.23.3/Dockerfile)
-uses pnpm, and the tag removed the npm lockfile required by Benka's Dockerfile.
+as well as changes to prompt caching, compaction, and SQLite persistence. The runtime build uses
+the [supported Python 3.14 interpreter](https://github.com/NousResearch/hermes-agent/blob/v0.23.3/pyproject.toml)
+and upstream's [pnpm dashboard build](https://github.com/NousResearch/hermes-agent/blob/v0.23.3/Dockerfile).
+The Benka lock reconciles the shared Python packages and preserves upstream's Pillow security override.
 
-Keep the current pin in production until the
-[runtime upgrade rehearsal](../hermes/operations.md#runtime-upgrade-rehearsal) passes.
-
-Known runtime-specific behaviour at this pin is recorded where it matters — for example, Hermes
-0.21.0 creates a default `SOUL.md` on the first CLI run and can abort an import while still exiting
-0 ([cutover and rollback](../hermes/cutover-rollback.md)).
+See the [runtime upgrade rehearsal](../hermes/operations.md#runtime-upgrade-rehearsal) for checks
+before promoting a new runtime image.
 
 ## Other pins
 
 | Component | Pin | Where it is set |
 | --- | --- | --- |
 | Last30Days skill | `01812ec1851e5c3d92a9049a41b7da4adbfbcb5d` | `deploy/hermes/Dockerfile`, `artifacts/signals-bridge/Dockerfile` (`ARG LAST30DAYS_COMMIT`) |
-| Python | `>=3.11,<3.14`; images build on 3.12 | `pyproject.toml`, `deploy/hermes/Dockerfile` |
+| Python | `>=3.14,<3.15`; image pinned by digest | `pyproject.toml`, `deploy/hermes/Dockerfile` |
 | Runtime dependencies | Exact `==` pins with `uv.lock` committed | `pyproject.toml` |
 | GitHub Actions | SHA-pinned, with the version in a trailing comment | `.github/workflows/` |
 | Embedding model | Identity and dimension **3072** — not interchangeable | Private deployment manifest |

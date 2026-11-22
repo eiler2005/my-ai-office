@@ -328,3 +328,16 @@ def test_a_newly_reviewed_ruleset_reaches_the_refreshed_manifest(active, snapsho
     jobs = json.loads((active / "private/manifests/schedules.json").read_text())["jobs"]
     assert "signals-late-arrival" in jobs
     assert report["signals_jobs"] == 2
+def test_interactive_model_settings_preserve_tiers_and_reserve_order():
+    from benka_integrations.production import interactive_model_settings
+
+    primary = {"provider": "custom:qwen", "model": "qwen3.8-flash"}
+    reserve = {"provider": "custom:deepseek", "model": "deepseek-flash"}
+    settings = interactive_model_settings([primary, reserve])
+
+    assert settings["model"] == {"provider": primary["provider"], "default": primary["model"]}
+    assert settings["auxiliary"]["compression"] == primary
+    assert settings["delegation"]["model"] == "qwen4-max"
+    assert settings["delegation"]["max_concurrent_children"] == 1
+    assert settings["fallback_providers"] == [reserve]
+    assert interactive_model_settings([reserve])["delegation"]["model"] == reserve["model"]

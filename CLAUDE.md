@@ -140,8 +140,8 @@ verified VPS run. See `CONTRIBUTING.md#language`.
 
 **Per-topic behaviour lives in those same two places — there is no per-topic config.**
 `docs/reference/telegram-surfaces.md` documents what each Telegram surface is for and how to change
-it. A prompt change also needs a new session (`/new`) on every affected surface, because Hermes
-freezes the prompt into a session at creation.
+it. After a prompt change, use `hermes sessions refresh-prompts` in each affected profile so
+continuing sessions rebuild their stored prompt while preserving their history.
 
 ## Documentation
 

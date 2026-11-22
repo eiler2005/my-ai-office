@@ -159,12 +159,9 @@ Three steps, and skipping the third is the usual reason a change appears to do n
 2. **Rebuild and deploy**, because the prompt section is in the image. Package the candidate, run
    `scripts/run-hermes-vps-tests.sh` on the VPS, then recreate the Gateway with `--no-deps` and copy
    the skill files into the profile homes.
-3. **Start a new session on every affected surface** — `/new` in the topic.
-
-Step 3 is not optional. Hermes freezes a plugin's system prompt into a session when the session is
-created and persists it verbatim, so an open conversation keeps the old instructions indefinitely.
-The procedure and the query that reveals which prompt a session is actually running are in
-[operations](../hermes/operations.md#changing-the-agents-instructions).
+3. **Refresh prompts in the affected profiles** with `hermes sessions refresh-prompts`.
+   Continuing conversations rebuild their stored instructions on the next turn and keep their
+   history. See [operations](../hermes/operations.md#changing-the-agents-instructions).
 
 ## What the migration lost, and why
 

@@ -7,6 +7,17 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [2026-11-22]
 
+### Changed
+
+- Upgraded the Hermes runtime to `v0.23.3`, Python 3.14, and the pinned pnpm dashboard build.
+- Switched dialogue and bounded worker calls to Qwen3.8 Flash, with Qwen4 Max for complex delegation
+  and DeepSeek V4.1 Flash as reserve. Added the running Hermes version to `benka_status`.
+
+### Fixed
+
+- Refreshed the Benka panel's expired server certificate and restored Secure cookies by scoping
+  HTTPS forwarding trust to its own Caddy.
+
 ### Documentation
 
 - Recorded the Hermes `v0.23.3` compatibility review and the Python, dashboard, and state

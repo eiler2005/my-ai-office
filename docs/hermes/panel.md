@@ -68,6 +68,9 @@ without a session, an incorrect password, a successful login, the Secure/HttpOnl
 response, the settings and sessions APIs, the WebSocket upgrade, and that a ticket cannot be
 replayed. The report contains no endpoint, cookie, or credentials.
 
+When the production panel owns port 8451, pass `--target production` to keep its verification
+report separate from the rehearsal record.
+
 These checks do not confirm a conversation with a model or a connected production bot.
 
 ## Certificates and maintenance
@@ -84,6 +87,13 @@ sudo docker restart benka-hermes-panel-caddy-1
 Before replacement the script checks the hostname, that at least seven days of validity remain, and
 that the key matches the certificate. A new hostname requires separate verification. The script
 never writes into the Reddit Compass volume.
+
+For the production panel, copy the validated server certificate and matching key into the TLS
+directory mounted by the `benka-hermes` Caddy, preserving the existing file ownership and modes.
+Keep the client CA and credentials in place. Restart only the Benka Caddy and run the production
+panel smoke. If Caddy is recreated and its address changes, update `dashboard.trusted_proxies`
+to its address on the Benka bridge and restart the dashboard so HTTPS forwarding produces Secure
+session cookies.
 
 Before production acceptance, schedule this check to run regularly with alerting on failure. **A
 certificate expiry is not an instruction to switch OpenClaw → Hermes.**
