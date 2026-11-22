@@ -24,17 +24,23 @@ current.
 | **Package version** | `0.21.0` (from the vendored `pyproject.toml`) |
 | **How it is vendored** | Git submodule at `vendor/hermes-agent`, installed via `[tool.uv.sources]` |
 
-**Currency, checked 2026-09-07:** the pinned commit is *ahead of* the latest upstream release,
-`v2026.8.31` (published 2026-08-31). It is a `main` commit taken on the day of the cutover, so the
-deployment is not running a stale release — it is running a specific unreleased commit, which is the
-deliberate consequence of pinning to a SHA rather than a tag.
+**Currency, checked 2026-11-22:** the latest stable upstream release is
+[`v0.23.3`](https://github.com/NousResearch/hermes-agent/releases/tag/v0.23.3), dated 2026-11-19 in
+the upstream release notes. The tag resolves to `caafe5389ae585ef77387a962aee05b1bcf17029`
+and descends from the repository pin. A read-only VPS check reported Hermes `0.21.0` and
+Python `3.12.14` in the running Gateway.
 
-Two consequences worth stating plainly:
+The release brings [unified Gateway session ownership and cron changes](https://github.com/NousResearch/hermes-agent/releases/tag/v0.23.0),
+as well as changes to prompt caching, compaction, and SQLite persistence. A submodule-only bump
+is blocked. [Upstream supports Python 3.14](https://github.com/NousResearch/hermes-agent/blob/v0.23.3/pyproject.toml)
+for this tag and gates core dependencies on that version. Benka builds on Python 3.12, and its
+project metadata excludes 3.14. Its exact `croniter`, `requests`, and `python-dotenv` pins also
+differ from the tag's Python 3.14 requirements. The
+[upstream frontend build](https://github.com/NousResearch/hermes-agent/blob/v0.23.3/Dockerfile)
+uses pnpm, and the tag removed the npm lockfile required by Benka's Dockerfile.
 
-- **There is no upstream release to "upgrade to" right now.** The next decision point is the release
-  after `v2026.8.31`, not a version bump that is already available.
-- **An unreleased commit carries no upstream release notes.** Any bump must be reviewed as a diff,
-  which is why the verification requirement above is not optional.
+Keep the current pin in production until the
+[runtime upgrade rehearsal](../hermes/operations.md#runtime-upgrade-rehearsal) passes.
 
 Known runtime-specific behaviour at this pin is recorded where it matters — for example, Hermes
 0.21.0 creates a default `SOUL.md` on the first CLI run and can abort an import while still exiting

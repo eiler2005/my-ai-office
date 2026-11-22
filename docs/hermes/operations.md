@@ -41,6 +41,23 @@ The Dockerfile builds the Hermes dashboard in a separate Node stage and installs
 the submodule. The runtime runs as UID/GID 1000, with a read-only root, memory/CPU/PID limits, and
 no Docker socket. Container logs are rotated.
 
+### Runtime upgrade rehearsal
+
+For the move to Hermes `v0.23.3`, prepare a separate candidate with a pinned Python 3.14 base,
+reconciled Python dependencies and a frozen lockfile. Port the dashboard build to the upstream
+pnpm workspace and verify the dashboard assets in the runtime image. Leave production polling
+and scheduled jobs with the current Gateway while the candidate is under test.
+
+Run the VPS suite, including the native plugin, paused cron, bounded agent, and Redis checks.
+Use a consistent, isolated copy of the current profile and session state to check that existing
+sessions resume, Telegram topic routing and permissions survive, the dashboard still authenticates,
+and existing cron jobs keep their identity and paused or enabled state without dispatching
+duplicate runs. Rehearse restoring that snapshot with the current image before any live switch.
+
+For promotion, retain the previous image and a fresh consistent snapshot. Check an ordinary
+inbound Telegram message and its reply through the UI, and verify receipt tracking and scheduler
+state. Use the [acceptance record](acceptance.md) to record the observed results.
+
 SQLite is configured with `journal_mode: delete`; WAL may be enabled only after verifying the fixed
 upstream SQLite version. **Never transfer a running SQLite database as a single file without its WAL
 and SHM.**

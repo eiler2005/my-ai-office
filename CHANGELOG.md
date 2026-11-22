@@ -5,6 +5,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2026-11-22]
+
+### Documentation
+
+- Recorded the Hermes `v0.23.3` compatibility review and the Python, dashboard, and state
+  rehearsal requirements for a future runtime upgrade.
+
 ## [2026-09-12]
 
 ### Fixed
