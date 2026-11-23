@@ -433,20 +433,39 @@ def prepare(source: Path, destination: Path, *, snapshot_sha256: str) -> dict[st
             "schedule_count": len(schedules["jobs"])}
 
 
+MODEL_POLICY = (
+    "Модельная политика: отвечай на обычные и короткие вопросы сам. "
+    "Для сложной задачи выбери несколько необходимых шагов. Делегируй не больше одной "
+    "узкой независимой подзадачи, например краткое резюме или извлечение фактов. "
+    "Проверяй результат и сам делай вывод. Не делегируй статусы и короткие правки."
+)
+
+PERSONAL_WEB_PROMPT = (
+    "Для актуальной погоды, новостей и других свежих публичных данных используй веб-поиск OpenAI "
+    "и указывай источник. Не включай в запросы приватные данные из писем, чатов или памяти."
+)
+
+
+def enable_personal_web_search(config: dict[str, Any]) -> None:
+    telegram_tools = config["platform_toolsets"]["telegram"]
+    if "web" in telegram_tools:
+        telegram_tools.remove("web")
+    if "search" not in telegram_tools:
+        telegram_tools.append("search")
+    config.setdefault("web", {}).update(search_backend="openai-native", keyless_fallback=False)
+
+
 def interactive_model_settings(routes: list[dict[str, str]]) -> dict[str, Any]:
-    """Use the reviewed direct providers in order for interactive and auxiliary work."""
+    """Keep interactive reasoning on Sol and give bounded tasks to the reserve."""
     if not routes:
         raise ValueError("No reviewed Hermes model route is available")
-    primary = routes[0]
-    delegate = dict(primary)
-    if primary["model"] == "qwen3.8-flash":
-        delegate["model"] = "qwen4-max"
+    quick = next((route for route in routes if route["model"].startswith("qwen")), routes[0])
     return {
-        "model": {"provider": primary["provider"], "default": primary["model"]},
-        "fallback_providers": routes[1:],
-        "auxiliary": {task: dict(primary) for task in ("title_generation", "compression", "background_review")},
+        "model": {"provider": "openai-codex", "default": "gpt-6.2-sol"},
+        "fallback_providers": [quick],
+        "auxiliary": {task: dict(quick) for task in ("title_generation", "compression", "background_review")},
         "delegation": {
-            **delegate, "max_concurrent_children": 1, "max_spawn_depth": 1, "orchestrator_enabled": False,
+            **quick, "max_concurrent_children": 1, "max_spawn_depth": 1, "orchestrator_enabled": False,
         },
     }
 
@@ -527,6 +546,7 @@ def finalize(destination: Path, *, snapshot_sha256: str) -> dict[str, Any]:
         fallback_chain.append({"provider": f"custom:{label}", "model": route["model"]})
     root["providers"] = provider_configs
     root.update(interactive_model_settings(fallback_chain))
+    root["agent"]["reasoning_effort"] = "medium"
     (runtime / "config.yaml").write_text(yaml.safe_dump(root, allow_unicode=True, sort_keys=False))
     os.chmod(runtime / "config.yaml", 0o600)
 
@@ -557,18 +577,17 @@ def finalize(destination: Path, *, snapshot_sha256: str) -> dict[str, Any]:
         soul = f"{identity}\n\n{soul.lstrip()}"
         soul_path.write_text(soul)
         os.chmod(soul_path, 0o600)
-    model_policy = (
-        "\n\nМодельная политика: обычные ответы выполняй сам. Для сложной многошаговой "
-        "задачи с исследованием, проектированием или проверкой используй ровно одного "
-        "изолированного delegate_task, затем проверь и синтезируй его результат. Не делегируй "
-        "простые вопросы, статусы и короткие правки.\n"
-    )
     model_keys = {key: root[key] for key in ("model", "providers", "custom_providers", "fallback_providers",
                                              "auxiliary", "delegation") if key in root}
     for domain in DOMAINS:
         profile = profiles_root / domain
         profile_config = yaml.safe_load((profile / "config.yaml").read_text()) or {}
         profile_config.update(copy.deepcopy(model_keys))
+        profile_config["agent"]["reasoning_effort"] = "medium"
+        personal_web_prompt = ""
+        if domain == "personal":
+            enable_personal_web_search(profile_config)
+            personal_web_prompt = "\n" + PERSONAL_WEB_PROMPT + "\n"
         # The root gateway owns the one Bot API polling connection.  Routed
         # profiles must keep their platform disabled, otherwise Hermes starts
         # duplicate pollers with the same bot credential.
@@ -579,7 +598,10 @@ def finalize(destination: Path, *, snapshot_sha256: str) -> dict[str, Any]:
         profile_env = dict(root_env)
         profile_env.pop("TELEGRAM_BOT_TOKEN", None)
         _write_env(profile / ".env", profile_env)
-        (profile / "SOUL.md").write_text(f"Ты Бенька. Активный контур: {domain}. Не используй данные других контуров.\n\n{soul}{model_policy}")
+        (profile / "SOUL.md").write_text(
+            f"Ты Бенька. Активный контур: {domain}. Не используй данные других контуров.\n\n"
+            f"{soul}\n\n{MODEL_POLICY}\n{personal_web_prompt}"
+        )
         os.chmod(profile / "SOUL.md", 0o600)
         if domain == "personal" and (runtime / "memories").is_dir():
             _copy_tree(runtime / "memories", profile / "memories")

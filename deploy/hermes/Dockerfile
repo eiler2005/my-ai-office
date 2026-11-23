@@ -25,6 +25,8 @@ RUN /opt/benka/.venv/bin/python -c 'from pathlib import Path; from pm import ens
 
 FROM runtime_deps AS runtime_base
 COPY --from=dashboard_build /tmp/hermes-web ./vendor/hermes-agent/hermes_cli/web_dist
+COPY deploy/hermes/openai-web-shared-auth.patch /tmp/openai-web-shared-auth.patch
+RUN git apply --recount --directory=vendor/hermes-agent /tmp/openai-web-shared-auth.patch
 RUN .venv/bin/python vendor/hermes-agent/scripts/write_install_stamp.py \
     --output vendor/hermes-agent/install-stamp.json --source docker --distribution docker \
     --update-mechanism external --base-version 0.23.3 --distance 0 \

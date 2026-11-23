@@ -5,6 +5,21 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2026-11-23]
+
+### Changed
+
+- Switched interactive work to GPT-6.2 Sol at medium reasoning. Qwen3.8 Flash handles fallback,
+  auxiliary calls, and at most one bounded delegated step.
+- Enabled native OpenAI web search for personal Telegram using the shared Codex OAuth login.
+
+### Fixed
+
+- Gave each outbound worker send a private writable Hermes home for its bootstrap lock while
+  preserving read-only access to gateway configuration.
+- Added VPS coverage for native worker delivery and a regression test for a mixed Signals
+  ruleset with one denied source and an uncertain delivery.
+
 ## [2026-11-22]
 
 ### Changed

@@ -1,0 +1,44 @@
+diff --git a/plugins/web/openai_native/provider.py b/plugins/web/openai_native/provider.py
+--- a/plugins/web/openai_native/provider.py
++++ b/plugins/web/openai_native/provider.py
+@@ -42,21 +42,23 @@
+     multi-account grants never write the providers singleton). Returns False on any
+     exception so a corrupted auth store cannot block other availability scans.
+     """
+-    try:
+-        from hermes_constants import get_hermes_home
++    from hermes_constants import get_default_hermes_root, get_hermes_home
+-
++
+-        auth_path = get_hermes_home() / "auth.json"
+-        if not auth_path.exists():
+-            return False
+-        store = json.loads(auth_path.read_text(encoding="utf-8-sig"))
+-        tokens = _dget(_dget(_dget(store, "providers"), "openai-codex"), "tokens")
+-        if str(_dget(tokens, "access_token") or "").strip():
+-            return True
+-        entries = _dget(_dget(store, "credential_pool"), "openai-codex")
+-        return isinstance(entries, list) and any(
+-            isinstance(e, dict) and str(e.get("access_token", "") or "").strip() for e in entries
+-        )
+-    except Exception:
+-        return False
++    for home in dict.fromkeys((get_hermes_home(), get_default_hermes_root())):
++        try:
++            store = json.loads((home / "auth.json").read_text(encoding="utf-8-sig"))
++        except (OSError, ValueError):
++            continue
++        tokens = _dget(_dget(_dget(store, "providers"), "openai-codex"), "tokens")
++        if str(_dget(tokens, "access_token") or "").strip():
++            return True
++        entries = _dget(_dget(store, "credential_pool"), "openai-codex")
++        if isinstance(entries, list) and any(
++            isinstance(e, dict) and str(e.get("access_token", "") or "").strip() for e in entries
++        ):
++            return True
++    return False
+-
+-
++
++
+ class OpenAINativeWebSearchProvider(BaseWebSearchProvider):

@@ -3,8 +3,10 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 from .config import require_active
@@ -31,8 +33,20 @@ def send(client, config, *, delivery_id: str, target: str, text: str, runner=sub
     try:
         hermes_cli = Path(sys.executable).with_name("hermes")
         command = str(hermes_cli) if hermes_cli.is_file() else "hermes"
-        result = runner([command, "send", "--to", target, "--file", "-", "--json"],
-                        input=text, text=True, capture_output=True, timeout=90, check=False)
+        source_home = Path(os.environ.get("HERMES_HOME") or Path.home() / ".hermes").expanduser().absolute()
+        # Workers mount the gateway's Hermes home read-only. The CLI still needs
+        # a writable runtime area for bootstrap state during standalone delivery.
+        with tempfile.TemporaryDirectory(prefix="benka-delivery-") as temporary:
+            home = Path(temporary)
+            for name in (".env", "config.yaml"):
+                source = source_home / name
+                if source.is_file():
+                    (home / name).symlink_to(source)
+            environment = dict(os.environ, HERMES_HOME=str(home), HERMES_DISABLE_LAZY_INSTALLS="1")
+            environment.pop("HERMES_PROFILE", None)
+            result = runner([command, "send", "--to", target, "--file", "-", "--json"],
+                            input=text, text=True, capture_output=True, timeout=90, check=False,
+                            env=environment)
         payload = json.loads(result.stdout)
         message_id = payload.get("message_id")
         if result.returncode or payload.get("success") is not True or payload.get("skipped") or not message_id:

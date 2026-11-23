@@ -37,13 +37,13 @@ os.environ.setdefault("TELEGRAM_BOT_TOKEN", "test-token")
 os.environ.setdefault("SIGNALS_SUPERGROUP_ID", "-1001")
 
 from config_store import normalize_config, validate_config
-from cron_bridge import _deliver_source_contexts, _recover_interrupted_ruleset_locks, _relay_telegram_event_via_telethon, _run_telegram_source, _source_health
+from cron_bridge import _deliver_source_contexts, _process_signals_job, _recover_interrupted_ruleset_locks, _relay_telegram_event_via_telethon, _run_telegram_source, _source_health
 from email_adapter import _window_messages, resolve_email_window
 from event_store import append_events, append_new_events
 from last30days_persistence import _render_expanded_markdown
 from last30days_runner import build_digest, write_signal_digest
 from matching import build_telegram_message_link, extract_tradingview_username, keyword_matches, local_event_from_candidate, match_email_rule, match_telegram_rule
-from models import Last30DaysCategorySection, Last30DaysDigest, Last30DaysPlatformSection, Last30DaysTheme, ModelMeta, SignalEvent
+from models import Last30DaysCategorySection, Last30DaysDigest, Last30DaysPlatformSection, Last30DaysTheme, ModelMeta, PreparedSignalBatch, SignalEvent
 from omniroute_client import _local_fallback_batch
 from poster import render_batch, render_last30days_digest
 from telegram_adapter import collect_telegram_candidates, resolve_telegram_window
@@ -278,6 +278,41 @@ class StartupLockRecoveryTests(unittest.TestCase):
         self.assertEqual(released, 1)
         self.assertIsNone(redis.get("lock:signals:ruleset:trading-si"))
         self.assertEqual(redis.get("lock:signals:last30days:personal-feed-v1"), "keep")
+
+
+class MixedRulesetDeliveryTests(unittest.TestCase):
+    def test_blocked_source_keeps_other_event_and_does_not_replay_uncertain_delivery(self):
+        from benka_integrations.delivery import UncertainDelivery
+
+        redis = FakeRedis()
+        timestamp = "2026-11-23T08:41:00+03:00"
+        event = SignalEvent(
+            event_id="one", ruleset_id="trading", rule_id="market-alert-user", source_type="email",
+            source_id="email-tradingview", external_ref="fixture-one", occurred_at=timestamp,
+            captured_at=timestamp, author="AnalystA", title="Example alert", summary="Matched the email rule",
+        )
+        post = AsyncMock(side_effect=UncertainDelivery("No delivery receipt"))
+        with (
+            patch("cron_bridge.load_config", return_value=sample_config()),
+            patch("cron_bridge._write_status"),
+            patch("cron_bridge._run_email_source", return_value=([event], ["email rule matched"])) as email,
+            patch("cron_bridge._run_telegram_source", side_effect=PermissionError("Channel access denied")) as telegram,
+            patch("cron_bridge.prepare_signal_batch", return_value=PreparedSignalBatch([event], ModelMeta())) as prepare,
+            patch("cron_bridge.post_html_message", post),
+        ):
+            with self.assertRaises(UncertainDelivery):
+                _process_signals_job(redis, {"ruleset_id": "trading", "run_id": "first"})
+            self.assertIsNone(redis.get("lock:signals:ruleset:trading"))
+            outcome = _process_signals_job(redis, {"ruleset_id": "trading", "run_id": "next"})
+
+        self.assertFalse(outcome["ok"])
+        self.assertEqual(email.call_args.kwargs["rules"][0]["id"], "market-alert-user")
+        self.assertEqual(telegram.call_args.kwargs["rules"][0]["id"], "telegram-si")
+        self.assertEqual(prepare.call_args.kwargs["candidates"], [event])
+        self.assertEqual([fields["event_id"] for stream, fields in redis.stream if stream == "ingest:events:signals"],
+                         ["one"])
+        self.assertTrue(any(stream == "dlq:failed" for stream, _ in redis.stream))
+        post.assert_awaited_once()
 
 
 class SourceHealthTests(unittest.TestCase):

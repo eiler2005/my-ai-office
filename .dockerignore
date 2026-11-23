@@ -45,6 +45,7 @@
 !deploy/hermes/*.example.json
 !deploy/hermes/*.example.yaml
 !deploy/hermes/Caddyfile
+!deploy/hermes/openai-web-shared-auth.patch
 **/__pycache__/
 **/.git
 **/.venv/

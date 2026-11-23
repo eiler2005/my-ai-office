@@ -378,14 +378,14 @@ Telegram is a set of purpose-specific surfaces rather than one unrestricted bot 
 
 ## Model routing
 
-Benka uses direct Qwen and DeepSeek routes. Background integrations make bounded calls with provider
-chains defined per workload.
+Benka uses GPT-6.2 Sol at medium reasoning effort for interactive work. Background integrations
+use bounded provider chains defined per workload.
 
 | Task | Primary route | Execution rule |
 | --- | --- | --- |
-| Auxiliary work and everyday dialogue | `qwen3.8-flash` | Handles titles, compression, background review, and normal conversation. |
-| Complex multi-step work | One `qwen4-max` delegation, reviewed by the main model | The delegated agent has no terminal, browser, filesystem, personal memory, or further delegation. |
-| Reserve | `deepseek-flash` | Used when the primary route is unavailable. |
+| Everyday dialogue and orchestration | `gpt-6.2-sol`, medium | Answers directly and plans only the steps the task needs. |
+| Auxiliary and narrowly scoped work | `qwen3.8-flash` | Handles titles, compression, background review, and at most one independent delegated step. |
+| Interactive reserve | `qwen3.8-flash` | Takes over if Sol is unavailable. |
 | Background integrations | Per-worker provider routes or assigned OmniRoute workload | Fresh Hermes home, no personal memory/context files, restricted tools, bounded time/tokens/turns, and deterministic fallback where available. |
 
 ## Memory that improves with work

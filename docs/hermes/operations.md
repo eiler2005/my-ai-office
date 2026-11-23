@@ -179,8 +179,8 @@ Keep the admin ID lists empty and the dangerous toolsets disabled until the Herm
 separately reviewed. Do not grant the terminal, file, browser, cronjob, or kanban toolsets to user
 sessions.
 
-`delegate_task` is permitted only for a single isolated Qwen4 Max subagent with no terminal, files,
-browser, memory, or further delegation; it exists for complex multi-step tasks.
+`delegate_task` can run a single isolated Qwen3.8 Flash subagent with no terminal, files, browser,
+memory, or further delegation. Use it for a bounded independent step that Sol can review.
 
 Place the generated `benka-manifests/*.json` in the read-only `/run/benka/profiles/`, and the
 credential files in `/run/benka/profile-secrets/<domain>/`. The config holds the paths; values are
@@ -204,18 +204,23 @@ so the agent can answer version questions without opening a shell.
 
 ## Models and integrations
 
-The interactive ladder uses the direct API providers configured for Benka.
+The main model uses the private Codex OAuth credential configured for Benka.
 
 | Tier | Model and purpose |
 |---|---|
-| Auxiliary operations and ordinary dialogue | Qwen3.8 Flash (`qwen3.8-flash`) |
-| Complex multi-step task | One `delegate_task` to Qwen4 Max (`qwen4-max`), with the main model reviewing and combining the result |
-| Reserve | DeepSeek V4.1 Flash (`deepseek-flash`) |
+| Dialogue and orchestration | GPT-6.2 Sol (`gpt-6.2-sol`), medium reasoning |
+| Auxiliary tasks | Qwen3.8 Flash (`qwen3.8-flash`) for titles, compression, and background review |
+| Delegated step | At most one bounded task on Qwen3.8 Flash, with Sol reviewing the result |
+| Interactive reserve | Qwen3.8 Flash |
 
-Delegation is reserved for research, design, or verification spanning several steps. Bounded worker
-calls use Qwen3.8 Flash, then DeepSeek V4.1 Flash. GPT-6.2 is not available through the configured
-model router. The installed Codex OAuth credential needs reauthorization before it can serve
-interactive requests again.
+Short questions, status checks, and edits run directly in the main model. Bounded worker
+calls use Qwen3.8 Flash, then DeepSeek V4.1 Flash.
+
+Personal Telegram also exposes native OpenAI web search for current public information. The
+search runs through the existing Codex OAuth route and the model cites the source. The runtime
+image lets the web provider discover the shared Codex login used by routed profiles. This
+capability uses the Codex Responses transport. The profile keeps web extraction, browser,
+terminal, and anonymous search fallback disabled.
 
 `BENKA_MODEL_PROVIDERS_FILE` is the path to a private JSON array of the form
 `[{"model": "...", "provider": "...", "base_url": "...", "api_key": "..."}]`, with a maximum of four
@@ -236,6 +241,9 @@ HTTP endpoints alongside the new worker.
 `benka_integrations.delivery` runs `hermes send` from the same virtualenv as the worker's Python,
 and only then falls back to `PATH`. Before updating a send-capable worker, verify that
 `/opt/benka/.venv/bin/hermes` exists inside the container.
+Each send gets a short-lived writable Hermes home. It links to the existing read-only gateway
+configuration and environment files so the CLI can create its runtime lock without writing into
+the shared mount.
 
 > [!IMPORTANT]
 > An `uncertain` receipt does not mean a confirmed delivery. First check the target Telegram topic,

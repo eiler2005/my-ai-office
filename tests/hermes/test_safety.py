@@ -110,6 +110,31 @@ def test_confirmed_delivery_has_id_and_is_not_repeated(client, cfg):
         send(client, cfg, delivery_id="job:1", target="telegram:123:4", text="changed", runner=runner)
 
 
+def test_delivery_uses_private_writable_home_with_read_only_configuration(client, cfg, monkeypatch, tmp_path):
+    source = tmp_path / "gateway"
+    source.mkdir()
+    for name in (".env", "config.yaml", "auth.json"):
+        (source / name).write_text("fixture")
+    monkeypatch.setenv("HERMES_HOME", str(source))
+    monkeypatch.setenv("HERMES_PROFILE", "some-profile")
+
+    def runner(command, *, env, **kwargs):
+        nonlocal sender_home
+        sender_home = Path(env["HERMES_HOME"])
+        assert sender_home != source and not sender_home.is_relative_to(source)
+        assert (sender_home / ".env").readlink() == source / ".env"
+        assert (sender_home / "config.yaml").readlink() == source / "config.yaml"
+        assert not (sender_home / "auth.json").exists()
+        assert "HERMES_PROFILE" not in env and env["HERMES_DISABLE_LAZY_INSTALLS"] == "1"
+        (sender_home / "bootstrap.lock").touch()
+        return subprocess.CompletedProcess(command, 0, '{"success":true,"message_id":42}')
+
+    sender_home = None
+    send(client, cfg, delivery_id="write-isolation", target="telegram:123:4", text="hello", runner=runner)
+    assert sender_home is not None and not sender_home.exists()
+    assert not (source / "bootstrap.lock").exists()
+
+
 @pytest.mark.parametrize("reply", ['broken', '{"success":true}', '{"success":true,"skipped":true,"message_id":3}'])
 def test_uncertain_delivery_is_quarantined(client, cfg, reply):
     calls = []

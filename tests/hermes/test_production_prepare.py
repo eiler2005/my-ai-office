@@ -328,16 +328,30 @@ def test_a_newly_reviewed_ruleset_reaches_the_refreshed_manifest(active, snapsho
     jobs = json.loads((active / "private/manifests/schedules.json").read_text())["jobs"]
     assert "signals-late-arrival" in jobs
     assert report["signals_jobs"] == 2
-def test_interactive_model_settings_preserve_tiers_and_reserve_order():
+def test_interactive_model_settings_use_sol_and_choose_qwen_for_bounded_work():
     from benka_integrations.production import interactive_model_settings
 
     primary = {"provider": "custom:qwen", "model": "qwen3.8-flash"}
     reserve = {"provider": "custom:deepseek", "model": "deepseek-flash"}
     settings = interactive_model_settings([primary, reserve])
 
-    assert settings["model"] == {"provider": primary["provider"], "default": primary["model"]}
+    assert settings["model"] == {"provider": "openai-codex", "default": "gpt-6.2-sol"}
     assert settings["auxiliary"]["compression"] == primary
-    assert settings["delegation"]["model"] == "qwen4-max"
+    assert settings["delegation"]["model"] == primary["model"]
     assert settings["delegation"]["max_concurrent_children"] == 1
-    assert settings["fallback_providers"] == [reserve]
+    assert settings["fallback_providers"] == [primary]
+    assert interactive_model_settings([reserve, primary])["fallback_providers"] == [primary]
     assert interactive_model_settings([reserve])["delegation"]["model"] == reserve["model"]
+
+
+def test_personal_web_search_is_scoped_and_idempotent():
+    from benka_integrations.production import enable_personal_web_search
+
+    config = {"platform_toolsets": {"telegram": ["benka", "web"], "cli": ["benka"]},
+              "agent": {"disabled_toolsets": ["terminal", "browser"]}}
+    enable_personal_web_search(config)
+    enable_personal_web_search(config)
+
+    assert config["platform_toolsets"] == {"telegram": ["benka", "search"], "cli": ["benka"]}
+    assert config["agent"]["disabled_toolsets"] == ["terminal", "browser"]
+    assert config["web"] == {"search_backend": "openai-native", "keyless_fallback": False}

@@ -9,6 +9,34 @@ activation; this cutover was performed only after a separate instruction from th
 By Denis's instruction, further builds and tests run on the VPS; GitHub Actions is not used for
 them. Production tokens, the production bot, mail, and Syncthing are never used in rehearsal tests.
 
+## Sol routing and worker delivery recovery
+
+On 2026-11-23 the owner renewed Codex OAuth. A bounded turn on the VPS confirmed GPT-6.2 Sol
+at medium reasoning. A separate test injected a primary outage and confirmed that Qwen3.8 Flash
+answered. The same Qwen model handles auxiliary operations and an optional bounded delegated
+step. Existing profile sessions were marked to refresh their prompts.
+The personal Telegram session journal recorded a new inbound turn and assistant output on Sol.
+
+The morning cron slots reached Redis, but `hermes send` tried to create a bootstrap lock in the
+workers' read-only gateway mount before contacting Telegram. The fix gives each invocation a
+private writable home and keeps its gateway configuration read-only. The offline VPS suite
+passed **337** regressions, including mixed Signals rules, and the native CLI test verified the
+read-only failure and the successful receipt with a writable home.
+
+Delivery checks confirmed the recovered 08:00 Telegram Digest, personal and work mail digests,
+Last30Days, and one previously persisted Signals alert in their configured topics. The mixed Signals
+ruleset continued to run. A separate ruleset's private Telegram source denied access to the
+configured session. The source still needs access before its coverage can be restored.
+
+## Native OpenAI web search
+
+On 2026-11-23 the personal Telegram profile gained the search-only Hermes toolset. The runtime
+uses the existing shared Codex OAuth login and declares OpenAI's provider-executed `web_search`
+in the Responses request. A live Sol turn with the deployed profile recorded
+`response.web_search_call.completed` and returned an NWS observation with a source link.
+The native test verifies profile discovery of the shared login and the search-only tool surface
+with synthetic credentials and network disabled.
+
 ## Hermes v0.23.3 runtime and model update
 
 On 2026-11-22, the Benka runtime moved to Hermes `v0.23.3` and Python 3.14. The isolated VPS build
