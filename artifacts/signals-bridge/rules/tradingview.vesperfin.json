@@ -1,0 +1,20 @@
+{
+  "source": {
+    "id": "tradingview-ru-vesperfin",
+    "kind": "tradingview_rss",
+    "locale": "ru",
+    "author": "vesperfin",
+    "enabled": true,
+    "delivery_mode": "chart"
+  },
+  "rule": {
+    "id": "vesperfin-si-cr",
+    "source_type": "tradingview_rss",
+    "source_id": "tradingview-ru-vesperfin",
+    "enabled": true,
+    "kind": "author_futures",
+    "author": "vesperfin",
+    "exchange": "RUS",
+    "families": ["Si", "CR"]
+  }
+}

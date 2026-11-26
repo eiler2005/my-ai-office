@@ -19,6 +19,7 @@ Start from the row that matches why you are here.
 | Document | What it covers |
 | --- | --- |
 | [Architecture](architecture.md) | Layered business and agent architecture, runtime boundaries, production topology, queue and delivery semantics, models, knowledge, interfaces, recovery. |
+| [TradingView author subscriptions](tradingview-signals-design.md) | Signals rules for new CR and Si ideas, quarterly contracts, chart delivery and recovery. |
 | [Workflows](workflows.md) | The interactive and background paths traced end to end, plus the catalogue of what runs on each. |
 | [Reliability](reliability.md) | Slot identity, the pending list, delivery receipts, and reconciliation — with the incidents that exercised them. |
 | [Knowledge](knowledge.md) | The five memory layers, why capture is explicit, and how grounded search works. |

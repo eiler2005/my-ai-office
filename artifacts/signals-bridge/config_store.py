@@ -11,10 +11,12 @@ from last30days_presets import (
     DEFAULT_PERSONAL_FEED_QUERY_BUNDLE,
     ensure_last30days_presets,
 )
+from tradingview_adapter import validate_rule as validate_tradingview_rule
+from tradingview_adapter import validate_source as validate_tradingview_source
 
 
 CONFIG_PATH = Path(os.environ.get("CONFIG_PATH", "/app/config.json"))
-VALID_SOURCE_TYPES = {"email", "telegram", "web"}
+VALID_SOURCE_TYPES = {"email", "telegram", "web", "tradingview_rss"}
 VALID_TELEGRAM_RULE_KINDS = {"hashtag", "author_keywords", "content_keywords"}
 VALID_EMAIL_RULE_KINDS = {"tradingview_user"}
 
@@ -92,6 +94,8 @@ def validate_config(data: dict) -> None:
             source_index[(source_type, source_id)] = item
             if source_type == "telegram" and not str(item.get("chat_id", "")).strip():
                 raise ValueError(f"telegram source {source_id} missing chat_id")
+            if source_type == "tradingview_rss":
+                validate_tradingview_source(item)
 
     seen_ruleset_ids: set[str] = set()
     for ruleset in data.get("rule_sets", []):
@@ -112,6 +116,8 @@ def validate_config(data: dict) -> None:
                 _validate_telegram_rule(rule, source_index[(source_type, source_id)])
             elif source_type == "email":
                 _validate_email_rule(rule)
+            elif source_type == "tradingview_rss":
+                validate_tradingview_rule(rule, source_index[(source_type, source_id)])
             elif source_type == "web" and sources.get("web"):
                 continue
 

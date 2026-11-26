@@ -5,6 +5,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2026-11-26]
+
+### Added
+
+- Added Signals subscriptions for TradingView authors and quarterly or continuous futures
+  contracts, starting with `vesperfin` on Si and CR. Author alerts use the existing Telegram
+  topic and Hermes delivery receipts.
+
 ## [2026-11-23]
 
 ### Changed

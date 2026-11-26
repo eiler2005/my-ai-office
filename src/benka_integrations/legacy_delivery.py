@@ -10,24 +10,29 @@ from .delivery import send
 from .queue import connection
 
 
-async def post_text(text, *, chat_id, topic_id=None, html=True):
+def _safe_external_text(text):
+    # Hermes recognizes attachment directives even in plain text.
+    text = re.sub(r"MEDIA:", "MEDIA\u200b:", text, flags=re.IGNORECASE)
+    return re.sub(r"\[\[(as_document|audio_as_voice)\]\]", r"[\1]", text, flags=re.IGNORECASE)
+
+
+async def post_text(text, *, chat_id, topic_id=None, html=True, delivery_id=None):
     config = load_manifest()
     target = f"telegram:{chat_id}" + (f":{topic_id}" if topic_id else "")
     if html:
         from markdownify import markdownify
         text = markdownify(text, heading_style="ATX")
-    # Hermes recognizes MEDIA directives even in plain text. External mail and
-    # Telegram content must never be interpreted as local attachment commands.
-    text = re.sub(r"MEDIA:", "MEDIA\u200b:", text, flags=re.IGNORECASE)
-    text = re.sub(r"\[\[(as_document|audio_as_voice)\]\]", r"[\1]", text, flags=re.IGNORECASE)
+    text = _safe_external_text(text)
     # Stable content key handles a process restart after a confirmed first chunk.
     import hashlib
-    identity = os.environ["BENKA_RUN_ID"] + ":" + target + ":" + hashlib.sha256(text.encode()).hexdigest()
+    identity = delivery_id or (
+        os.environ["BENKA_RUN_ID"] + ":" + target + ":" + hashlib.sha256(text.encode()).hexdigest()
+    )
     await asyncio.to_thread(send, connection(config), config, delivery_id=identity, target=target, text=text)
     return True
 
 
-async def post_media(data, *, filename, caption, chat_id, topic_id=None, document=True):
+async def post_media(data, *, filename, caption, chat_id, topic_id=None, document=True, delivery_id=None):
     import hashlib
     from pathlib import Path
     from .config import confined, require_active
@@ -47,9 +52,11 @@ async def post_media(data, *, filename, caption, chat_id, topic_id=None, documen
     elif hashlib.sha256(path.read_bytes()).hexdigest() != sha:
         raise ValueError("Attachment content changed")
     target = f"telegram:{chat_id}" + (f":{topic_id}" if topic_id else "")
-    if caption:
+    if caption and delivery_id is None:
         await post_text(caption, chat_id=chat_id, topic_id=topic_id, html=False)
     directive = ("[[as_document]] " if document else "") + f"MEDIA:{path}"
-    identity = os.environ["BENKA_RUN_ID"] + ":media:" + target + ":" + sha
+    if caption and delivery_id is not None:
+        directive = _safe_external_text(caption) + "\n" + directive
+    identity = delivery_id or (os.environ["BENKA_RUN_ID"] + ":media:" + target + ":" + sha)
     await asyncio.to_thread(send, connection(config), config, delivery_id=identity, target=target, text=directive)
     return True

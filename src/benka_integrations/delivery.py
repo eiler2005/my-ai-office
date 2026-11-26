@@ -16,11 +16,20 @@ class UncertainDelivery(RuntimeError):
     pass
 
 
+def _journal_key(delivery_id: str) -> str:
+    return "benka:delivery:" + hashlib.sha256(delivery_id.encode()).hexdigest()
+
+
+def receipt_status(client, delivery_id: str) -> str | None:
+    raw = client.get(_journal_key(delivery_id))
+    return json.loads(raw)["status"] if raw else None
+
+
 def send(client, config, *, delivery_id: str, target: str, text: str, runner=subprocess.run):
     require_active(config, "send")
     if target not in config.get("delivery_targets", []):
         raise PermissionError("Destination is not in this domain's allowlist")
-    key = "benka:delivery:" + hashlib.sha256(delivery_id.encode()).hexdigest()
+    key = _journal_key(delivery_id)
     fingerprint = hashlib.sha256((target + "\0" + text).encode()).hexdigest()
     claim = json.dumps({"status": "sending", "fingerprint": fingerprint})
     if not client.set(key, claim, nx=True):

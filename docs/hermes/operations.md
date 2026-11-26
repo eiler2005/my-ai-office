@@ -311,6 +311,13 @@ and applies the same rule, deduplication, Hermes receipt, and source-context del
 must never be used without `source_id`; message identifiers and run IDs stay in the private
 operation record.
 
+TradingView author subscriptions run in the existing Signals worker and may use an existing
+scheduled ruleset. Back up the private Signals config before adding sources or rules, validate
+the merged config against the candidate image, and replace only the Signals worker after the
+active worker has stopped. Recreate the worker to pick up atomic replacements of private
+bind-mounted config files. Check its source status and chart delivery receipts. See
+[TradingView author subscriptions](../tradingview-signals-design.md).
+
 ## Wiki and LightRAG
 
 Wiki and RAG require tokens. File paths are restricted to the domain root; URL ingest is disabled by

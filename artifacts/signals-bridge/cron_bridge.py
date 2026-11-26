@@ -38,6 +38,7 @@ import state_store
 from telegram_adapter import build_client as build_telethon_client
 from telegram_adapter import collect_telegram_candidates
 from telegram_adapter import is_telethon_session_locked_error, telethon_session_lock
+import tradingview_adapter
 
 load_dotenv("/app/signals.env", override=False)
 
@@ -772,6 +773,8 @@ def _process_signals_job(r, data: dict[str, str]) -> dict:
         candidates = []
         tails: list[list[str]] = []
         source_errors: list[str] = []
+        tradingview_enabled = False
+        tradingview_posted = 0
         for source_type, rules in _rules_by_source(ruleset).items():
             for source_id, source_rules in rules.items():
                 if source_filter and source_id != source_filter:
@@ -799,6 +802,18 @@ def _process_signals_job(r, data: dict[str, str]) -> dict:
                             now=now,
                             target_message_id=target_message_id,
                         )
+                    elif source_type == "tradingview_rss":
+                        if target_message_id is not None:
+                            raise ValueError("target_message_id is supported only for Telegram sources")
+                        if TOPIC_ID <= 0:
+                            raise ValueError("TradingView requires the existing Signals topic ID")
+                        tradingview_enabled = True
+                        tail = tradingview_adapter.poll(
+                            r, source, source_rules, now=now, target=f"telegram:{SUPERGROUP_ID}:{TOPIC_ID}",
+                            tz=config["timezone"],
+                        )
+                        _mark_source_success(r, source_id, now)
+                        source_candidates = []
                     elif source_type == "web":
                         if source.get("enabled"):
                             raise RuntimeError(f"web source not implemented yet: {source_id}")
@@ -818,6 +833,13 @@ def _process_signals_job(r, data: dict[str, str]) -> dict:
                         payload={"ruleset_id": ruleset["id"], "source_id": source_id},
                     )
 
+        if tradingview_enabled:
+            tradingview_posted, failures = asyncio.run(tradingview_adapter.deliver_pending(
+                r, chat=SUPERGROUP_ID, topic=TOPIC_ID, holder=holder,
+            ))
+            if failures:
+                source_errors.append(f"tradingview_pending_reconciliation_or_retry={failures}")
+            tails.append([f"tradingview_posted={tradingview_posted}"])
         prepared = prepare_signal_batch(
             ruleset_title=str(ruleset.get("title", ruleset["id"])),
             topic_name=topic_name,
@@ -849,7 +871,7 @@ def _process_signals_job(r, data: dict[str, str]) -> dict:
             "run_id": run_id,
             "started_at": started_at,
             "finished_at": finished_at,
-            "posted_events": len(fresh_events) if posted else 0,
+            "posted_events": tradingview_posted + (len(fresh_events) if posted else 0),
             "tail": _tail_union(
                 *tails,
                 [
