@@ -313,9 +313,10 @@ operation record.
 
 TradingView author subscriptions run in the existing Signals worker and may use an existing
 scheduled ruleset. Back up the private Signals config before adding sources or rules, validate
-the merged config against the candidate image, and replace only the Signals worker after the
-active worker has stopped. Recreate the worker to pick up atomic replacements of private
-bind-mounted config files. Check its source status and chart delivery receipts. See
+the merged config against the candidate image, then stop and recreate the Signals and Last30Days
+workers. Both workers load the shared Signals config and need a compatible image. Recreating
+them also picks up atomic replacements of the private bind-mounted config files. Check the
+Signals source status and chart delivery receipts. See
 [TradingView author subscriptions](../tradingview-signals-design.md).
 
 ## Wiki and LightRAG

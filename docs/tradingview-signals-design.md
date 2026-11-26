@@ -51,3 +51,7 @@ Run `.venv/bin/python scripts/test-hermes.py --suite signals --suite hermes`. Th
 the exchange and author filters, rollover and continuous symbols, chart selection, body
 splitting, overlapping matches, first activation, backfill, and recovery after a partial send.
 The production check confirms the selected job and its Telegram chart receipt in Signals.
+
+The initial production backfill on November 26, 2026 used a 48-hour window. Signals delivered
+one matching `CRZ2026` idea. The latest `SIZ2026` idea was earlier than the window. The chart,
+original link, and topic were verified by reading the delivered Telegram message.
